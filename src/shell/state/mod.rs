@@ -1,6 +1,6 @@
 use super::command::Command;
 
-type Key = u8;
+pub type Key = u8;
 
 pub struct State(
   pub Option<Command>,
