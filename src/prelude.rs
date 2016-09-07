@@ -1,3 +1,2 @@
-pub use ::shell::{Shell, ShellError};
-pub use ::shell::state::State;
-pub use ::shell::command::Command;
+pub use ::shell::{Shell, ShellError, ShellState};
+pub use ::shell::Display;

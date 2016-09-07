@@ -1,12 +1,7 @@
 [package]
 name = "pty-shell-mode"
 version = "0.0.1"
-authors = [
-	"adjivas <adjivas@users.noreply.github.com>",
-	"brezaire <voncay@users.noreply.github.com>",
-	"flime <LinFeiLong@users.noreply.github.com>",
-	"jpepin <limaconoob@users.noreply.github.com>"
-]
+authors = ["adjivas <adjivas@users.noreply.github.com>"]
 keywords = ["pty", "shell", "mode"]
 
 [features]
@@ -31,6 +26,9 @@ version       = "*"
 
 [dependencies.libc]
 version       = "*"
+
+[dependencies.itertools]
+version = "0.4"
 
 [dependencies.clippy]
 version       = "*"

@@ -1,9 +1,14 @@
-use ::chan;
-use ::pty::prelude as pty;
+mod state;
 
 use std::io::{Read, Write};
 use std::io;
 use std::thread;
+
+use ::chan;
+use ::pty::prelude as pty;
+
+pub use self::state::DeviceState;
+
 
 pub type In = ([u8; 1], usize);
 pub type Out = ([u8; 4096], usize);
@@ -63,22 +68,32 @@ impl io::Write for Device {
 }
 
 impl Iterator for Device {
-  type Item = (Option<u8>, Option<Out>);
+  type Item = DeviceState;
 
-  fn next(&mut self) -> Option<(Option<u8>, Option<Out>)> {
+  fn next(&mut self) -> Option<DeviceState> {
     let ref input: chan::Receiver<([u8; 1], usize)> = self.input;
     let ref output: chan::Receiver<([u8; 4096], usize)> = self.output;
+    let mut current: DeviceState = Default::default();
 
     chan_select! {
+      default => {
+        return Some(current)
+      },
       output.recv() -> val => {
         return match val {
-          Some((buf, len @ 1 ... 4096)) => Some((None, Some((buf, len)))),
+          Some((mut buf, len @ 1 ... 4096)) => {
+            current.read(&mut buf[..len]);
+            Some(current)
+          },
           _ => None,
         }
       },
       input.recv() -> val => {
         return match val {
-          Some((read, 1)) => Some((Some(read[0]), None)),
+          Some((buf, 1)) => {
+            current.write(&buf[..1]);
+            Some(current)
+          },
           _ => None,
         }
       },

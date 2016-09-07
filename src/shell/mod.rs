@@ -1,32 +1,27 @@
 mod err;
-mod log;
+mod display;
 mod device;
 pub mod state;
-pub mod command;
 
-use ::std::collections::VecDeque;
-use ::std::fmt;
-use ::std::io;
-use ::std::io::{Read, Write};
+use std::collections::VecDeque;
+use std::{fmt, io, mem};
+use std::io::{Read, Write};
 
-use ::pty::prelude as pty;
-use ::fork::Child;
 use ::libc;
+use ::fork::Child;
+use ::pty::prelude as pty;
 
-use self::device::Device;
-use self::state::State;
-use self::command::Command;
-use self::log::Log;
+use self::device::{Device, DeviceState};
+pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
+pub use self::display::Display;
 
 /// The struct `Shell` is the speudo terminal interface.
 
 pub struct Shell {
   pid: libc::pid_t,
-  pty: pty::Fork,
   device: Device,
-  log: Log,
-  line: Command,
+  display: Display,
 }
 
 impl Shell {
@@ -40,12 +35,13 @@ impl Shell {
           slave.exec(command.unwrap_or("bash"));
         },
         pty::Fork::Parent(pid, master) => {
+          unsafe {
+            mem::forget(fork);
+          }
           Ok(Shell {
             pid: pid,
-            pty: fork,
             device: Device::from_speudo(master),
-            log: Log::default(),
-            line: Vec::with_capacity(4096),
+            display: Display::default(),
           })
         },
       },
@@ -53,10 +49,17 @@ impl Shell {
   }
 }
 
-impl Iterator for Shell {
-  type Item = State;
 
-  fn next(&mut self) -> Option<State> {
+
+
+impl Iterator for Shell {
+  type Item = ShellState;
+
+  fn next(&mut self) -> Option<ShellState> {
+    None
+  }
+}
+/*
     match self.device.next() {
       None => None,
       Some((rx_in, rx_out)) => {
@@ -91,4 +94,4 @@ impl io::Write for Shell {
   fn flush(&mut self) -> io::Result<()> {
     self.device.flush()
   }
-}
+}*/
