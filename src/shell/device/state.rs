@@ -1,59 +1,51 @@
-use std::io;
-
-pub struct DeviceState {
+#[derive(Clone)]
+pub enum DeviceState {
   /// Update
-  idle: Option<()>,
+  Idle,
   /// The output of new lines
-  out_text: Option<Vec<u8>>,
+  OutText(Vec<u8>),
   /// The current character
-  in_character: Option<u8>,
-  /// The last line
-  in_line: Option<Vec<u8>>,
-  /// The last line buf
-  in_line_buf: Option<Vec<u8>>,
+  InCharacter(u8),
 }
 
-impl io::Read for DeviceState {
+impl DeviceState {
 
-  /// The method `read` initialize the standard output.
-  fn read(&mut self, output: &mut [u8]) -> io::Result<usize> {
-    let len: usize = output.len();
-    let mut out: Vec<u8> = Vec::with_capacity(len);
-
-    out.extend_from_slice(output);
-    self.out_text = Some(out);
-    self.idle = None;
-    Ok(len)
-  }
-}
-
-impl io::Write for DeviceState {
-
-  /// The method `write` initialize the standard input.
-  fn write(&mut self, input: &[u8]) -> io::Result<usize> {
-    let len: usize = input.len();
-    let mut inp: Vec<u8> = Vec::with_capacity(len);
-
-    inp.extend_from_slice(input);
-    self.in_line_buf = Some(inp);
-    self.in_character = Some(input[0]);
-    self.idle = None;
-    Ok(len)
+  /// The constructor method `from_idle` returns a Update's event.
+  pub fn from_idle() -> Self {
+    DeviceState::Idle
   }
 
-  fn flush(&mut self) -> io::Result<()> {
-    Ok(())
+  /// The constructor method `from_out` returns a text Output's event.
+  pub fn from_out(buf: &[u8]) -> Self {
+    DeviceState::OutText(Vec::from(buf))
   }
-}
 
-impl Default for DeviceState {
-  fn default() -> DeviceState {
-    DeviceState {
-      idle: Some(()),
-      out_text: None,
-      in_character: None,
-      in_line: None,
-      in_line_buf: None,
+  /// The constructor method `from_out` returns a key Input's event.
+  pub fn from_in(key: u8) -> Self {
+    DeviceState::InCharacter(key)
+  }
+
+  /// The accessor method `is_idle` returns a Option for Update's event.
+  pub fn is_idle(&self) -> Option<()> {
+    match *self {
+      DeviceState::Idle => Some(()),
+      _ => None,
+    }
+  }
+
+  /// The accessor method `is_out_text` returns a Option for Ouput's event.
+  pub fn is_out_text(self) -> Option<Vec<u8>> {
+    match self {
+      DeviceState::OutText(buf) => Some(buf),
+      _ => None,
+    }
+  }
+
+  /// The accessor method `is_character` returns a Option for key Input's event.
+  pub fn is_character(&self) -> Option<u8> {
+    match *self {
+      DeviceState::InCharacter(key) => Some(key),
+      _ => None,
     }
   }
 }

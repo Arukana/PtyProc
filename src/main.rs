@@ -2,20 +2,22 @@ extern crate pty_shell_mode;
 
 use pty_shell_mode::prelude as shell;
 
-use std::io::Write;
+use std::io::{self, Write};
 
 fn main() {
   let mut shell: shell::Shell = shell::Shell::new(None).unwrap();
 
-  while let Some(state) = shell.next() {
-/*    if let Some(_) = command {
-      shell.write(&[10u8]).unwrap();
-      shell.flush().unwrap();
+  while let Some(event) = shell.next() {
+    if let Some(ref o) = event.is_out_text() {
+      io::stdout().write(o.as_slice()).unwrap();
+      io::stdout().flush().unwrap();
     }
-    if let Some(k) = key {
+    if let Some(k) = event.is_keydown()  {
       shell.write(&[k]).unwrap();
       shell.flush().unwrap();
-    }*/
+    }
+    if let Some(_) = event.is_line() {
+    }
   }
   println!("bye bye");
 }

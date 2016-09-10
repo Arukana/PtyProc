@@ -6,12 +6,8 @@ extern crate termios;
 extern crate termion;
 extern crate itertools;
 
-const DISPlAY_DEFAULT_COL: libc::c_ushort = 80;
-const DISPlAY_DEFAULT_ROW: libc::c_ushort = 24;
-
-const DEVICESTATE_DEFAULT_DISPLAY: usize = 4096;
-const DEVICESTATE_DEFAULT_LINE: usize = 1024;
-
+const DISPLAY_DEFAULT_COL: libc::c_ushort = 80;
+const DISPLAY_DEFAULT_ROW: libc::c_ushort = 24;
 
 mod winsize;
 pub mod terminal;

@@ -1,12 +1,10 @@
 use std::collections::VecDeque;
-use std::ffi::OsStr;
-use std::{io, fmt, vec};
+use std::{io, fmt};
 
-use ::itertools::Itertools;
 use ::termion;
 use ::libc;
-use ::ffi;
 
+#[derive(Clone)]
 pub struct Display {
   screen: VecDeque<u8>,
   col: libc::c_ushort,
@@ -32,7 +30,10 @@ impl Iterator for Display {
 
 impl fmt::Display for Display {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{}", String::from_utf8_lossy(self.screen.as_slices().0))
+    write!(f, "{}{}",
+      termion::cursor::Goto(0, 0),
+      String::from_utf8_lossy(self.screen.as_slices().0),
+    )
   }
 }
 
@@ -70,14 +71,14 @@ impl Default for Display {
   fn default() -> Display {
     let (col, row): (libc::c_ushort, libc::c_ushort) = termion::terminal_size()
                                                                .unwrap_or((
-      ::DISPlAY_DEFAULT_COL,
-      ::DISPlAY_DEFAULT_ROW
+      ::DISPLAY_DEFAULT_COL,
+      ::DISPLAY_DEFAULT_ROW
     ));
 
     Display {
       screen: VecDeque::with_capacity(col.checked_mul(row).unwrap_or_default() as usize),
-      col: ::DISPlAY_DEFAULT_COL,
-      row: ::DISPlAY_DEFAULT_ROW,
+      col: ::DISPLAY_DEFAULT_COL,
+      row: ::DISPLAY_DEFAULT_ROW,
     }
   }
 }

@@ -41,8 +41,6 @@ fn enter_raw_mode(fd: libc::c_int) -> Result<()> {
     new_termios.c_cc[VMIN] = 1;
     new_termios.c_cc[VTIME] = 0;
 
-    unsafe {
-        tcsetattr(libc::STDIN_FILENO, TCSANOW, &new_termios);
-    }
+    tcsetattr(libc::STDIN_FILENO, TCSANOW, &new_termios);
     Ok(())
 }
