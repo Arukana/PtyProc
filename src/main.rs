@@ -12,9 +12,11 @@ fn main() {
       io::stdout().write(o.as_slice()).unwrap();
       io::stdout().flush().unwrap();
     }
-/*    if let Some(ref s) = event.is_out_screen() {
-        print!("{}", s);
-    }*/
+    if let Some(_) = event.is_out_screen() {
+      if let Some(ref sig) = event.is_signal() {
+        println!("{}", sig);
+      }
+    }
     if let Some(k) = event.is_keydown()  {
       shell.write(&[k]).unwrap();
       shell.flush().unwrap();

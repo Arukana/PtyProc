@@ -63,13 +63,14 @@ impl Device {
       static mut signal: Option<Sig> = None;
 
       unsafe extern "C" fn event(sig: Sig) {
-              signal = Some(sig);
+        signal = Some(sig);
       }
       unsafe {
         signal!(sig::ffi::Sig::WINCH, event);
         loop {
           if let Some(sig) = signal {
             tx_sig.send(sig);
+            signal = None;
           }
         }
       }

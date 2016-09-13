@@ -1,5 +1,5 @@
 use std::io::{self, Write};
-use std::ops::{BitOr, BitAnd, Not};
+use std::ops::BitOr;
 
 use ::libc;
 
@@ -30,6 +30,11 @@ impl ShellState {
     self.idle
   }
 
+  /// The accessor method `is_signal` returns the Signal event.
+  pub fn is_signal(&self) -> Option<libc::c_int> {
+    self.sig
+  }
+
   /// The accessor method `is_keydown` returns the KeyDown event.
   pub fn is_keydown(&self) -> Option<u8> {
     self.in_character
@@ -47,8 +52,8 @@ impl ShellState {
 
   /// The accessor method `is_out_screen` returns the Output screen event.
   pub fn is_out_screen(&self) -> Option<&Display> {
-    if self.idle.is_none().bitand(
-      self.sig.eq(&Some(libc::SIGWINCH)).not()
+    if self.idle.is_none().bitor(
+      self.sig.eq(&Some(libc::SIGWINCH))
     ) {
       Some(&self.out_screen)
     }
