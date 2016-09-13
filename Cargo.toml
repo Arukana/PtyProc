@@ -27,8 +27,11 @@ version       = "*"
 [dependencies.libc]
 version       = "*"
 
+[dependencies.sig]
+version       = "1.0.0"
+
 [dependencies.itertools]
-version = "0.4"
+version       = "0.4"
 
 [dependencies.clippy]
 version       = "*"

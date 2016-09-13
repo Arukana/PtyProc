@@ -30,8 +30,7 @@ impl Iterator for Display {
 
 impl fmt::Display for Display {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{}{}",
-      termion::cursor::Goto(0, 0),
+    write!(f, "{}",
       String::from_utf8_lossy(self.screen.as_slices().0),
     )
   }

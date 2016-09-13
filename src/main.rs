@@ -12,12 +12,15 @@ fn main() {
       io::stdout().write(o.as_slice()).unwrap();
       io::stdout().flush().unwrap();
     }
+/*    if let Some(ref s) = event.is_out_screen() {
+        print!("{}", s);
+    }*/
     if let Some(k) = event.is_keydown()  {
       shell.write(&[k]).unwrap();
       shell.flush().unwrap();
     }
-    if let Some(_) = event.is_line() {
-    }
+/*    if let Some(_) = event.is_line() {
+    }*/
   }
   println!("bye bye");
 }

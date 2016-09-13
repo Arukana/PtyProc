@@ -1,6 +1,7 @@
 use std::io::{self, Write};
+use std::ops::{BitOr, BitAnd, Not};
 
-use std::ops::BitOr;
+use ::libc;
 
 use super::Display;
 use super::DeviceState;
@@ -9,14 +10,16 @@ use super::DeviceState;
 pub struct ShellState {
   /// Update.
   idle: Option<()>,
+  /// Signal.
+  sig: Option<libc::c_int>,
   /// The current character.
-  in_character: Option<u8>,
+  in_character: Option<libc::c_uchar>,
   /// The output of new lines.
-  out_text: Option<Vec<u8>>,
+  out_text: Option<Vec<libc::c_uchar>>,
   /// The output of screen.
   out_screen: Display,
   /// The last line.
-  in_line: Vec<u8>,
+  in_line: Vec<libc::c_uchar>,
   in_line_ready: bool,
 }
 
@@ -44,7 +47,9 @@ impl ShellState {
 
   /// The accessor method `is_out_screen` returns the Output screen event.
   pub fn is_out_screen(&self) -> Option<&Display> {
-    if self.idle.is_none() {
+    if self.idle.is_none().bitand(
+      self.sig.eq(&Some(libc::SIGWINCH)).not()
+    ) {
       Some(&self.out_screen)
     }
     else {
@@ -69,6 +74,7 @@ impl ShellState {
     event: DeviceState,
   ) -> io::Result<()> {
     self.idle = event.is_idle();
+    self.sig = event.is_signal();
     self.in_character = event.is_character();
     self.out_text = event.to_owned().is_out_text();
     if self.in_line_ready {
