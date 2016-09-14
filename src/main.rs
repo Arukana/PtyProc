@@ -11,9 +11,6 @@ fn main() {
   let mut shell: shell::Shell = shell::Shell::new(None).unwrap();
 
   while let Some(event) = shell.next() {
-    
-    println!("{:?}", event);
-
     if let Some(ref o) = event.is_out_text() {
       io::stdout().write(o.as_slice()).unwrap();
       io::stdout().flush().unwrap();
