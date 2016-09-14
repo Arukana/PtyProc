@@ -1,3 +1,15 @@
+# **************************************************************************** #
+#                                                                              #
+#                                                         :::      ::::::::    #
+#    Cargo.toml                                         :+:      :+:    :+:    #
+#                                                     +:+ +:+         +:+      #
+#    By: jpepin <jpepin@student.42.fr>              +#+  +:+       +#+         #
+#                                                 +#+#+#+#+#+   +#+            #
+#    Created: 2016/09/14 06:02:06 by jpepin            #+#    #+#              #
+#    Updated: 2016/09/14 06:36:05 by jpepin           ###   ########.fr        #
+#                                                                              #
+# **************************************************************************** #
+
 [package]
 name = "pty-shell-mode"
 version = "0.0.1"
@@ -22,7 +34,10 @@ version       = "0.1"
 version       = "0.1.18"
 
 [dependencies.termion]
-version       = "*"
+git = "https://github.com/limaconoob/termion.git"
+
+[dependencies.ms]
+git = "https://github.com/limaconoob/Neko.git"
 
 [dependencies.termios]
 version       = "*"

@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 use std::{io, fmt};
 
 use ::termion;
+use ::termion::cursor::{Goto};
 use ::libc;
 
 #[derive(Clone)]
@@ -10,6 +11,26 @@ pub struct Display {
   col: libc::c_ushort,
   row: libc::c_ushort,
 }
+
+impl Display
+{ pub fn to_matrix(&self) -> Vec<Vec<u8>>
+  { let mut matrix: Vec<Vec<u8>> = Vec::with_capacity(self.row as usize);
+    let mut flag: bool = true;
+    let mut tmp = self.screen.iter();
+    {0..self.row}.all(|y|
+    { let mut coucou: Vec<u8> = Vec::with_capacity(self.col as usize);
+      {0..self.col}.all(|x|
+      { if flag
+        { if let Some(k) = tmp.next()
+          { coucou.push(*k);
+          if *k == 10
+          { flag = false; }}}
+        else
+        { coucou.push(0); }
+        true });
+      matrix.push(coucou);
+      true });
+    matrix }}
 
 impl ExactSizeIterator for Display {
   fn len(&self) -> usize {
@@ -30,7 +51,8 @@ impl Iterator for Display {
 
 impl fmt::Display for Display {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-    write!(f, "{}",
+    write!(f, "{}{}",
+      Goto(1, 1),
       String::from_utf8_lossy(self.screen.as_slices().0),
     )
   }
