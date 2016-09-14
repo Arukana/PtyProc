@@ -34,5 +34,7 @@ fn main() {
 /*    if let Some(_) = event.is_line() {
     }*/
   }
-  println!("bye bye");
+
+  //MOUSE OFF
+  print!("\x1b[?1015l\x1b[?1002l\x1b[?1000l");
 }
