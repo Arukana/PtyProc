@@ -12,7 +12,7 @@ use ::pty::prelude as pty;
 pub use self::state::DeviceState;
 
 pub type In = libc::c_uchar;
-pub type Out = ([libc::c_uchar; 4096], usize);
+pub type Out = [libc::c_uchar; 4096];
 pub type Sig = libc::c_int;
 
 /// The struct `Device` is the input/output terminal interface.
@@ -20,7 +20,7 @@ pub type Sig = libc::c_int;
 pub struct Device {
   speudo: pty::Master,
   input: chan::Receiver<In>,
-  output: chan::Receiver<Out>,
+  output: chan::Receiver<(Out, libc::size_t)>,
   signal: chan::Receiver<Sig>,
 }
 
@@ -28,7 +28,7 @@ impl Device {
   fn new (
     speudo: pty::Master,
     input: chan::Receiver<In>,
-    output: chan::Receiver<Out>,
+    output: chan::Receiver<(Out, libc::size_t)>,
     signal: chan::Receiver<libc::c_int>,
   ) -> Self {
     ::terminal::setup_terminal(speudo);
@@ -65,8 +65,8 @@ impl Device {
       unsafe extern "C" fn event(sig: Sig) {
         signal = Some(sig);
       }
+      signal!(sig::ffi::Sig::WINCH, event);
       unsafe {
-        signal!(sig::ffi::Sig::WINCH, event);
         loop {
           if let Some(sig) = signal {
             tx_sig.send(sig);
@@ -104,7 +104,7 @@ impl Iterator for Device {
 
   fn next(&mut self) -> Option<DeviceState> {
     let ref input: chan::Receiver<In> = self.input;
-    let ref output: chan::Receiver<Out> = self.output;
+    let ref output: chan::Receiver<(Out, libc::size_t)> = self.output;
     let ref signal: chan::Receiver<Sig> = self.signal;
 
     chan_select! {
@@ -118,7 +118,7 @@ impl Iterator for Device {
         None => None,
       },
       output.recv() -> val => return match val {
-        Some((buf, len @ 1 ... 4096)) => Some(DeviceState::from_out(&buf[..len])),
+        Some((buf, len @ 1 ... 4096)) => Some(DeviceState::from_out(buf, len)),
         _ => None,
       },
     }

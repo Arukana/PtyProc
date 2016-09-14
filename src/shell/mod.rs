@@ -44,6 +44,11 @@ impl Shell {
       },
     }
   }
+
+  /// The accessor method `get_pid` returns the pid from the master.
+  pub fn get_pid(&self) -> &libc::pid_t {
+    &self.pid
+  }
 }
 
 impl io::Write for Shell {

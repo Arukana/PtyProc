@@ -14,6 +14,8 @@ pub struct ShellState {
   sig: Option<libc::c_int>,
   /// The current character.
   in_character: Option<libc::c_uchar>,
+  /// The past character.
+  in_character_past: Option<libc::c_uchar>,
   /// The output of new lines.
   out_text: Option<Vec<libc::c_uchar>>,
   /// The output of screen.
@@ -35,6 +37,15 @@ impl ShellState {
     self.sig
   }
 
+  /// The method `is_resized` returns the Option for the WINCH Signal event.
+  pub fn is_resized(&self) -> Option<()> {
+    if let Some(libc::SIGWINCH) = self.sig {
+      Some(())
+    } else {
+      None
+    }
+  }
+
   /// The accessor method `is_keydown` returns the KeyDown event.
   pub fn is_keydown(&self) -> Option<u8> {
     self.in_character
@@ -44,8 +55,7 @@ impl ShellState {
   pub fn is_out_text(&self) -> Option<&Vec<u8>> {
     if let Some(ref out) = self.out_text {
       Some(&out)
-    }
-    else {
+    } else {
       None
     }
   }
@@ -56,8 +66,7 @@ impl ShellState {
       self.sig.eq(&Some(libc::SIGWINCH))
     ) {
       Some(&self.out_screen)
-    }
-    else {
+    } else {
       None
     }
   }
@@ -66,8 +75,7 @@ impl ShellState {
   pub fn is_line(&self) -> Option<&Vec<u8>> {
     if self.in_line_ready {
       Some(&self.in_line)
-    }
-    else {
+    } else {
       None
     }
   }
@@ -80,8 +88,9 @@ impl ShellState {
   ) -> io::Result<()> {
     self.idle = event.is_idle();
     self.sig = event.is_signal();
+    self.in_character_past = self.in_character;
     self.in_character = event.is_character();
-    self.out_text = event.to_owned().is_out_text();
+    self.out_text = event.is_out_text();
     if self.in_line_ready {
       self.in_line.clear();
       self.in_line_ready = false;

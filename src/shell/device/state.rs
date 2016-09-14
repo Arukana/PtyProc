@@ -1,15 +1,18 @@
 use ::libc;
 
-#[derive(Clone)]
+use super::In;
+use super::Out;
+use super::Sig;
+
 pub enum DeviceState {
   /// Update.
   Idle,
   /// As catched a signal.
-  Sig(libc::c_int),
+  Sig(Sig),
   /// The output of new lines.
-  OutText(Vec<libc::c_uchar>),
+  OutText(Out, libc::size_t),
   /// The current character.
-  InCharacter(libc::c_uchar),
+  InCharacter(In),
 }
 
 impl DeviceState {
@@ -20,8 +23,8 @@ impl DeviceState {
   }
 
   /// The constructor method `from_out` returns a text Output's event.
-  pub fn from_out(buf: &[libc::c_uchar]) -> Self {
-    DeviceState::OutText(Vec::from(buf))
+  pub fn from_out(buf: Out, len: libc::size_t) -> Self {
+    DeviceState::OutText(buf, len)
   }
 
   /// The constructor method `from_out` returns a key Input's event.
@@ -45,7 +48,7 @@ impl DeviceState {
   /// The accessor method `is_out_text` returns a Option for Ouput's event.
   pub fn is_out_text(self) -> Option<Vec<libc::c_uchar>> {
     match self {
-      DeviceState::OutText(buf) => Some(buf),
+      DeviceState::OutText(buf, len) => Some(Vec::from(&buf[..len])),
       _ => None,
     }
   }

@@ -15,6 +15,9 @@ travis        = ["lints", "nightly"] # for building with travis-cargo
 [dependencies.pty]
 git           = "https://github.com/adjivas/pty-rs.git"
 
+[dependencies.time]
+version       = "0.1"
+
 [dependencies.chan]
 version       = "0.1.18"
 
@@ -29,9 +32,6 @@ version       = "*"
 
 [dependencies.sig]
 version       = "1.0.0"
-
-[dependencies.itertools]
-version       = "0.4"
 
 [dependencies.clippy]
 version       = "*"
