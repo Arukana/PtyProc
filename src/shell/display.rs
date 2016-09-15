@@ -75,7 +75,9 @@ impl Default for Display {
     ));
 
     Display {
-      screen: VecDeque::with_capacity(col.checked_mul(row).unwrap_or_default() as usize),
+      screen: VecDeque::with_capacity(
+        col.checked_mul(row).unwrap_or_default() as usize
+      ),
       col: ::DISPLAY_DEFAULT_COL,
       row: ::DISPLAY_DEFAULT_ROW,
     }

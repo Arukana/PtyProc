@@ -3,7 +3,9 @@ use ::libc;
 use super::In;
 use super::Out;
 use super::Sig;
+use super::Press;
 
+#[derive(Copy)]
 pub enum DeviceState {
   /// Update.
   Idle,
@@ -12,7 +14,7 @@ pub enum DeviceState {
   /// The output of new lines.
   OutText(Out, libc::size_t),
   /// The current character.
-  InCharacter(In),
+  InPress(Press),
 }
 
 impl DeviceState {
@@ -28,8 +30,8 @@ impl DeviceState {
   }
 
   /// The constructor method `from_out` returns a key Input's event.
-  pub fn from_in(key: libc::c_uchar) -> Self {
-    DeviceState::InCharacter(key)
+  pub fn from_in(buf: In, len: libc::size_t) -> Self {
+    DeviceState::InPress(Press::new(buf, len))
   }
 
   /// The constructor method `from_ig` returns a Signal's event.
@@ -53,10 +55,11 @@ impl DeviceState {
     }
   }
 
-  /// The accessor method `is_character` returns a Option for key Input's event.
-  pub fn is_character(&self) -> Option<libc::c_uchar> {
+  /// The accessor method `is_input` returns a Option for key
+  /// or mouse Input's event.
+  pub fn is_input(&self) -> Option<Press> {
     match *self {
-      DeviceState::InCharacter(key) => Some(key),
+      DeviceState::InPress(event) => Some(event),
       _ => None,
     }
   }
@@ -68,4 +71,8 @@ impl DeviceState {
       _ => None,
     }
   }
+}
+
+impl Clone for DeviceState {
+  fn clone(&self) -> DeviceState { *self }
 }

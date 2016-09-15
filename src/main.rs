@@ -17,11 +17,11 @@ fn main() {
         println!("{}", sig);
       }
     }
-    if let Some(k) = event.is_keydown()  {
-      shell.write(&[k]).unwrap();
+    if let Some(i) = event.is_in_text()  {
+      shell.write(i).unwrap();
       shell.flush().unwrap();
     }
-/*    if let Some(_) = event.is_line() {
+/*    if let Some(l) = event.is_line() {
     }*/
   }
   println!("bye bye");

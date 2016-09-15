@@ -1,7 +1,7 @@
 mod err;
 mod display;
-mod device;
-pub mod state;
+mod state;
+pub mod device;
 
 use std::{io, mem};
 
@@ -9,7 +9,7 @@ use ::libc;
 use ::fork::Child;
 use ::pty::prelude as pty;
 
-pub use self::device::{Device, DeviceState};
+use self::device::Device;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 pub use self::display::Display;
@@ -71,7 +71,7 @@ impl Iterator for Shell {
           None
         }
         else {
-          Some(self.state.clone())
+          Some(self.state.to_owned())
         }
       },
     }

@@ -1,3 +1,5 @@
+#![feature(slice_patterns)]
+
 #[macro_use(chan_select)] extern crate chan;
 #[macro_use] extern crate sig;
 extern crate pty;

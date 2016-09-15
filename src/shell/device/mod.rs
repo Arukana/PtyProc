@@ -1,4 +1,5 @@
 mod state;
+mod press;
 
 use std::io::{self, Read};
 use std::thread;
@@ -9,9 +10,10 @@ use ::libc;
 use ::sig;
 use ::pty::prelude as pty;
 
+pub use self::press::Press;
 pub use self::state::DeviceState;
 
-pub type In = libc::c_uchar;
+pub type In = [libc::c_uchar; 12];
 pub type Out = [libc::c_uchar; 4096];
 pub type Sig = libc::c_int;
 
@@ -19,15 +21,17 @@ pub type Sig = libc::c_int;
 
 pub struct Device {
   speudo: pty::Master,
-  input: chan::Receiver<In>,
+  input: chan::Receiver<(In, libc::size_t )>,
   output: chan::Receiver<(Out, libc::size_t)>,
   signal: chan::Receiver<Sig>,
 }
 
 impl Device {
+
+  /// The constructor method `new` returns a Device interface iterable.
   fn new (
     speudo: pty::Master,
-    input: chan::Receiver<In>,
+    input: chan::Receiver<(In, libc::size_t)>,
     output: chan::Receiver<(Out, libc::size_t)>,
     signal: chan::Receiver<libc::c_int>,
   ) -> Self {
@@ -46,14 +50,14 @@ impl Device {
     let (tx_sig, rx_sig) = chan::sync(0);
 
     thread::spawn(move || {
-      let mut bytes: [libc::c_uchar; 1] = [0; 1];
+      let mut bytes: In = [0; 12];
 
-      while let Some(1) = io::stdin().read(&mut bytes).ok() {
-        tx_in.send(bytes[0]);
+      while let Some(read) = io::stdin().read(&mut bytes).ok() {
+        tx_in.send((bytes, read));
       }
     });
     thread::spawn(move || {
-      let mut bytes = [0u8; 4096];
+      let mut bytes: Out = [0u8; 4096];
 
       while let Some(read) = master.read(&mut bytes).ok() {
         tx_out.send((bytes, read));
@@ -103,7 +107,7 @@ impl Iterator for Device {
   type Item = DeviceState;
 
   fn next(&mut self) -> Option<DeviceState> {
-    let ref input: chan::Receiver<In> = self.input;
+    let ref input: chan::Receiver<(In, libc::size_t)> = self.input;
     let ref output: chan::Receiver<(Out, libc::size_t)> = self.output;
     let ref signal: chan::Receiver<Sig> = self.signal;
 
@@ -114,7 +118,7 @@ impl Iterator for Device {
         None => None,
       },
       input.recv() -> val => return match val {
-        Some(key) => Some(DeviceState::from_in(key)),
+        Some((buf, len)) => Some(DeviceState::from_in(buf, len)),
         None => None,
       },
       output.recv() -> val => return match val {

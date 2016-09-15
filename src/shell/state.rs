@@ -4,18 +4,18 @@ use std::ops::BitOr;
 use ::libc;
 
 use super::Display;
-use super::DeviceState;
+use super::device::{DeviceState, Press};
 
-#[derive(Clone, Default)]
+#[derive(Default, Clone)]
 pub struct ShellState {
   /// Update.
   idle: Option<()>,
   /// Signal.
   sig: Option<libc::c_int>,
   /// The current character.
-  in_character: Option<libc::c_uchar>,
+  in_text: Option<Press>,
   /// The past character.
-  in_character_past: Option<libc::c_uchar>,
+  in_text_past: Option<Press>,
   /// The output of new lines.
   out_text: Option<Vec<libc::c_uchar>>,
   /// The output of screen.
@@ -47,14 +47,28 @@ impl ShellState {
   }
 
   /// The accessor method `is_keydown` returns the KeyDown event.
-  pub fn is_keydown(&self) -> Option<u8> {
-    self.in_character
+  pub fn is_keydown(&self) -> Option<libc::c_uchar> {
+    if let Some(ref event) = self.in_text {
+      event.is_char()
+    } else {
+      None
+    }
   }
 
   /// The accessor method `is_out_text` returns the Output text event.
-  pub fn is_out_text(&self) -> Option<&Vec<u8>> {
+  pub fn is_out_text(&self) -> Option<&Vec<libc::c_uchar>> {
     if let Some(ref out) = self.out_text {
-      Some(&out)
+      Some(out)
+    } else {
+      None
+    }
+  }
+
+
+  /// The accessor method `is_in_text` returns the Input text event.
+  pub fn is_in_text(&self) -> Option<&[libc::c_uchar]> {
+    if let Some(ref int) = self.in_text {
+      Some(int.as_slice())
     } else {
       None
     }
@@ -72,7 +86,7 @@ impl ShellState {
   }
 
   /// The accessor method `is_line` returns the Output line event.
-  pub fn is_line(&self) -> Option<&Vec<u8>> {
+  pub fn is_line(&self) -> Option<&Vec<libc::c_uchar>> {
     if self.in_line_ready {
       Some(&self.in_line)
     } else {
@@ -88,16 +102,16 @@ impl ShellState {
   ) -> io::Result<()> {
     self.idle = event.is_idle();
     self.sig = event.is_signal();
-    self.in_character_past = self.in_character;
-    self.in_character = event.is_character();
+    self.in_text_past = self.in_text;
+    self.in_text = event.is_input();
     self.out_text = event.is_out_text();
     if self.in_line_ready {
       self.in_line.clear();
       self.in_line_ready = false;
     }
-    if let Some(key) = self.in_character {
-      self.in_line.push(key);
-      if key.eq(&10).bitor(key.eq(&13)) {
+    if let Some(ref event) = self.in_text {
+      self.in_line.extend_from_slice(event.as_slice());
+      if event.is_enter().is_some() {
         self.in_line_ready = true;
       }
     }
