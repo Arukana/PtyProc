@@ -70,6 +70,7 @@ impl Device {
         signal = Some(sig);
       }
       signal!(sig::ffi::Sig::WINCH, event);
+      signal!(sig::ffi::Sig::CHLD, event);
       unsafe {
         loop {
           if let Some(sig) = signal {

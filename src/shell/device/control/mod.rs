@@ -1,4 +1,5 @@
 use ::libc;
+use ::time;
 use ::std::{fmt, str};
 
 use super::In;
@@ -9,6 +10,8 @@ pub struct Control {
   buf: In,
   /// Length.
   len: libc::size_t,
+  /// Time where the control was pressed.
+  time: time::Tm,
 }
 
 impl Control {
@@ -17,12 +20,17 @@ impl Control {
     Control {
       buf: buf,
       len: len,
+      time: time::now(),
     }
   }
 
   /// The accessor method `as_slice` returns the Control Event.
   pub fn as_slice(&self) -> &[libc::c_uchar] {
     &self.buf[..self.len]
+  }
+
+  pub fn as_time(&self) -> &time::Tm {
+    &self.time
   }
 
   /// The accessor method `is_char` returns a Option for the Character Key.

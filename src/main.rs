@@ -21,8 +21,9 @@ fn main() {
       shell.write(i).unwrap();
       shell.flush().unwrap();
     }
-/*    if let Some(l) = event.is_line() {
-    }*/
+    if let Some(ref s) = event.is_signal() {
+      println!("{}", s);
+    }
   }
   println!("bye bye");
 }

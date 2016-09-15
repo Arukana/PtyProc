@@ -12,7 +12,8 @@ branches:
 # Only while clippy is failing
 matrix:
   allow_failures:
-    - rust: nightly
+    - rust: stable
+    - rust: beta
     - os: osx
 env:
   global:
