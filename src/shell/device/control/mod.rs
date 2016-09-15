@@ -2,7 +2,10 @@ use ::libc;
 use ::time;
 use ::std::{fmt, str};
 
+mod operate;
+
 use super::In;
+use self::operate::Operate;
 
 #[derive(Copy, Clone)]
 pub struct Control {
@@ -10,6 +13,8 @@ pub struct Control {
   buf: In,
   /// Length.
   len: libc::size_t,
+  /// Operation.
+  operate: Operate,
   /// Time where the control was pressed.
   time: time::Tm,
 }
@@ -20,6 +25,7 @@ impl Control {
     Control {
       buf: buf,
       len: len,
+      operate: Operate::new(&buf),
       time: time::now(),
     }
   }
@@ -29,6 +35,7 @@ impl Control {
     &self.buf[..self.len]
   }
 
+  /// The accessor method `as_timer` returns the Time.
   pub fn as_time(&self) -> &time::Tm {
     &self.time
   }
