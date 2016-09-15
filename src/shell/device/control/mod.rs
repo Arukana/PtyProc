@@ -4,23 +4,23 @@ use ::std::{fmt, str};
 use super::In;
 
 #[derive(Copy, Clone)]
-pub struct Press {
+pub struct Control {
   /// Buffer.
   buf: In,
   /// Length.
   len: libc::size_t,
 }
 
-impl Press {
-  /// The constructor method `new` returns a Pressed's event from Device.
+impl Control {
+  /// The constructor method `new` returns a Control's event from Device.
   pub fn new(buf: In, len: libc::size_t) -> Self {
-    Press {
+    Control {
       buf: buf,
       len: len,
     }
   }
 
-  /// The accessor method `as_slice` returns the pressed Event.
+  /// The accessor method `as_slice` returns the Control Event.
   pub fn as_slice(&self) -> &[libc::c_uchar] {
     &self.buf[..self.len]
   }
@@ -44,7 +44,7 @@ impl Press {
  // [b'[', b'<', n, ..] => {
 }
 
-impl fmt::Display for Press {
+impl fmt::Display for Control {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     f.write_str(
       unsafe {

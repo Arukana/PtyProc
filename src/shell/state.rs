@@ -4,7 +4,7 @@ use std::ops::BitOr;
 use ::libc;
 
 use super::Display;
-use super::device::{DeviceState, Press};
+use super::device::{DeviceState, Control};
 
 #[derive(Default, Clone)]
 pub struct ShellState {
@@ -13,9 +13,9 @@ pub struct ShellState {
   /// Signal.
   sig: Option<libc::c_int>,
   /// The current character.
-  in_text: Option<Press>,
+  in_text: Option<Control>,
   /// The past character.
-  in_text_past: Option<Press>,
+  in_text_past: Option<Control>,
   /// The output of new lines.
   out_text: Option<Vec<libc::c_uchar>>,
   /// The output of screen.
@@ -63,7 +63,6 @@ impl ShellState {
       None
     }
   }
-
 
   /// The accessor method `is_in_text` returns the Input text event.
   pub fn is_in_text(&self) -> Option<&[libc::c_uchar]> {

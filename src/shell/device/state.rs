@@ -3,7 +3,7 @@ use ::libc;
 use super::In;
 use super::Out;
 use super::Sig;
-use super::Press;
+use super::Control;
 
 #[derive(Copy)]
 pub enum DeviceState {
@@ -14,7 +14,7 @@ pub enum DeviceState {
   /// The output of new lines.
   OutText(Out, libc::size_t),
   /// The current character.
-  InPress(Press),
+  InText(Control),
 }
 
 impl DeviceState {
@@ -31,7 +31,7 @@ impl DeviceState {
 
   /// The constructor method `from_out` returns a key Input's event.
   pub fn from_in(buf: In, len: libc::size_t) -> Self {
-    DeviceState::InPress(Press::new(buf, len))
+    DeviceState::InText(Control::new(buf, len))
   }
 
   /// The constructor method `from_ig` returns a Signal's event.
@@ -57,9 +57,9 @@ impl DeviceState {
 
   /// The accessor method `is_input` returns a Option for key
   /// or mouse Input's event.
-  pub fn is_input(&self) -> Option<Press> {
+  pub fn is_input(&self) -> Option<Control> {
     match *self {
-      DeviceState::InPress(event) => Some(event),
+      DeviceState::InText(event) => Some(event),
       _ => None,
     }
   }

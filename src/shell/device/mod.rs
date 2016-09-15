@@ -1,5 +1,5 @@
 mod state;
-mod press;
+mod control;
 
 use std::io::{self, Read};
 use std::thread;
@@ -10,7 +10,7 @@ use ::libc;
 use ::sig;
 use ::pty::prelude as pty;
 
-pub use self::press::Press;
+pub use self::control::Control;
 pub use self::state::DeviceState;
 
 pub type In = [libc::c_uchar; 12];
