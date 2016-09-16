@@ -5,7 +5,7 @@ use super::Out;
 use super::Sig;
 use super::Control;
 
-#[derive(Copy)]
+//#[derive(Copy)]
 pub enum DeviceState {
   /// Update.
   Idle,

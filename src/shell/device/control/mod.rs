@@ -2,12 +2,14 @@ use ::libc;
 use ::time;
 use ::std::{fmt, str};
 
-mod operate;
+pub mod operate;
 
 use super::In;
 use self::operate::Operate;
+use self::operate::mouse::Mouse;
+use self::operate::key::Key;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Control {
   /// Buffer.
   buf: In,
@@ -40,7 +42,7 @@ impl Control {
     &self.time
   }
 
-  /// The accessor method `is_char` returns a Option for the Character Key.
+  /// The accessor method `is_char` returns an Option for the Character Key.
   pub fn is_char(&self) -> Option<libc::c_uchar> {
     match self.buf {
       [c, b'\0', ..] => Some(c),
@@ -48,15 +50,41 @@ impl Control {
     }
   }
 
-  /// The accessor method `is_enter` returns a Option for the Enter Key.
-  pub fn is_enter(&self) -> Option<()> {
+  /// The accessor method `is_enter` returns an Option for the Enter Key.
+  pub fn is_enter(&self) -> Option<Operate> {
     match self.buf {
-      [b'\r', b'\0', ..] | [b'\n', b'\0', ..] => Some(()),
+      [b'\r', b'\0', ..] |
+      [b'\n', b'\0', ..] |
+      [b'\n', b'\r', b'\0', ..] => Some(Operate::Key(Enter)),
       _ => None,
     }
   }
 
- // [b'[', b'<', n, ..] => {
+  /// The accessor method `is_mouse` returns an Option tupple of the Mouse Button and its coordinates
+  pub fn is_mouse(&self) -> Option<Operate> {
+    match self.buf {
+      [b'\x1B', b'[', b'<', ..] => { 
+        let mut tup: (u8, u8, u8) = (0, 0, 0);
+        let mut i = 0;
+        self.buf.split(|cut| *cut == ';').all(|nbr|
+        { if i == 0
+          { for x in nbr
+            { if *x.is_numeric()
+              { tup.0 = (tup.0 * 10) + (*x as u8) - 48; }}
+            i = 1; }
+          else if i == 1
+          { for x in nbr
+            { tup.1 = (tup.1 * 10) + (*x as u8) - 48; }
+              i = 2; }
+          else
+          { for x in nbr
+            { if *x.is_numeric()
+              { tup.2 = (tup.2 * 10) + (*x as u8) - 48; }}}
+          true });
+      },
+      _ => None,
+    }
+  }
 }
 
 impl fmt::Display for Control {

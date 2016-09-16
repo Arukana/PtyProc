@@ -2,6 +2,8 @@ use ::libc;
 
 #[derive(Copy, Clone)]
 pub enum Key {
+    /// Enter
+    Enter,
     /// Backspace
     Backspace,
     /// Left arrow

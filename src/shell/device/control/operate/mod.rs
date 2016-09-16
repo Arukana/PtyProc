@@ -1,5 +1,5 @@
-mod mouse;
-mod key;
+pub mod mouse;
+pub mod key;
 
 use ::libc;
 use ::super::super::In;
@@ -10,7 +10,7 @@ pub use self::key::Key;
 #[derive(Copy, Clone)]
 pub enum Operate {
   /// The mouse operate.
-  Mouse(Mouse),
+  Mouse(Mouse, libc::c_ushort, libc::c_ushort),
   /// The key operate.
   Key(Key),
 }
@@ -24,7 +24,7 @@ impl Operate {
   /// The accessor method `is_mouse` returns a Option for the Mouse Operate.
   pub fn is_mouse(&self) -> Option<Mouse> {
     match *self {
-      Operate::Mouse(mouse) => Some(mouse),
+      Operate::Mouse(mouse, _, _) => Some(mouse),
       Operate::Key(_) => None,
     }
   }
