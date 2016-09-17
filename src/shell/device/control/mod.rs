@@ -9,7 +9,7 @@ use self::operate::Operate;
 use self::operate::mouse::Mouse;
 use self::operate::key::Key;
 
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct Control {
   /// Buffer.
   buf: In,
