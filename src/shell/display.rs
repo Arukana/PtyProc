@@ -22,13 +22,13 @@ impl Display
       {0..self.col}.all(|x|
       { if flag
         { if let Some(k) = tmp.next()
-          { coucou.push(*k);
+          { coucou.insert(x as usize, *k);
           if *k == 10
           { flag = false; }}}
         else
-        { coucou.push(0); }
+        { coucou.insert(x as usize, 0); }
         true });
-      matrix.push(coucou);
+      matrix.insert(y as usize, coucou);
       true });
     matrix }}
 
