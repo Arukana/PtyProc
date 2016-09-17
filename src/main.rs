@@ -22,7 +22,4 @@ fn main() {
       println!("{}", s);
     }
   }
-
-  //MOUSE OFF
-  print!("\x1b[?1015l\x1b[?1002l\x1b[?1000l");
 }

@@ -1,19 +1,10 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Cargo.toml                                         :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: jpepin <jpepin@student.42.fr>              +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2016/09/14 06:02:06 by jpepin            #+#    #+#              #
-#    Updated: 2016/09/14 06:36:05 by jpepin           ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
-
 [package]
 name = "pty-shell-mode"
 version = "0.0.1"
-authors = ["adjivas <adjivas@users.noreply.github.com>"]
+authors = [
+  "adjivas <adjivas@users.noreply.github.com>",
+  "Jeremy PEPIN <jpepin@student.42.fr>"
+]
 keywords = ["pty", "shell", "mode"]
 
 [features]
@@ -36,14 +27,8 @@ version       = "0.1.18"
 [dependencies.termion]
 git = "https://github.com/limaconoob/termion.git"
 
-[dependencies.ms]
-git = "https://github.com/limaconoob/Neko.git"
-
-[dependencies.termios]
-version       = "*"
-
 [dependencies.libc]
-version       = "*"
+version       = "0.2"
 
 [dependencies.clippy]
 version       = "*"

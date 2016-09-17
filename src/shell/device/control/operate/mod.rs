@@ -1,8 +1,8 @@
 pub mod mouse;
 pub mod key;
 
+use super::In;
 use ::libc;
-use ::super::super::In;
 
 pub use self::mouse::Mouse;
 pub use self::key::Key;

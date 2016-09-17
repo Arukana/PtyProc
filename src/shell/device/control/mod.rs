@@ -1,13 +1,12 @@
 mod operate;
 
+use std::{fmt, str};
+
 use ::libc;
 use ::time;
-use ::std::{fmt, str};
 
-use super::In;
-use self::operate::Operate;
-use self::operate::mouse::Mouse;
-use self::operate::key::Key;
+pub use super::In;
+pub use self::operate::Operate;
 
 #[derive(Copy, Clone)]
 pub struct Control {
@@ -37,6 +36,10 @@ impl Control {
     &self.buf[..self.len]
   }
 
+  /// The accessor method `as_timer` returns the Time.
+  pub fn as_operate(&self) -> &Operate {
+    &self.operate
+  }
   /// The accessor method `as_timer` returns the Time.
   pub fn as_time(&self) -> &time::Tm {
     &self.time
