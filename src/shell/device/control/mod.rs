@@ -64,7 +64,7 @@ impl Control {
   pub fn is_mouse(&self) -> Option<Operate> {
     match self.buf {
       [b'\x1B', b'[', b'<', ..] => { 
-        let mut tup: (u8, u8, u8) = (0, 0, 0);
+       /* let mut tup: (u8, u8, u8) = (0, 0, 0);
         let mut i = 0;
         self.buf.split(|cut| *cut == ';').all(|nbr|
         { if i == 0
@@ -80,7 +80,8 @@ impl Control {
           { for x in nbr
             { if *x.is_numeric()
               { tup.2 = (tup.2 * 10) + (*x as u8) - 48; }}}
-          true });
+          true });*/
+          None
       },
       _ => None,
     }

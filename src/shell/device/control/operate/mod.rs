@@ -33,7 +33,7 @@ impl Operate {
   pub fn is_key(&self) -> Option<Key> {
     match *self {
       Operate::Key(key) => Some(key),
-      Operate::Mouse(_) => None,
+      Operate::Mouse(_, _, _) => None,
     }
   }
 }
