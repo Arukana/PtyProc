@@ -1,7 +1,10 @@
 [package]
 name = "pty-shell-mode"
 version = "0.0.1"
-authors = ["adjivas <adjivas@users.noreply.github.com>"]
+authors = [
+  "adjivas <adjivas@users.noreply.github.com>",
+  "Jeremy PEPIN <jpepin@student.42.fr>"
+]
 keywords = ["pty", "shell", "mode"]
 
 [features]
@@ -22,13 +25,10 @@ version       = "0.1"
 version       = "0.1.18"
 
 [dependencies.termion]
-version       = "*"
-
-[dependencies.termios]
-version       = "*"
+git = "https://github.com/limaconoob/termion.git"
 
 [dependencies.libc]
-version       = "*"
+version       = "0.2"
 
 [dependencies.clippy]
 version       = "*"

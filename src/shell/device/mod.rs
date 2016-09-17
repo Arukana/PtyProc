@@ -1,17 +1,16 @@
 mod control;
-//mod signal;
 mod state;
 
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::thread;
 use std::os::unix::io::AsRawFd;
+use std::ops::BitOr;
 
 use ::chan;
 use ::libc;
 use ::pty::prelude as pty;
 
 pub use self::control::Control;
-//pub use self::signal::SignalFd;
 pub use self::state::DeviceState;
 
 pub type In = [libc::c_uchar; 12];
@@ -36,7 +35,7 @@ impl Device {
     output: chan::Receiver<(Out, libc::size_t)>,
     signal: chan::Receiver<libc::c_int>,
   ) -> Self {
-    ::terminal::setup_terminal(speudo);
+    ::terminal::setup_terminal(speudo.as_raw_fd());
     Device {
       speudo: speudo,
       input: input,
@@ -105,7 +104,11 @@ impl io::Write for Device {
 impl Drop for Device {
   fn drop(&mut self) {
     unsafe {
-      if libc::close(self.speudo.as_raw_fd()) == -1 {
+      if io::stdout().write(
+        "\x1b[?1015l\x1b[?1002l\x1b[?1000l".as_bytes()
+      ).is_err().bitor(
+        libc::close(self.speudo.as_raw_fd()).eq(&-1)
+      ) {
         unimplemented!()
       }
     }

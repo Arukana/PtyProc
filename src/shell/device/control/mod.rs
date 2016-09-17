@@ -1,11 +1,12 @@
 mod operate;
 
+use std::{fmt, str};
+
 use ::libc;
 use ::time;
-use ::std::{fmt, str};
 
-use super::In;
-use self::operate::Operate;
+pub use super::In;
+pub use self::operate::Operate;
 
 #[derive(Copy, Clone)]
 pub struct Control {
@@ -36,11 +37,15 @@ impl Control {
   }
 
   /// The accessor method `as_timer` returns the Time.
+  pub fn as_operate(&self) -> &Operate {
+    &self.operate
+  }
+  /// The accessor method `as_timer` returns the Time.
   pub fn as_time(&self) -> &time::Tm {
     &self.time
   }
 
-  /// The accessor method `is_char` returns a Option for the Character Key.
+  /// The accessor method `is_char` returns an Option for the Character Key.
   pub fn is_char(&self) -> Option<libc::c_uchar> {
     match self.buf {
       [c, b'\0', ..] => Some(c),
@@ -48,15 +53,25 @@ impl Control {
     }
   }
 
-  /// The accessor method `is_enter` returns a Option for the Enter Key.
+  /// The accessor method `is_enter` returns an Option for the Enter Key.
   pub fn is_enter(&self) -> Option<()> {
     match self.buf {
-      [b'\r', b'\0', ..] | [b'\n', b'\0', ..] => Some(()),
+      [b'\r', b'\0', ..] |
+      [b'\n', b'\0', ..] |
+      [b'\n', b'\r', b'\0', ..] => Some(()),
       _ => None,
     }
   }
 
- // [b'[', b'<', n, ..] => {
+  /// The accessor method `is_mouse` returns an Option tupple of the Mouse Button and its coordinates
+  pub fn is_mouse(&self) -> Option<Operate> {
+    match self.buf {
+      [b'\x1B', b'[', b'<', ..] => { 
+          None
+      },
+      _ => None,
+    }
+  }
 }
 
 impl fmt::Display for Control {

@@ -14,11 +14,6 @@ fn main() {
       io::stdout().write(o.as_slice()).unwrap();
       io::stdout().flush().unwrap();
     }
-    if let Some(_) = event.is_out_screen() {
-      if let Some(ref sig) = event.is_signal() {
-        println!("{}", sig);
-      }
-    }
     if let Some(i) = event.is_in_text()  {
       shell.write(i).unwrap();
       shell.flush().unwrap();
@@ -27,5 +22,4 @@ fn main() {
       println!("{}", s);
     }
   }
-  println!("bye bye");
 }

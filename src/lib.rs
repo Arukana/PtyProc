@@ -4,7 +4,7 @@
 extern crate pty;
 extern crate libc;
 extern crate time;
-extern crate termios;
+//extern crate termios;
 extern crate termion;
 
 const DISPLAY_DEFAULT_COL: libc::c_ushort = 80;
