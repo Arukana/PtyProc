@@ -6,7 +6,7 @@ use ::libc;
 use super::Display;
 use super::device::{DeviceState, Control};
 
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct ShellState {
   /// Update.
   idle: Option<()>,
@@ -26,6 +26,20 @@ pub struct ShellState {
 }
 
 impl ShellState {
+
+  /// The constructor method `new` returns a empty ShellState.
+  pub fn new(fd: libc::c_int) -> Self {
+      ShellState {
+          idle: None,
+          sig: None,
+          in_text: None,
+          in_text_past: None,
+          out_text: None,
+          out_screen: Display::new(fd).unwrap(),
+          in_line: Vec::new(),
+          in_line_ready: false,
+      }
+  }
 
   /// The accessor method `is_idle` returns the Idle event.
   pub fn is_idle(&self) -> Option<()> {
@@ -98,7 +112,8 @@ impl ShellState {
   pub fn with_device (
     &mut self,
     event: DeviceState,
-  ) -> io::Result<()> {
+    fd: libc::c_int,
+  ) -> io::Result<Self> {
     self.idle = event.is_idle();
     self.sig = event.is_signal();
     self.in_text_past = self.in_text;
@@ -114,9 +129,12 @@ impl ShellState {
         self.in_line_ready = true;
       }
     }
-    if let Some(ref buf) = self.out_text {
-      try!(self.out_screen.write(buf.as_slice()));
+    if let Some(ref text) = self.out_text {
+      try!(self.out_screen.write(text.as_slice()));
     }
-    Ok(())
+    if let Some(()) = self.is_resized() {
+      self.out_screen = Display::new(fd).unwrap();
+    }
+    Ok(self.to_owned())
   }
 }

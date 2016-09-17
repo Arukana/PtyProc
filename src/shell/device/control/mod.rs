@@ -8,7 +8,7 @@ use ::time;
 pub use super::In;
 pub use self::operate::Operate;
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy, Debug)]
 pub struct Control {
   /// Buffer.
   buf: In,

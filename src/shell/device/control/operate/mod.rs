@@ -7,7 +7,7 @@ use ::libc;
 pub use self::mouse::Mouse;
 pub use self::key::Key;
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy, Debug)]
 pub enum Operate {
   /// The mouse operate.
   Mouse(Mouse, libc::c_ushort, libc::c_ushort),

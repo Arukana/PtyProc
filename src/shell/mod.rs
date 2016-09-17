@@ -3,7 +3,10 @@ mod display;
 mod state;
 pub mod device;
 
-use std::{io, mem};
+use std::os::unix::io::AsRawFd;
+use std::io::{self, Write};
+use std::ops::BitOr;
+use std::mem;
 
 use ::libc;
 use ::fork::Child;
@@ -18,6 +21,7 @@ pub use self::display::Display;
 
 pub struct Shell {
   pid: libc::pid_t,
+  speudo: pty::Master,
   device: Device,
   state: ShellState,
 }
@@ -35,11 +39,17 @@ impl Shell {
         pty::Fork::Child(ref slave) => slave.exec(command.unwrap_or("bash")),
         pty::Fork::Parent(pid, master) => {
           mem::forget(fork);
-          Ok(Shell {
-            pid: pid,
-            device: Device::from_speudo(master),
-            state: ShellState::default(),
-          })
+          if ::terminal::setup_terminal(master.as_raw_fd()).is_err() {
+            Err(ShellError::BadIoctl)
+          }
+          else {
+            Ok(Shell {
+              pid: pid,
+              speudo: master,
+              device: Device::from_speudo(master),
+              state: ShellState::new(master.as_raw_fd()),
+            })
+          }
         },
       },
     }
@@ -53,10 +63,26 @@ impl Shell {
 
 impl io::Write for Shell {
   fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-    self.device.write(buf)
+    self.speudo.write(buf)
   }
+
   fn flush(&mut self) -> io::Result<()> {
-    self.device.flush()
+    self.speudo.flush()
+  }
+}
+
+impl Drop for Shell {
+  fn drop(&mut self) {
+    unsafe {
+      ::terminal::restore_termios();
+      if io::stdout().write(
+        "\x1b[?1015l\x1b[?1002l\x1b[?1000l".as_bytes()
+      ).is_err().bitor(
+        libc::close(self.speudo.as_raw_fd()).eq(&-1)
+      ) {
+        unimplemented!()
+      }
+    }
   }
 }
 
@@ -67,11 +93,11 @@ impl Iterator for Shell {
     match self.device.next() {
       None => None,
       Some(event) => {
-        if self.state.with_device(event).is_err() {
-          None
+        if let Some(state) = self.state.with_device(event, self.speudo.as_raw_fd()).ok() {
+          Some(state)
         }
         else {
-          Some(self.state.to_owned())
+          None
         }
       },
     }

@@ -1,10 +1,8 @@
 mod control;
 mod state;
 
-use std::io::{self, Read, Write};
+use std::io::{self, Read};
 use std::thread;
-use std::os::unix::io::AsRawFd;
-use std::ops::BitOr;
 
 use ::chan;
 use ::libc;
@@ -19,8 +17,8 @@ pub type Sig = libc::c_int;
 
 /// The struct `Device` is the input/output terminal interface.
 
+#[derive(Clone)]
 pub struct Device {
-  speudo: pty::Master,
   input: chan::Receiver<(In, libc::size_t)>,
   output: chan::Receiver<(Out, libc::size_t)>,
   signal: chan::Receiver<Sig>,
@@ -30,14 +28,11 @@ impl Device {
 
   /// The constructor method `new` returns a Device interface iterable.
   fn new (
-    speudo: pty::Master,
     input: chan::Receiver<(In, libc::size_t)>,
     output: chan::Receiver<(Out, libc::size_t)>,
     signal: chan::Receiver<libc::c_int>,
   ) -> Self {
-    ::terminal::setup_terminal(speudo.as_raw_fd());
     Device {
-      speudo: speudo,
       input: input,
       output: output,
       signal: signal,
@@ -87,31 +82,7 @@ impl Device {
         }
       }
     });
-    Device::new(master, rx_in, rx_out, rx_sig)
-  }
-}
-
-impl io::Write for Device {
-  fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-    self.speudo.write(buf)
-  }
-
-  fn flush(&mut self) -> io::Result<()> {
-    self.speudo.flush()
-  }
-}
-
-impl Drop for Device {
-  fn drop(&mut self) {
-    unsafe {
-      if io::stdout().write(
-        "\x1b[?1015l\x1b[?1002l\x1b[?1000l".as_bytes()
-      ).is_err().bitor(
-        libc::close(self.speudo.as_raw_fd()).eq(&-1)
-      ) {
-        unimplemented!()
-      }
-    }
+    Device::new(rx_in, rx_out, rx_sig)
   }
 }
 

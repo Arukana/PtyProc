@@ -1,6 +1,6 @@
 use ::libc;
 
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy, Debug)]
 pub enum Key {
     /// Enter
     Enter,

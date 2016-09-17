@@ -74,5 +74,7 @@ impl DeviceState {
 }
 
 impl Clone for DeviceState {
-  fn clone(&self) -> DeviceState { *self }
+  fn clone(&self) -> DeviceState {
+    *self
+  }
 }

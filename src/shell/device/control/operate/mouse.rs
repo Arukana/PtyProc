@@ -1,4 +1,4 @@
-#[derive(Copy, Clone)]
+#[derive(Clone, Copy, Debug)]
 pub enum Mouse {
   /// The left mouse button is pressed.
   Left,
