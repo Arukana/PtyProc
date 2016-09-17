@@ -1,7 +1,6 @@
-#![feature(slice_patterns)]
+#![feature(slice_patterns, integer_atomics)]
 
 #[macro_use(chan_select)] extern crate chan;
-#[macro_use] extern crate sig;
 extern crate pty;
 extern crate libc;
 extern crate time;

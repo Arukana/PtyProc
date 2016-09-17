@@ -1,8 +1,8 @@
+mod operate;
+
 use ::libc;
 use ::time;
 use ::std::{fmt, str};
-
-mod operate;
 
 use super::In;
 use self::operate::Operate;

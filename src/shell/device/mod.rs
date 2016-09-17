@@ -1,5 +1,6 @@
-mod state;
 mod control;
+//mod signal;
+mod state;
 
 use std::io::{self, Read};
 use std::thread;
@@ -7,10 +8,10 @@ use std::os::unix::io::AsRawFd;
 
 use ::chan;
 use ::libc;
-use ::sig;
 use ::pty::prelude as pty;
 
 pub use self::control::Control;
+//pub use self::signal::SignalFd;
 pub use self::state::DeviceState;
 
 pub type In = [libc::c_uchar; 12];
@@ -21,7 +22,7 @@ pub type Sig = libc::c_int;
 
 pub struct Device {
   speudo: pty::Master,
-  input: chan::Receiver<(In, libc::size_t )>,
+  input: chan::Receiver<(In, libc::size_t)>,
   output: chan::Receiver<(Out, libc::size_t)>,
   signal: chan::Receiver<Sig>,
 }
@@ -64,18 +65,25 @@ impl Device {
       }
     });
     thread::spawn(move || {
-      static mut signal: Option<Sig> = None;
+      use std::sync::atomic::{AtomicI32, ATOMIC_I32_INIT, Ordering};
+      use std::time::Duration;
+      use std::ops::Div;
 
-      unsafe extern "C" fn event(sig: Sig) {
-        signal = Some(sig);
+      static GOT_SIGNAL: AtomicI32 = ATOMIC_I32_INIT;
+
+      unsafe fn event(sig: Sig) {
+        GOT_SIGNAL.store(sig, Ordering::Release);
       }
-      signal!(sig::ffi::Sig::WINCH, event);
-      signal!(sig::ffi::Sig::CHLD, event);
+      let duration: Duration = Duration::from_secs(1).div(2);
       unsafe {
+        libc::signal(libc::SIGWINCH, event as libc::sighandler_t);
         loop {
-          if let Some(sig) = signal {
-            tx_sig.send(sig);
-            signal = None;
+          match GOT_SIGNAL.load(Ordering::Relaxed) {
+            0 => thread::sleep(duration),
+            sig => {
+              GOT_SIGNAL.store(0, Ordering::Release);
+              tx_sig.send(sig);
+            },
           }
         }
       }

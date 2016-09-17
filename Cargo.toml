@@ -30,9 +30,6 @@ version       = "*"
 [dependencies.libc]
 version       = "*"
 
-[dependencies.sig]
-version       = "1.0.0"
-
 [dependencies.clippy]
 version       = "*"
 optional      = true

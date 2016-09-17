@@ -18,7 +18,7 @@ pub enum Operate {
 impl Operate {
   /// The constructor method `new` returns evaluated Operate.
   pub fn new(buf: &In) -> Self {
-    unimplemented!()
+    Operate::Mouse(Mouse::Left)
   }
 
   /// The accessor method `is_mouse` returns a Option for the Mouse Operate.
