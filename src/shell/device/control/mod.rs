@@ -51,11 +51,11 @@ impl Control {
   }
 
   /// The accessor method `is_enter` returns an Option for the Enter Key.
-  pub fn is_enter(&self) -> Option<Operate> {
+  pub fn is_enter(&self) -> Option<()> {
     match self.buf {
       [b'\r', b'\0', ..] |
       [b'\n', b'\0', ..] |
-      [b'\n', b'\r', b'\0', ..] => Some(Operate::Key(Enter)),
+      [b'\n', b'\r', b'\0', ..] => Some(()),
       _ => None,
     }
   }
@@ -64,23 +64,6 @@ impl Control {
   pub fn is_mouse(&self) -> Option<Operate> {
     match self.buf {
       [b'\x1B', b'[', b'<', ..] => { 
-       /* let mut tup: (u8, u8, u8) = (0, 0, 0);
-        let mut i = 0;
-        self.buf.split(|cut| *cut == ';').all(|nbr|
-        { if i == 0
-          { for x in nbr
-            { if *x.is_numeric()
-              { tup.0 = (tup.0 * 10) + (*x as u8) - 48; }}
-            i = 1; }
-          else if i == 1
-          { for x in nbr
-            { tup.1 = (tup.1 * 10) + (*x as u8) - 48; }
-              i = 2; }
-          else
-          { for x in nbr
-            { if *x.is_numeric()
-              { tup.2 = (tup.2 * 10) + (*x as u8) - 48; }}}
-          true });*/
           None
       },
       _ => None,
