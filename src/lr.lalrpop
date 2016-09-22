@@ -1,0 +1,15 @@
+use std::str::FromStr; // LALRPOP pulls in dependencies just like in Rust.
+use util;
+
+grammar; // This marks the file as a grammar for LALRPOP to generate code for.
+
+Num: i32 = <s:r"[-]?[0-9]+"> => i32::from_str(s).unwrap();
+
+
+Mouse: util::Mouse = {
+    <s:r"[-]?[0-9]+"> => util::Mouse::new( i32::from_str(s).unwrap() ),
+};
+
+pub Term: (util::Mouse, i32, i32) = {
+    "<" <t:Mouse> ";" <x:Num> ";" <y:Num> "m" => (t, x, y),
+};

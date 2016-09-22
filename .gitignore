@@ -15,7 +15,6 @@ Cargo.lock
 *.rs#
 *.rs.swp
 *.swp
-*.swo
 
 # Temp files
 .*~
@@ -24,3 +23,5 @@ Cargo.lock
 *.bak
 *.bk
 *.orig
+
+src/lr.rs

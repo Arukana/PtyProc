@@ -1,25 +1,31 @@
-extern crate pty_shell_mode;
-extern crate libc;
-
-use pty_shell_mode::prelude as shell;
-
-use std::io::{self, Write};
+pub mod lr; // synthesized by LALRPOP
+pub mod util;
+use std::io::prelude::*;
+use std::io;
 
 fn main() {
-  let mut shell: shell::Shell = shell::Shell::new(None).unwrap();
 
-  println!("Welcome {}-{}", shell.get_pid(), unsafe { libc::getpid() } );
-  while let Some(event) = shell.next() {
-    if let Some(ref o) = event.is_out_text() {
-      io::stdout().write(o.as_slice()).unwrap();
-      io::stdout().flush().unwrap();
+    let mut input_line = String::new();
+
+    loop {
+        print!("> ");
+        let _ = io::stdout().flush(); // Make sure the '>' prints
+
+        // Read in a string from stdin
+        io::stdin().read_line(&mut input_line).ok().expect("The read line failed O:");
+        
+        // If 'exit' break out of the loop.
+        match input_line.trim() {
+            "exit" => break, //This could interfere with some parsers, so be careful
+            line => {
+                 println!("{:?}", lr::parse_Term(&line.to_string()));
+                
+            }
+        }
+        
+        // Clear the input line so we get fresh input
+        input_line.clear();
     }
-    if let Some(i) = event.is_in_text()  {
-      shell.write(i).unwrap();
-      shell.flush().unwrap();
-    }
-    if let Some(ref s) = event.is_signal() {
-      println!("{}", s);
-    }
-  }
+
+    println!("Smell ya later! ;D");
 }
