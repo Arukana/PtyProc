@@ -1,11 +1,15 @@
 pub mod lr; // synthesized by LALRPOP
 pub mod util;
+extern crate libc;
 use std::io::prelude::*;
 use std::io;
 
 fn main() {
 
     let mut input_line = String::new();
+
+        print!("\x1b[?1002h\x1b[?1015h\x1b[?1006h");
+        let _ = io::stdout().flush(); // Make sure the '>' prints
 
     loop {
         print!("> ");
@@ -18,7 +22,12 @@ fn main() {
         match input_line.trim() {
             "exit" => break, //This could interfere with some parsers, so be careful
             line => {
-                 println!("{:?}", lr::parse_Term(&line.to_string()));
+              
+              match lr::parse_MouseUse(&line.to_string())
+              { Ok(v) => println!("{:?}", v),
+                Err(_) => { match lr::parse_KeysUse(&line.to_string())
+                { Ok(u) => println!("{:?}", u),
+                  Err(_) => println!("Unimplemented :'("), }}}
                 
             }
         }
@@ -26,6 +35,9 @@ fn main() {
         // Clear the input line so we get fresh input
         input_line.clear();
     }
+
+    print!("\x1b[?1006l\x1b[?1015l\x1b[?1002l");
+        let _ = io::stdout().flush(); // Make sure the '>' prints
 
     println!("Smell ya later! ;D");
 }

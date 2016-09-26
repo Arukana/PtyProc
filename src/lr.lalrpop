@@ -1,15 +1,90 @@
 use std::str::FromStr; // LALRPOP pulls in dependencies just like in Rust.
 use util;
+//    <s:r"[-]?[0-9]+"> => util::Mouse::new( i32::from_str(s).unwrap() ),
 
 grammar; // This marks the file as a grammar for LALRPOP to generate code for.
 
-Num: i32 = <s:r"[-]?[0-9]+"> => i32::from_str(s).unwrap();
+Num: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
+Get: i32 = <n:r"[\x1B-\x1B]"> => 27;
+Tab: i32 = <n:r"[\x09-\x09]"> => 9;
+Sup: i32 = <n:r"[\x7F-\x7F]"> => 127;
 
-
-Mouse: util::Mouse = {
-    <s:r"[-]?[0-9]+"> => util::Mouse::new( i32::from_str(s).unwrap() ),
+Key: util::Key = {
+    <s:r"[A-z]"> => util::Key::new(s.as_bytes()[0]),
+    <s:r"[0-9]+"> => util::Key::new(s.as_bytes()[0]),
 };
 
-pub Term: (util::Mouse, i32, i32) = {
-    "<" <t:Mouse> ";" <x:Num> ";" <y:Num> "m" => (t, x, y),
+Mouse: util::Mouse = {
+    <s:r"[0-9]+"> => util::Mouse::new( i32::from_str(s).unwrap() ),
+};
+
+pub MouseUse: (util::Mouse, i32, i32) = {
+    <n:Get> "[<" <t:Mouse> ";" <x:Num> ";" <y:Num> "m" => (t, x, y),
+    <n:Get> "[<" <t:Mouse> ";" <x:Num> ";" <y:Num> "M" => (t, x, y),
+};
+
+pub KeysUse: (util::Key) = {
+
+    <c:Key> => c,
+
+    <n:Get> => util::Key::Esc,
+    <t:Tab> => util::Key::Tab,
+    <u:Sup> => util::Key::Backspace,
+    "\n" => util::Key::Enter,
+    "\r" => util::Key::Enter,
+    "\n\r" => util::Key::Enter,
+
+    <n:Get> "[A" => util::Key::Up,
+    <n:Get> "[B" => util::Key::Down,
+    <n:Get> "[C" => util::Key::Right,
+    <n:Get> "[D" => util::Key::Left,
+    <n:Get> "[F" => util::Key::End,
+
+    <n:Get> "[1;2A" => util::Key::ShiftUp,
+    <n:Get> "[1;2B" => util::Key::ShiftDown,
+    <n:Get> "[1;2C" => util::Key::ShiftRight,
+    <n:Get> "[1;2D" => util::Key::ShiftLeft,
+    <n:Get> "[1;2P" => util::Key::F(13),
+    <n:Get> "[1;2Q" => util::Key::F(14),
+    <n:Get> "[1;2R" => util::Key::F(15),
+    <n:Get> "[1;2S" => util::Key::F(16),
+
+    <n:Get> "[1;9A" => util::Key::AltUp,
+    <n:Get> "[1;9B" => util::Key::AltDown,
+    <n:Get> "[1;9C" => util::Key::AltRight,
+    <n:Get> "[1;9D" => util::Key::AltLeft,
+
+    <n:Get> "[1;5A" => util::Key::CtrlUp,
+    <n:Get> "[1;5B" => util::Key::CtrlDown,
+    <n:Get> "[1;5C" => util::Key::CtrlRight,
+    <n:Get> "[1;5D" => util::Key::CtrlLeft,
+
+    <n:Get> "[1;10A" => util::Key::AltShiftUp,
+    <n:Get> "[1;10B" => util::Key::AltShiftDown,
+    <n:Get> "[1;10C" => util::Key::AltShiftRight,
+    <n:Get> "[1;10D" => util::Key::AltShiftLeft,
+
+    <n:Get> "[1;6A" => util::Key::CtrlShiftUp,
+    <n:Get> "[1;6B" => util::Key::CtrlShiftDown,
+    <n:Get> "[1;6C" => util::Key::CtrlShiftRight,
+    <n:Get> "[1;6D" => util::Key::CtrlShiftLeft,
+
+    <n:Get> "[3~" => util::Key::Delete,
+    <n:Get> "[5~" => util::Key::PageUp,
+    <n:Get> "[6~" => util::Key::PageDown,
+
+    <n:Get> "OP" => util::Key::F(1),
+    <n:Get> "OQ" => util::Key::F(2),
+    <n:Get> "OR" => util::Key::F(3),
+    <n:Get> "OS" => util::Key::F(4),
+
+    <n:Get> "[15~" => util::Key::F(5),
+    <n:Get> "[17~" => util::Key::F(6),
+    <n:Get> "[18~" => util::Key::F(7),
+    <n:Get> "[19~" => util::Key::F(8),
+    <n:Get> "[20~" => util::Key::F(9),
+    <n:Get> "[21~" => util::Key::F(10),
+    <n:Get> "[23~" => util::Key::F(11),
+    <n:Get> "[24~" => util::Key::F(12),
+
 };
