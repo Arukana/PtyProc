@@ -4,6 +4,8 @@ grammar;
 
 Num: u16 = <s:r"[0-9]+"> => u16::from_str(s).unwrap();
 Esc: u16 = <n:r"[\x1B-\x1B]"> => 27;
+Maj: char = <s:r"[A-Z]"> => (s.as_bytes()[0]) as char;
+Min: char = <s:r"[a-z]"> => (s.as_bytes()[0]) as char;
 
 pub CursorUse: (outp::Cursor) = {
   
@@ -16,6 +18,8 @@ pub CursorUse: (outp::Cursor) = {
   <n:Esc> "[" <x:Num> ";" <y:Num> "f" => outp::Cursor::CursorGoto(x, y),
   <n:Esc> "[H" => outp::Cursor::CursorGoto(1, 1),
   <n:Esc> "[f" => outp::Cursor::CursorGoto(1, 1),
+  <n:Esc> "[;H" => outp::Cursor::CursorGoto(1, 1),
+  <n:Esc> "[;f" => outp::Cursor::CursorGoto(1, 1),
 
   <n:Esc> "[" <k:Num> "A" => outp::Cursor::CursorUp(k),
   <n:Esc> "[" <k:Num> "B" => outp::Cursor::CursorDown(k),
@@ -40,5 +44,12 @@ pub CursorUse: (outp::Cursor) = {
   <n:Esc> "[J" => outp::Cursor::EraseDown,
   <n:Esc> "[1J" => outp::Cursor::EraseUp,
   <n:Esc> "[2J" => outp::Cursor::Clear,
+
+  <n:Esc> "[" <attr:Num> "m" => outp::Cursor::Attribute(attr),
+  
+  <n:Esc> "[" <r:Num> <c:Maj> => outp::Cursor::Unimplemented(r, c),
+  <n:Esc> "[" <r:Num> <c:Min> => outp::Cursor::Unimplemented(r, c),
+  <n:Esc> "[" <c:Maj> => outp::Cursor::Unimplemented(0, c),
+  <n:Esc> "[" <c:Min> => outp::Cursor::Unimplemented(0, c),
 
 };

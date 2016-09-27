@@ -52,6 +52,12 @@ pub enum Cursor {
   ///The output screen is cleared
   Clear,
 
+  ///The next output character while have diferred attributes
+  Attribute(libc::c_ushort),
+
+  ///Unimplemented potential event
+  Unimplemented(libc::c_ushort, char),
+
 
   /* ****************** FEATURES ***********************
   ///-- Save Cursor ---
