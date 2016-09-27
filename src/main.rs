@@ -1,5 +1,7 @@
 pub mod lr; // synthesized by LALRPOP
+pub mod outlr;
 pub mod util;
+pub mod outp;
 extern crate libc;
 use std::io::prelude::*;
 use std::io;
@@ -27,7 +29,9 @@ fn main() {
               { Ok(v) => println!("{:?}", v),
                 Err(_) => { match lr::parse_KeysUse(&line.to_string())
                 { Ok(u) => println!("{:?}", u),
-                  Err(_) => println!("Unimplemented :'("), }}}
+                  Err(_) => { match outlr::parse_CursorUse(&line.to_string())
+                  { Ok(t) => println!("{:?}", t),
+                    Err(_) => println!("Unimplemented :'("), }}}}}
                 
             }
         }
