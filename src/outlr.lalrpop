@@ -1,13 +1,44 @@
-use std::str::FromStr; // LALRPOP pulls in dependencies just like in Rust.
+use std::str::FromStr;
 use outp;
+grammar;
 
-grammar; // This marks the file as a grammar for LALRPOP to generate code for.
-
-Num: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
-Get: i32 = <n:r"[\x1B-\x1B]"> => 27;
-
-Cursor: outp::Cursor = {
-};
+Num: u16 = <s:r"[0-9]+"> => u16::from_str(s).unwrap();
+Esc: u16 = <n:r"[\x1B-\x1B]"> => 27;
 
 pub CursorUse: (outp::Cursor) = {
+  
+  <n:Esc> "[7h" => outp::Cursor::LineWrap(true),
+  <n:Esc> "[7l" => outp::Cursor::LineWrap(false),
+  <n:Esc> "[r" => outp::Cursor::ScrollEnable,
+  <n:Esc> "c" => outp::Cursor::TermReset,
+
+  <n:Esc> "[" <x:Num> ";" <y:Num> "H" => outp::Cursor::CursorGoto(x, y),
+  <n:Esc> "[" <x:Num> ";" <y:Num> "f" => outp::Cursor::CursorGoto(x, y),
+  <n:Esc> "[H" => outp::Cursor::CursorGoto(1, 1),
+  <n:Esc> "[f" => outp::Cursor::CursorGoto(1, 1),
+
+  <n:Esc> "[" <k:Num> "A" => outp::Cursor::CursorUp(k),
+  <n:Esc> "[" <k:Num> "B" => outp::Cursor::CursorDown(k),
+  <n:Esc> "[" <k:Num> "C" => outp::Cursor::CursorRight(k),
+  <n:Esc> "[" <k:Num> "D" => outp::Cursor::CursorLeft(k),
+  <n:Esc> "[A" => outp::Cursor::CursorUp(1),
+  <n:Esc> "[B" => outp::Cursor::CursorDown(1),
+  <n:Esc> "[C" => outp::Cursor::CursorRight(1),
+  <n:Esc> "[D" => outp::Cursor::CursorLeft(1),
+
+  <n:Esc> "[s" => outp::Cursor::SaveCursor,
+  <n:Esc> "7" => outp::Cursor::SaveCursor,
+  <n:Esc> "[u" => outp::Cursor::RestoreCursor,
+  <n:Esc> "8" => outp::Cursor::RestoreCursor,
+
+  <n:Esc> "D" => outp::Cursor::ScrollUp,
+  <n:Esc> "M" => outp::Cursor::ScrollDown,
+
+  <n:Esc> "[K" => outp::Cursor::EraseRightLine,
+  <n:Esc> "[1K" => outp::Cursor::EraseLeftLine,
+  <n:Esc> "[2K" => outp::Cursor::EraseLine,
+  <n:Esc> "[J" => outp::Cursor::EraseDown,
+  <n:Esc> "[1J" => outp::Cursor::EraseUp,
+  <n:Esc> "[2J" => outp::Cursor::Clear,
+
 };
