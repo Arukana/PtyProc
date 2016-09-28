@@ -1,35 +1,18 @@
 [package]
-name = "pty-shell-mode"
-version = "0.0.1"
-authors = [
-  "adjivas <adjivas@users.noreply.github.com>",
-  "Jeremy PEPIN <jpepin@student.42.fr>"
-]
-keywords = ["pty", "shell", "mode"]
+name = "example"
+version = "0.1.0"
+build = "build.rs"
 
 [features]
-default       = []
-lints         = ["clippy", "nightly"]
-nightly       = [] # for building with nightly and unstable features
-unstable      = [] # for building with unstable features on stable Rust
-debug         = [] # for building with debug messages
-travis        = ["lints", "nightly"] # for building with travis-cargo
+lints = ["nightly"]
+nightly = []
+unstable = []
 
-[dependencies.pty]
-git           = "https://github.com/adjivas/pty-rs.git"
+[build-dependencies]
+lalrpop = "0.12.0"
 
-[dependencies.time]
-version       = "0.1"
-
-[dependencies.chan]
-version       = "0.1.18"
-
-[dependencies.termion]
-git = "https://github.com/limaconoob/termion.git"
+[dependencies]
+lalrpop-util = "0.12.0"
 
 [dependencies.libc]
-version       = "0.2"
-
-[dependencies.clippy]
-version       = "*"
-optional      = true
+version = "*"

@@ -1,0 +1,91 @@
+use std::str::FromStr; // LALRPOP pulls in dependencies just like in Rust.
+use util;
+//    <s:r"[-]?[0-9]+"> => util::Mouse::new( i32::from_str(s).unwrap() ),
+
+grammar; // This marks the file as a grammar for LALRPOP to generate code for.
+
+Num: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
+Esc: i32 = <n:r"[\x1B-\x1B]"> => 27;
+Tab: i32 = <n:r"[\x09-\x09]"> => 9;
+Sup: i32 = <n:r"[\x7F-\x7F]"> => 127;
+
+Key: util::Key = {
+    <s:r"[A-z]"> => util::Key::new(s.as_bytes()[0]),
+    <s:r"[0-9]+"> => util::Key::new(s.as_bytes()[0]),
+};
+
+Mouse: util::Mouse = {
+    <s:r"[0-9]+"> => util::Mouse::new( i32::from_str(s).unwrap() ),
+};
+
+pub MouseUse: (util::Mouse, i32, i32) = {
+    <n:Esc> "[<" <t:Mouse> ";" <x:Num> ";" <y:Num> "m" => (t, x, y),
+    <n:Esc> "[<" <t:Mouse> ";" <x:Num> ";" <y:Num> "M" => (t, x, y),
+};
+
+pub KeysUse: (util::Key) = {
+
+    <c:Key> => c,
+    "!" => util::Key::Char(b'!'),
+
+    <n:Esc> => util::Key::Esc,
+    <t:Tab> => util::Key::Tab,
+    <u:Sup> => util::Key::Backspace,
+    "\n" => util::Key::Enter,
+    "\r" => util::Key::Enter,
+    "\n\r" => util::Key::Enter,
+
+    <n:Esc> "[A" => util::Key::Up,
+    <n:Esc> "[B" => util::Key::Down,
+    <n:Esc> "[C" => util::Key::Right,
+    <n:Esc> "[D" => util::Key::Left,
+    <n:Esc> "[F" => util::Key::End,
+
+    <n:Esc> "[1;2A" => util::Key::ShiftUp,
+    <n:Esc> "[1;2B" => util::Key::ShiftDown,
+    <n:Esc> "[1;2C" => util::Key::ShiftRight,
+    <n:Esc> "[1;2D" => util::Key::ShiftLeft,
+    <n:Esc> "[1;2P" => util::Key::F(13),
+    <n:Esc> "[1;2Q" => util::Key::F(14),
+    <n:Esc> "[1;2R" => util::Key::F(15),
+    <n:Esc> "[1;2S" => util::Key::F(16),
+
+    <n:Esc> "[1;9A" => util::Key::AltUp,
+    <n:Esc> "[1;9B" => util::Key::AltDown,
+    <n:Esc> "[1;9C" => util::Key::AltRight,
+    <n:Esc> "[1;9D" => util::Key::AltLeft,
+
+    <n:Esc> "[1;5A" => util::Key::CtrlUp,
+    <n:Esc> "[1;5B" => util::Key::CtrlDown,
+    <n:Esc> "[1;5C" => util::Key::CtrlRight,
+    <n:Esc> "[1;5D" => util::Key::CtrlLeft,
+
+    <n:Esc> "[1;10A" => util::Key::AltShiftUp,
+    <n:Esc> "[1;10B" => util::Key::AltShiftDown,
+    <n:Esc> "[1;10C" => util::Key::AltShiftRight,
+    <n:Esc> "[1;10D" => util::Key::AltShiftLeft,
+
+    <n:Esc> "[1;6A" => util::Key::CtrlShiftUp,
+    <n:Esc> "[1;6B" => util::Key::CtrlShiftDown,
+    <n:Esc> "[1;6C" => util::Key::CtrlShiftRight,
+    <n:Esc> "[1;6D" => util::Key::CtrlShiftLeft,
+
+    <n:Esc> "[3~" => util::Key::Delete,
+    <n:Esc> "[5~" => util::Key::PageUp,
+    <n:Esc> "[6~" => util::Key::PageDown,
+
+    <n:Esc> "OP" => util::Key::F(1),
+    <n:Esc> "OQ" => util::Key::F(2),
+    <n:Esc> "OR" => util::Key::F(3),
+    <n:Esc> "OS" => util::Key::F(4),
+
+    <n:Esc> "[15~" => util::Key::F(5),
+    <n:Esc> "[17~" => util::Key::F(6),
+    <n:Esc> "[18~" => util::Key::F(7),
+    <n:Esc> "[19~" => util::Key::F(8),
+    <n:Esc> "[20~" => util::Key::F(9),
+    <n:Esc> "[21~" => util::Key::F(10),
+    <n:Esc> "[23~" => util::Key::F(11),
+    <n:Esc> "[24~" => util::Key::F(12),
+
+};
