@@ -18,27 +18,27 @@ pub extern "C" fn restore_termios() {
     }
 }
 
-pub fn setup_terminal(fd: libc::c_int) -> Result<termios> {
+pub fn setup_terminal(_: libc::c_int) -> Result<termios> {
     let termios: termios = unsafe { ::std::mem::zeroed() };
     unsafe {
-        libc::ioctl(fd, 0x00005401, &termios);
+        libc::ioctl(0, 0x00005401, &termios);
     }
     unsafe {
         termios_to_restore = Some(termios);
         libc::atexit(restore_termios);
     };
-    enter_raw_mode(fd).unwrap();
+    enter_raw_mode(0).unwrap();
     let winsize: winsize = unsafe { ::std::mem::zeroed() };
     unsafe {
-        libc::ioctl(fd, libc::TIOCSWINSZ, winsize);
+        libc::ioctl(0, libc::TIOCSWINSZ, winsize);
     }
     Ok(termios)
 }
 
-fn enter_raw_mode(fd: libc::c_int) -> Result<()> {
+fn enter_raw_mode(_: libc::c_int) -> Result<()> {
     let mut new_termios: termios = unsafe { ::std::mem::zeroed() };
     unsafe {
-        libc::ioctl(fd, 0x00005401, &new_termios);
+        libc::ioctl(0, 0x00005401, &new_termios);
     }
     new_termios.c_lflag &= !(libc::ECHO | libc::ICANON | libc::IEXTEN | libc::ISIG);
     new_termios.c_iflag &= !(libc::BRKINT | libc::ICRNL | libc::INPCK | libc::ISTRIP | libc::IXON);
@@ -48,7 +48,7 @@ fn enter_raw_mode(fd: libc::c_int) -> Result<()> {
     new_termios.c_cc[libc::VMIN] = 1;
     new_termios.c_cc[libc::VTIME] = 0;
     unsafe {
-        libc::ioctl(fd, 0x00005402, &new_termios);
+        libc::ioctl(0, 0x00005402, &new_termios);
     }
     io::stdout().write(b"\x1b[?1002h\x1b[?1015h\x1b[?1006h").unwrap(); // MOUSE ON
     Ok(())

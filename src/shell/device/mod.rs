@@ -1,4 +1,4 @@
-mod control;
+pub mod control;
 mod state;
 
 use std::io::{self, Read};
@@ -8,7 +8,6 @@ use ::chan;
 use ::libc;
 use ::pty::prelude as pty;
 
-pub use self::control::Control;
 pub use self::state::DeviceState;
 
 pub type In = [libc::c_uchar; 12];

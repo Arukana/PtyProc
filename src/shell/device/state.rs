@@ -3,7 +3,7 @@ use ::libc;
 use super::In;
 use super::Out;
 use super::Sig;
-use super::Control;
+use super::control::Control;
 
 #[derive(Copy)]
 pub enum DeviceState {

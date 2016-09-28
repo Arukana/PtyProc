@@ -1,4 +1,4 @@
-mod operate;
+pub mod operate;
 
 use std::{fmt, str};
 
@@ -6,7 +6,7 @@ use ::libc;
 use ::time;
 
 pub use super::In;
-pub use self::operate::Operate;
+use self::operate::Operate;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Control {
@@ -57,18 +57,7 @@ impl Control {
   pub fn is_enter(&self) -> Option<()> {
     match self.buf {
       [b'\r', b'\0', ..] |
-      [b'\n', b'\0', ..] |
-      [b'\n', b'\r', b'\0', ..] => Some(()),
-      _ => None,
-    }
-  }
-
-  /// The accessor method `is_mouse` returns an Option tupple of the Mouse Button and its coordinates
-  pub fn is_mouse(&self) -> Option<Operate> {
-    match self.buf {
-      [b'\x1B', b'[', b'<', ..] => { 
-          None
-      },
+      [b'\n', b'\0', ..] => Some(()),
       _ => None,
     }
   }

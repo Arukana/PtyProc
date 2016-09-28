@@ -1,6 +1,7 @@
 mod err;
 mod display;
 mod state;
+pub mod mode;
 pub mod device;
 
 use std::os::unix::io::AsRawFd;
@@ -12,6 +13,7 @@ use ::libc;
 use ::fork::Child;
 use ::pty::prelude as pty;
 
+use self::mode::Mode;
 use self::device::Device;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
@@ -21,6 +23,7 @@ pub use self::display::Display;
 
 pub struct Shell {
   pid: libc::pid_t,
+  mode: Mode,
   speudo: pty::Master,
   device: Device,
   state: ShellState,
@@ -29,9 +32,18 @@ pub struct Shell {
 impl Shell {
 
   /// The constructor method `new` returns a shell interface according to 
-  /// the command's option.
+  /// the command's option and a configured mode Line by Line.
   pub fn new (
     command: Option<&'static str>,
+  ) -> Result<Self> {
+    Shell::from_mode(command, Mode::Line)
+  }
+
+  /// The constructor method `from_mode` returns a shell interface according to
+  /// the command's option and the mode.
+  pub fn from_mode (
+    command: Option<&'static str>,
+    mode: Mode,
   ) -> Result<Self> {
     match pty::Fork::from_ptmx() {
       Err(cause) => Err(ShellError::BadFork(cause)),
@@ -45,6 +57,7 @@ impl Shell {
           else {
             Ok(Shell {
               pid: pid,
+              mode: mode,
               speudo: master,
               device: Device::from_speudo(master),
               state: ShellState::new(master.as_raw_fd()),
@@ -58,6 +71,34 @@ impl Shell {
   /// The accessor method `get_pid` returns the pid from the master.
   pub fn get_pid(&self) -> &libc::pid_t {
     &self.pid
+  }
+
+  /// The method `set_mode` changes the terminal mode.
+  pub fn set_mode(&mut self, mode: Mode) {
+    self.mode = mode;
+  }
+
+  /// The method `mode_pass` sends the input to the speudo terminal
+  /// if the mode was defined with a procedure.
+  fn mode_pass (
+    &mut self,
+    state: &ShellState
+  ) {
+    match self.mode {
+      Mode::Character => {
+        if let Some(text) = state.is_in_text() {
+          self.write(text).unwrap();
+          self.flush().unwrap();
+        }
+      },
+      Mode::Line => {
+        if let Some(line) = state.is_line() {
+          self.write(&line[..]).unwrap();
+          self.flush().unwrap();
+        }
+      },
+      _ => {},
+    }
   }
 }
 
@@ -93,7 +134,11 @@ impl Iterator for Shell {
     match self.device.next() {
       None => None,
       Some(event) => {
-        if let Some(state) = self.state.with_device(event, self.speudo.as_raw_fd()).ok() {
+        if let Some(state) = self.state.with_device(
+          event,
+          self.speudo.as_raw_fd(),
+        ).ok() {
+          self.mode_pass(&state);
           Some(state)
         }
         else {

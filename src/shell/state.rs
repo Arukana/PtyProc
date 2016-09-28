@@ -4,7 +4,9 @@ use std::ops::BitOr;
 use ::libc;
 
 use super::Display;
-use super::device::{DeviceState, Control};
+use super::device::DeviceState;
+use super::device::control::Control;
+use super::device::control::operate::Key;
 
 #[derive(Clone)]
 pub struct ShellState {
@@ -54,6 +56,7 @@ impl ShellState {
   /// The method `is_resized` returns the Option for the WINCH Signal event.
   pub fn is_resized(&self) -> Option<()> {
     if let Some(libc::SIGWINCH) = self.sig {
+        println!("{}-{:?}", self.in_line_ready, self.in_line);
       Some(())
     } else {
       None
@@ -125,7 +128,7 @@ impl ShellState {
     }
     if let Some(ref event) = self.in_text {
       self.in_line.extend_from_slice(event.as_slice());
-      if event.is_enter().is_some() {
+      if let Some(&13) = self.in_line.last() {
         self.in_line_ready = true;
       }
     }
