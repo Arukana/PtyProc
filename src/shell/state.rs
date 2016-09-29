@@ -56,7 +56,6 @@ impl ShellState {
   /// The method `is_resized` returns the Option for the WINCH Signal event.
   pub fn is_resized(&self) -> Option<()> {
     if let Some(libc::SIGWINCH) = self.sig {
-        println!("{}-{:?}", self.in_line_ready, self.in_line);
       Some(())
     } else {
       None
@@ -128,8 +127,10 @@ impl ShellState {
     }
     if let Some(ref event) = self.in_text {
       self.in_line.extend_from_slice(event.as_slice());
-      if let Some(&13) = self.in_line.last() {
-        self.in_line_ready = true;
+      if let Some(last) = self.in_line.last() {
+        if last.eq(&10).bitor(last.eq(&13)) {
+          self.in_line_ready = true;
+        }
       }
     }
     if let Some(ref text) = self.out_text {

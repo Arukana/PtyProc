@@ -44,7 +44,7 @@ impl Device {
     let (tx_sig, rx_sig) = chan::sync(0);
 
     thread::spawn(move || {
-      let mut bytes: In = [0; 12];
+      let mut bytes: In = [0u8; 12];
 
       while let Some(read) = io::stdin().read(&mut bytes).ok() {
         tx_in.send((bytes, read));
