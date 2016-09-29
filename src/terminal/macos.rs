@@ -21,10 +21,10 @@ pub extern "C" fn restore_termios() {
     }
 }
 
-pub fn setup_terminal(fd: libc::c_int) -> Result<termios> {
+pub fn setup_terminal(_: libc::c_int) -> Result<termios> {
     let termios: termios = unsafe { ::std::mem::zeroed() };
     unsafe {
-        libc::ioctl(fd,
+        libc::ioctl(0,
                     (0x40000000 | (116 << 8) | 19 |
                      (((::std::mem::size_of::<termios>() & 0x1FFF) << 16) as u64)),
                     &termios);
@@ -33,18 +33,18 @@ pub fn setup_terminal(fd: libc::c_int) -> Result<termios> {
         termios_to_restore = Some(termios);
         libc::atexit(restore_termios);
     };
-    enter_raw_mode(fd).unwrap();
+    enter_raw_mode(0).unwrap();
     let winsize: winsize = unsafe { ::std::mem::zeroed() };
     unsafe {
-        libc::ioctl(fd, libc::TIOCSWINSZ, winsize);
+        libc::ioctl(0, libc::TIOCSWINSZ, winsize);
     }
     Ok(termios)
 }
 
-fn enter_raw_mode(fd: libc::c_int) -> Result<()> {
+fn enter_raw_mode(_: libc::c_int) -> Result<()> {
     let mut new_termios: termios = unsafe { ::std::mem::zeroed() };
     unsafe {
-        libc::ioctl(fd,
+        libc::ioctl(0,
                     (0x40000000 | (116 << 8) | 19 |
                      (((::std::mem::size_of::<termios>() & 0x1FFF) << 16) as u64)),
                     &new_termios);
@@ -54,7 +54,7 @@ fn enter_raw_mode(fd: libc::c_int) -> Result<()> {
     new_termios.c_cc[libc::VMIN] = 1;
     new_termios.c_cc[libc::VTIME] = 0;
     unsafe {
-        libc::ioctl(fd,
+        libc::ioctl(0,
                     (0x80000000 | (116 << 8) | 20 |
                      (((::std::mem::size_of::<termios>() & 0x1FFF) << 16) as u64)),
                     &new_termios);
