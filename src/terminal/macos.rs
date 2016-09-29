@@ -74,7 +74,7 @@ impl Drop for Termios {
         self.fd,
         (0x80000000 | (116 << 8) | 20 |
         (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
-        &self.termios
+        &self.config
       ).eq(&-1) {
         panic!("{}", ::errno::errno());
       }
