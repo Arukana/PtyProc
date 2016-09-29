@@ -1,22 +1,24 @@
 use ::pty::prelude as pty;
 use ::libc;
 
-use std::ffi::CString;
+use std::ffi;
 use std::ptr;
 
 pub trait Child {
-  fn exec(&self, &'static str) -> !;
+  fn exec<S: AsRef<str>>(&self, S) -> !;
 }
 
 impl Child for pty::Slave {
-  fn exec(&self, command: &'static str) -> ! {
-    let mut ptrs = [
-      CString::new(command).unwrap().as_ptr(),
-      ptr::null(),
-    ];
+  fn exec<S: AsRef<str>>(&self, shell: S) -> ! {
+    let cmd = ffi::CString::new(shell.as_ref()).unwrap();
+    let mut args: Vec<*const libc::c_char> = Vec::with_capacity(1);
 
+    args.push(cmd.as_ptr());
+    args.push(ptr::null());
     unsafe {
-      libc::execvp(*ptrs.as_ptr(), ptrs.as_mut_ptr());
+      if libc::execvp(cmd.as_ptr(), args.as_mut_ptr()).eq(&-1) {
+        panic!("{}: {}", cmd.to_string_lossy(), ::errno::errno());
+      }
     }
     unimplemented!();
   }

@@ -4,6 +4,7 @@
 extern crate pty;
 extern crate libc;
 extern crate time;
+extern crate errno;
 
 pub mod terminal;
 pub mod shell;
