@@ -6,7 +6,7 @@ use pty_shell_mode::prelude as shell;
 use std::io::{self, Write};
 
 fn main() {
-  let mut shell: shell::Shell = shell::Shell::from_mode(None, shell::Mode::Line).unwrap();
+  let mut shell: shell::Shell = shell::Shell::from_mode(None, shell::Mode::Character).unwrap();
 
   println!("Welcome {}-{}", shell.get_pid(), unsafe { libc::getpid() } );
   while let Some(event) = shell.next() {

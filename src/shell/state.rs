@@ -137,7 +137,7 @@ impl ShellState {
       try!(self.out_screen.write(text.as_slice()));
     }
     if let Some(()) = self.is_resized() {
-      self.out_screen = Display::new(fd).unwrap();
+      self.out_screen.resize().unwrap();
     }
     Ok(self.to_owned())
   }

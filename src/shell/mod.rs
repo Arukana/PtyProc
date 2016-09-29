@@ -19,11 +19,14 @@ pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 pub use self::display::Display;
 
+use super::terminal::Termios;
+
 /// The struct `Shell` is the speudo terminal interface.
 
 pub struct Shell {
   pid: libc::pid_t,
   mode: Mode,
+  config: Termios,
   speudo: pty::Master,
   device: Device,
   state: ShellState,
@@ -36,7 +39,7 @@ impl Shell {
   pub fn new (
     command: Option<&'static str>,
   ) -> Result<Self> {
-    Shell::from_mode(command, Mode::Line)
+    Shell::from_mode(command, Mode::None)
   }
 
   /// The constructor method `from_mode` returns a shell interface according to
@@ -50,19 +53,15 @@ impl Shell {
       Ok(fork) => match fork {
         pty::Fork::Child(ref slave) => slave.exec(command.unwrap_or("bash")),
         pty::Fork::Parent(pid, master) => {
-          mem::forget(fork);
-          if ::terminal::setup_terminal(master.as_raw_fd()).is_err() {
-            Err(ShellError::BadIoctl)
-          }
-          else {
-            Ok(Shell {
-              pid: pid,
-              mode: mode,
-              speudo: master,
-              device: Device::from_speudo(master),
-              state: ShellState::new(master.as_raw_fd()),
-            })
-          }
+        mem::forget(fork);
+          Ok(Shell {
+            pid: pid,
+            config: Termios::default(),
+            mode: mode,
+            speudo: master,
+            device: Device::from_speudo(master),
+            state: ShellState::new(master.as_raw_fd()),
+          })
         },
       },
     }
@@ -115,9 +114,8 @@ impl io::Write for Shell {
 impl Drop for Shell {
   fn drop(&mut self) {
     unsafe {
-      ::terminal::restore_termios();
       if io::stdout().write(
-        "\x1b[?1015l\x1b[?1002l\x1b[?1000l".as_bytes()
+        b"\x1b[?1015l\x1b[?1002l\x1b[?1000l" // MOUSE OFF
       ).is_err().bitor(
         libc::close(self.speudo.as_raw_fd()).eq(&-1)
       ) {

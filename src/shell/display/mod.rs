@@ -31,30 +31,12 @@ impl Display {
         }
     }
 
-    pub fn to_matrix(&self) -> Vec<Vec<u8>> {
-        let mut matrix: Vec<Vec<u8>> = Vec::with_capacity(self.screen.len());
-        let mut flag: bool = true;
-        let mut tmp = self.screen.iter();
-
-        {0..self.size.get_row()}.all(|y: usize| {
-            let mut coucou: Vec<u8> = Vec::with_capacity(self.size.get_col());
-            {0..self.size.get_col()}.all(|x: usize| {
-                if flag {
-                    if let Some(k) = tmp.next() {
-                        coucou.insert(x, *k);
-                        if *k == 10 {
-                            flag = false;
-                        }
-                    }
-                } else {
-                    coucou.insert(x, 0);
-                }
-                true
-            });
-            matrix.insert(y, coucou);
-            true
-        });
-        matrix
+    /// The method `resize` updates the size of the Display interface.
+    pub fn resize(&mut self) -> Result<()> {
+      match Winszed::new(libc::STDIN_FILENO) {
+        Err(why) => Err(DisplayError::WinszedFail(why)),
+        Ok(size) => Ok(self.size = size),
+      }
     }
 }
 
