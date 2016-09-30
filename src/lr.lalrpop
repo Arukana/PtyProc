@@ -7,7 +7,10 @@ grammar; // This marks the file as a grammar for LALRPOP to generate code for.
 Num: i32 = <s:r"[0-9]+"> => i32::from_str(s).unwrap();
 Esc: i32 = <n:r"[\x1B-\x1B]"> => 27;
 Tab: i32 = <n:r"[\x09-\x09]"> => 9;
+Bell: i32 = <n:r"[\x07-\x07]"> => 7;
+Car: i32 = <n:r"[\x0D-\x0D]"> => 13;
 Sup: i32 = <n:r"[\x7F-\x7F]"> => 127;
+Quote: i32 = <n:r"[\x22-\x22]"> => 34;
 
 Key: util::Key = {
     <s:r"[A-z]"> => util::Key::new(s.as_bytes()[0]),
@@ -27,12 +30,37 @@ pub KeysUse: (util::Key) = {
 
     <c:Key> => c,
     "!" => util::Key::Char(b'!'),
+    <q:Quote> => util::Key::Char(34),
+    "#" => util::Key::Char(b'#'),
+    "$" => util::Key::Char(b'$'),
+    "%" => util::Key::Char(b'%'),
+    "&" => util::Key::Char(b'&'),
+    "'" => util::Key::Char(b'\''),
+    "(" => util::Key::Char(b'\x28'),
+    ")" => util::Key::Char(b'\x29'),
+    "*" => util::Key::Char(b'*'),
+    "+" => util::Key::Char(b'+'),
+    "," => util::Key::Char(b','),
+    "-" => util::Key::Char(b'-'),
+    "." => util::Key::Char(b'.'),
+    "/" => util::Key::Char(b'/'),
+    ":" => util::Key::Char(b':'),
+    ";" => util::Key::Char(b';'),
+    "<" => util::Key::Char(b'<'),
+    "=" => util::Key::Char(b'='),
+    ">" => util::Key::Char(b'>'),
+    "?" => util::Key::Char(b'?'),
+    "@" => util::Key::Char(b'@'),
+    "{" => util::Key::Char(123),
+    "|" => util::Key::Char(b'|'),
+    "}" => util::Key::Char(125),
+    "~" => util::Key::Char(b'~'),
 
     <n:Esc> => util::Key::Esc,
     <t:Tab> => util::Key::Tab,
+    <b:Bell> => util::Key::Bell,
+    <c:Car> => util::Key::Carriage,
     <u:Sup> => util::Key::Backspace,
-    "\n" => util::Key::Enter,
-    "\r" => util::Key::Enter,
     "\n\r" => util::Key::Enter,
 
     <n:Esc> "[A" => util::Key::Up,

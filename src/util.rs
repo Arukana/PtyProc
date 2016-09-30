@@ -32,6 +32,10 @@ pub enum Key {
     Ctrl(libc::c_uchar),
     /// Esc key
     Esc,
+    ///The Bell signal when something wrong happened
+    Bell,
+    ///The carriage return lead the cursor to the beginning of the current line
+    Carriage,
     /// Left arrow
     Left,
     /// Right arrow
@@ -84,8 +88,7 @@ pub enum Key {
 
 impl Key
 { pub fn new(s: u8) -> Self
-  { println!("KEY:{}", s);
-    Key::Char(s) }}
+  { Key::Char(s) }}
 
 
 #[derive(Clone, Copy, Debug)]
