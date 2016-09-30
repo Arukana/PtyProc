@@ -31,6 +31,7 @@ pub KeysUse: (util::Key) = {
     <c:Key> => c,
     "!" => util::Key::Char(b'!'),
     <q:Quote> => util::Key::Char(34),
+    " " => util::Key::Space,
     "#" => util::Key::Char(b'#'),
     "$" => util::Key::Char(b'$'),
     "%" => util::Key::Char(b'%'),
@@ -62,6 +63,7 @@ pub KeysUse: (util::Key) = {
     <c:Car> => util::Key::Carriage,
     <u:Sup> => util::Key::Backspace,
     "\n\r" => util::Key::Enter,
+    "\n" => util::Key::Enter,
 
     <n:Esc> "[A" => util::Key::Up,
     <n:Esc> "[B" => util::Key::Down,

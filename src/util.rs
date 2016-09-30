@@ -2,6 +2,8 @@ use ::libc;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Key {
+    /// Space
+    Space,
     /// Enter
     Enter,
     ///Tabulation
