@@ -43,5 +43,5 @@ fn main() {
     print!("\x1b[?1006l\x1b[?1015l\x1b[?1002l");
         let _ = io::stdout().flush(); // Make sure the '>' prints
 
-    println!("Smell ya later! ;D");
+    println!("Fuck ya later! ;D");
 }

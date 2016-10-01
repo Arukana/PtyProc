@@ -22,8 +22,10 @@ pub enum Key {
     Delete,
     /// Insert key
     Insert,
-    /// Function keys between 1-19
+    /// Function keys between 1-16
     F(libc::c_uchar),
+    /// Shit and Function keys between 1-16
+    ShiftF(libc::c_uchar),
     /// Simple character
     Char(libc::c_uchar),
     /// Character used with Alt
@@ -54,6 +56,8 @@ pub enum Key {
     ShiftUp,
     /// Shift Down arrow
     ShiftDown,
+    /// Shift End key
+    ShiftEnd,
     /// Alt Left arrow
     AltLeft,
     /// Alt Right arrow
@@ -62,6 +66,8 @@ pub enum Key {
     AltUp,
     /// Alt Down arrow
     AltDown,
+    /// Alt End key
+    AltEnd,
     /// Control Left arrow
     CtrlLeft,
     /// Control Right arrow
@@ -70,6 +76,8 @@ pub enum Key {
     CtrlUp,
     /// Control Down arrow
     CtrlDown,
+    /// Ctrl End key
+    CtrlEnd,
     /// Alt Shift Left arrow
     AltShiftLeft,
     /// Alt Shift Right arrow
@@ -78,6 +86,8 @@ pub enum Key {
     AltShiftUp,
     /// Alt Shift Down arrow
     AltShiftDown,
+    /// Alt Shift End key
+    AltShiftEnd,
     /// Control Shift Left arrow
     CtrlShiftLeft,
     /// Control Shift Right arrow
@@ -86,6 +96,14 @@ pub enum Key {
     CtrlShiftUp,
     /// Control Shift Down arrow
     CtrlShiftDown,
+    /// Ctrl Shift End key
+    CtrlShiftEnd,
+    /// Ctrl Alt End key
+    CtrlAltEnd,
+    /// Ctrl Alt Shift End key
+    CtrlAltShiftEnd,
+    /// Output of the TermVersion
+    TermVersion(libc::c_ushort, libc::c_ushort),
 }
 
 impl Key
@@ -284,8 +302,8 @@ impl Mouse {
         24 => Mouse::CmdCtrlLeft,
         25 => Mouse::CmdCtrlWheel,
         26 => Mouse::CmdCtrlRight,
-        88 => Mouse::CmdWheelUp,
-        89 => Mouse::CmdWheelDown,
+        88 => Mouse::CmdCtrlWheelUp,
+        89 => Mouse::CmdCtrlWheelDown,
 
         ///Command Control Drag
         56 => Mouse::CmdCtrlLeftDrag,

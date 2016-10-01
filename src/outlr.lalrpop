@@ -12,6 +12,7 @@ pub CursorUse: (outp::Cursor) = {
   <n:Esc> "[7h" => outp::Cursor::LineWrap(true),
   <n:Esc> "[7l" => outp::Cursor::LineWrap(false),
   <n:Esc> "[r" => outp::Cursor::ScrollEnable,
+  <n:Esc> "[>0c" => outp::Cursor::TermVersion,
   <n:Esc> "c" => outp::Cursor::TermReset,
 
   <n:Esc> "[" <x:Num> ";" <y:Num> "H" => outp::Cursor::CursorGoto(x, y),

@@ -8,6 +8,8 @@ pub enum Cursor {
   LineWrap(bool),
   ///Enable the scrolling
   ScrollEnable,
+  ///Terminal version is outputted
+  TermVersion,
   ///Terminal setups are rebooted to initial state
   TermReset,
 
