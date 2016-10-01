@@ -102,8 +102,6 @@ pub enum Key {
     CtrlAltEnd,
     /// Ctrl Alt Shift End key
     CtrlAltShiftEnd,
-    /// Output of the TermVersion
-    TermVersion(libc::c_ushort, libc::c_ushort),
 }
 
 impl Key

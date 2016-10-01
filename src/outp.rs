@@ -9,7 +9,9 @@ pub enum Cursor {
   ///Enable the scrolling
   ScrollEnable,
   ///Terminal version is outputted
-  TermVersion,
+  TermVersionIn,
+  ///Terminal version resulting output
+  TermVersionOut(libc::c_ushort, libc::c_ushort),
   ///Terminal setups are rebooted to initial state
   TermReset,
 

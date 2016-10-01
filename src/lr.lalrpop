@@ -63,9 +63,6 @@ pub KeysUse: (util::Key) = {
     <n:New> <c:Car> => util::Key::Enter,
     <n:New> => util::Key::Enter,
 
-    <v:Nus> ";" <w:Nus> ";c" => util::Key::TermVersion(v, w),
-    <v:Nus> ";" <w:Nus> ";0c" => util::Key::TermVersion(v, w),
-
     <n:Esc> "[A" => util::Key::Up,
     <n:Esc> "[B" => util::Key::Down,
     <n:Esc> "[C" => util::Key::Right,
