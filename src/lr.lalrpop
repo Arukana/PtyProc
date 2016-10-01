@@ -27,6 +27,8 @@ Mouse: util::Mouse = {
 pub KeysUse: (util::Key) = {
 
     <c:Key> => c,
+    "m" => util::Key::Char(b'm'),
+    "M" => util::Key::Char(b'M'),
     "!" => util::Key::Char(b'!'),
     <q:Quote> => util::Key::Char(34),
     <s:Space> => util::Key::Space,
@@ -61,6 +63,7 @@ pub KeysUse: (util::Key) = {
     <c:Car> => util::Key::Carriage,
     <u:Sup> => util::Key::Backspace,
     <n:New> <c:Car> => util::Key::Enter,
+    <c:Car> <n:New> => util::Key::Enter,
     <n:New> => util::Key::Enter,
 
     <n:Esc> "[A" => util::Key::Up,
