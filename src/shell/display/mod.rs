@@ -38,7 +38,36 @@ impl Display {
         Ok(size) => Ok(self.size = size),
       }
     }
-}
+
+    /// The method `to_matrix` transform the output screen into a matrix
+    pub fn to_matrix(&self) -> Vec<Vec<u8>>
+    { let mut flag: bool = true;
+      let mut tmp = self.screen.iter();
+      let row;
+      let col;
+      match Winszed::new(libc::STDIN_FILENO) {
+        Err(_) => { row = 0; col = 0; },
+        Ok(size) => { row = size.ws_row;
+                      col = size.ws_col; }}
+      let mut matrix: Vec<Vec<u8>> = Vec::with_capacity(row as usize);
+      {0..row}.all(|y|
+      { let mut coucou: Vec<u8> = Vec::with_capacity(col as usize);
+        {0..col}.all(|x|
+        { if flag
+          { if let Some(k) = tmp.next()
+            { coucou.push(*k);
+              if *k == 10
+              { flag = false; }}
+            else
+            { flag = false;
+              coucou.push(0); }}
+          else
+          { coucou.push(0); }
+          true });
+        flag = false;
+        matrix.push(coucou);
+        true });
+      matrix }}
 
 impl ExactSizeIterator for Display {
     fn len(&self) -> usize {
