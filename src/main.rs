@@ -8,7 +8,7 @@ use pty_shell_mode::prelude as shell;
 
 use std::io::{self, Write};
 
-fn pattern_matching(line: &[u8], from: &str)
+fn pattern_matching(line: &str, from: &str)
 { match lr::parse_KeysUse(&line.to_string())
   { Ok(v) => print!("\n\r{}::{:?}\n\r", from, v),
     Err(_) => { match lr::parse_MouseUse(&line.to_string())
@@ -16,10 +16,10 @@ fn pattern_matching(line: &[u8], from: &str)
       Err(_) => { match outlr::parse_CursorUse(&line.to_string())
       { Ok(t) => print!("\n\r{}::{:?}\n\r", from, t),
         Err(_) => { for i in line.as_bytes()
-        { if i == '\x1B'
+        { if *i == '\x1B' as u8
           { print!(" ** "); }
-          print!("Err{}::{}", from, i);
-          print!(" !{}! ", from) }}, }}, }; }, }, }
+          print!("Err{}::({}, {})", from, i, *i as char); }
+          print!(" !{}! ", from) }, }}, }; }, }; }
 
 fn main() {
   let mut shell: shell::Shell = shell::Shell::from_mode(None, shell::Mode::Character).unwrap();
@@ -33,7 +33,7 @@ fn main() {
     if let Some(ref o) = event.is_out_text()
     { io::stdout().write(o.as_slice()).unwrap();
       let _ = match std::str::from_utf8(o)
-      { Ok(line) => { pattern_matching(line, &"Out") },
+      { Ok(line) => { pattern_matching(line, &"Out") },
         Err(_) => {}, };
       io::stdout().flush().unwrap(); }
 //    if let Some(ref k) = event.is_out_screen()
