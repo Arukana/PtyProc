@@ -52,11 +52,17 @@ pub CursorUse: (outp::Cursor) = {
   <n:Esc> "[1J" => outp::Cursor::EraseUp,
   <n:Esc> "[2J" => outp::Cursor::Clear,
 
+  <n:Esc> "[0m" => outp::Cursor::ClearAttribute(attr),
+  <n:Esc> "[m" => outp::Cursor::ClearAttribute(attr),
   <n:Esc> "[" <attr:Num> "m" => outp::Cursor::Attribute(attr),
   
-  <n:Esc> "[" <r:Num> <c:Maj> => outp::Cursor::Unimplemented(r, c),
-  <n:Esc> "[" <r:Num> <c:Min> => outp::Cursor::Unimplemented(r, c),
   <n:Esc> "[" <c:Maj> => outp::Cursor::Unimplemented(0, c),
   <n:Esc> "[" <c:Min> => outp::Cursor::Unimplemented(0, c),
+  <n:Esc> "[" <r:Num> <c:Maj> => outp::Cursor::Unimplemented(r, c),
+  <n:Esc> "[" <r:Num> <c:Min> => outp::Cursor::Unimplemented(r, c),
+  <n:Esc> "[?" <r:Num> <c:Maj> => outp::Cursor::Unimplemented(r, c),
+  <n:Esc> "[?" <r:Num> <c:Min> => outp::Cursor::Unimplemented(r, c),
+  <n:Esc> "[>" <r:Num> <c:Maj> => outp::Cursor::Unimplemented(r, c),
+  <n:Esc> "[>" <r:Num> <c:Min> => outp::Cursor::Unimplemented(r, c),
 
 };

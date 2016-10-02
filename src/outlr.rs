@@ -15,6 +15,7 @@ mod __parse__CursorUse {
         Term_22_3b_22(&'input str),
         Term_22_3b0c_22(&'input str),
         Term_22_3bc_22(&'input str),
+        Term_22_3e_22(&'input str),
         Term_22A_22(&'input str),
         Term_22B_22(&'input str),
         Term_22C_22(&'input str),
@@ -64,6 +65,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -105,6 +107,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -146,35 +149,36 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        9, // on ">", goto 8
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
-        9, // on "D", goto 8
+        10, // on "D", goto 9
         0, // on "H", error
-        10, // on "M", goto 9
-        11, // on "[", goto 10
-        12, // on "[1J", goto 11
-        13, // on "[1K", goto 12
-        14, // on "[2J", goto 13
-        15, // on "[2K", goto 14
-        16, // on "[7h", goto 15
-        17, // on "[7l", goto 16
-        18, // on "[;H", goto 17
-        19, // on "[;f", goto 18
-        20, // on "[>", goto 19
-        21, // on "[>0c", goto 20
-        22, // on "[A", goto 21
-        23, // on "[B", goto 22
-        24, // on "[C", goto 23
-        25, // on "[D", goto 24
-        26, // on "[H", goto 25
-        27, // on "[J", goto 26
-        28, // on "[K", goto 27
-        29, // on "[f", goto 28
-        30, // on "[r", goto 29
-        31, // on "[s", goto 30
-        32, // on "[u", goto 31
-        33, // on "c", goto 32
+        11, // on "M", goto 10
+        12, // on "[", goto 11
+        13, // on "[1J", goto 12
+        14, // on "[1K", goto 13
+        15, // on "[2J", goto 14
+        16, // on "[2K", goto 15
+        17, // on "[7h", goto 16
+        18, // on "[7l", goto 17
+        19, // on "[;H", goto 18
+        20, // on "[;f", goto 19
+        21, // on "[>", goto 20
+        22, // on "[>0c", goto 21
+        23, // on "[A", goto 22
+        24, // on "[B", goto 23
+        25, // on "[C", goto 24
+        26, // on "[D", goto 25
+        27, // on "[H", goto 26
+        28, // on "[J", goto 27
+        29, // on "[K", goto 28
+        30, // on "[f", goto 29
+        31, // on "[r", goto 30
+        32, // on "[s", goto 31
+        33, // on "[u", goto 32
+        34, // on "c", goto 33
         0, // on "f", error
         0, // on "m", error
         0, // on r#"[0-9]+"#, error
@@ -184,9 +188,10 @@ mod __parse__CursorUse {
         // State 3
         0, // on "7", error
         0, // on "8", error
-        34, // on ";", goto 33
+        35, // on ";", goto 34
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -225,9 +230,10 @@ mod __parse__CursorUse {
         // State 4
         0, // on "7", error
         0, // on "8", error
-        -44, // on ";", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        -46, // on ";", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -264,40 +270,41 @@ mod __parse__CursorUse {
         0, // on r#"[\\x1B-\\x1B]"#, error
         0, // on r#"[a-z]"#, error
         // State 5
-        -41, // on "7", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "8", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "7", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "8", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        -43, // on ">", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
-        -41, // on "D", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "D", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
         0, // on "H", error
-        -41, // on "M", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[1J", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[1K", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[2J", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[2K", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[7h", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[7l", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[;H", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[;f", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[>", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[>0c", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[A", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[B", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[C", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[D", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[H", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[J", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[K", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[f", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[r", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[s", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "[u", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
-        -41, // on "c", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "M", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[1J", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[1K", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[2J", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[2K", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[7h", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[7l", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[;H", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[;f", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[>", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[>0c", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[A", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[B", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[C", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[D", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[H", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[J", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[K", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[f", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[r", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[s", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "[u", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
+        -43, // on "c", reduce `Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);`
         0, // on "f", error
         0, // on "m", error
         0, // on r#"[0-9]+"#, error
@@ -310,6 +317,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -351,6 +359,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -392,6 +401,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -423,7 +433,7 @@ mod __parse__CursorUse {
         0, // on "c", error
         0, // on "f", error
         0, // on "m", error
-        0, // on r#"[0-9]+"#, error
+        5, // on r#"[0-9]+"#, goto 4
         0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
         0, // on r#"[a-z]"#, error
@@ -433,6 +443,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -474,47 +485,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
-        0, // on "A", error
-        0, // on "B", error
-        0, // on "C", error
-        0, // on "D", error
-        0, // on "H", error
-        0, // on "M", error
-        0, // on "[", error
-        0, // on "[1J", error
-        0, // on "[1K", error
-        0, // on "[2J", error
-        0, // on "[2K", error
-        0, // on "[7h", error
-        0, // on "[7l", error
-        0, // on "[;H", error
-        0, // on "[;f", error
-        0, // on "[>", error
-        0, // on "[>0c", error
-        0, // on "[A", error
-        0, // on "[B", error
-        0, // on "[C", error
-        0, // on "[D", error
-        0, // on "[H", error
-        0, // on "[J", error
-        0, // on "[K", error
-        0, // on "[f", error
-        0, // on "[r", error
-        0, // on "[s", error
-        0, // on "[u", error
-        0, // on "c", error
-        0, // on "f", error
-        0, // on "m", error
-        38, // on r#"[0-9]+"#, goto 37
-        39, // on r#"[A-Z]"#, goto 38
-        0, // on r#"[\\x1B-\\x1B]"#, error
-        40, // on r#"[a-z]"#, goto 39
-        // State 11
-        0, // on "7", error
-        0, // on "8", error
-        0, // on ";", error
-        0, // on ";0c", error
-        0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -550,12 +521,55 @@ mod __parse__CursorUse {
         0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
         0, // on r#"[a-z]"#, error
+        // State 11
+        0, // on "7", error
+        0, // on "8", error
+        0, // on ";", error
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
+        0, // on "H", error
+        0, // on "M", error
+        0, // on "[", error
+        0, // on "[1J", error
+        0, // on "[1K", error
+        0, // on "[2J", error
+        0, // on "[2K", error
+        0, // on "[7h", error
+        0, // on "[7l", error
+        0, // on "[;H", error
+        0, // on "[;f", error
+        0, // on "[>", error
+        0, // on "[>0c", error
+        0, // on "[A", error
+        0, // on "[B", error
+        0, // on "[C", error
+        0, // on "[D", error
+        0, // on "[H", error
+        0, // on "[J", error
+        0, // on "[K", error
+        0, // on "[f", error
+        0, // on "[r", error
+        0, // on "[s", error
+        0, // on "[u", error
+        0, // on "c", error
+        0, // on "f", error
+        0, // on "m", error
+        40, // on r#"[0-9]+"#, goto 39
+        41, // on r#"[A-Z]"#, goto 40
+        0, // on r#"[\\x1B-\\x1B]"#, error
+        42, // on r#"[a-z]"#, goto 41
         // State 12
         0, // on "7", error
         0, // on "8", error
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -597,6 +611,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -638,6 +653,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -679,6 +695,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -720,6 +737,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -761,6 +779,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -802,6 +821,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -843,47 +863,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
-        0, // on "A", error
-        0, // on "B", error
-        0, // on "C", error
-        0, // on "D", error
-        0, // on "H", error
-        0, // on "M", error
-        0, // on "[", error
-        0, // on "[1J", error
-        0, // on "[1K", error
-        0, // on "[2J", error
-        0, // on "[2K", error
-        0, // on "[7h", error
-        0, // on "[7l", error
-        0, // on "[;H", error
-        0, // on "[;f", error
-        0, // on "[>", error
-        0, // on "[>0c", error
-        0, // on "[A", error
-        0, // on "[B", error
-        0, // on "[C", error
-        0, // on "[D", error
-        0, // on "[H", error
-        0, // on "[J", error
-        0, // on "[K", error
-        0, // on "[f", error
-        0, // on "[r", error
-        0, // on "[s", error
-        0, // on "[u", error
-        0, // on "c", error
-        0, // on "f", error
-        0, // on "m", error
-        5, // on r#"[0-9]+"#, goto 4
-        0, // on r#"[A-Z]"#, error
-        0, // on r#"[\\x1B-\\x1B]"#, error
-        0, // on r#"[a-z]"#, error
-        // State 20
-        0, // on "7", error
-        0, // on "8", error
-        0, // on ";", error
-        0, // on ";0c", error
-        0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -919,12 +899,55 @@ mod __parse__CursorUse {
         0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
         0, // on r#"[a-z]"#, error
+        // State 20
+        0, // on "7", error
+        0, // on "8", error
+        0, // on ";", error
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
+        0, // on "H", error
+        0, // on "M", error
+        0, // on "[", error
+        0, // on "[1J", error
+        0, // on "[1K", error
+        0, // on "[2J", error
+        0, // on "[2K", error
+        0, // on "[7h", error
+        0, // on "[7l", error
+        0, // on "[;H", error
+        0, // on "[;f", error
+        0, // on "[>", error
+        0, // on "[>0c", error
+        0, // on "[A", error
+        0, // on "[B", error
+        0, // on "[C", error
+        0, // on "[D", error
+        0, // on "[H", error
+        0, // on "[J", error
+        0, // on "[K", error
+        0, // on "[f", error
+        0, // on "[r", error
+        0, // on "[s", error
+        0, // on "[u", error
+        0, // on "c", error
+        0, // on "f", error
+        0, // on "m", error
+        5, // on r#"[0-9]+"#, goto 4
+        0, // on r#"[A-Z]"#, error
+        0, // on r#"[\\x1B-\\x1B]"#, error
+        0, // on r#"[a-z]"#, error
         // State 21
         0, // on "7", error
         0, // on "8", error
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -966,6 +989,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1007,6 +1031,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1048,6 +1073,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1089,6 +1115,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1130,6 +1157,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1171,6 +1199,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1212,6 +1241,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1253,6 +1283,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1294,6 +1325,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1335,6 +1367,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1376,6 +1409,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1417,47 +1451,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
-        0, // on "A", error
-        0, // on "B", error
-        0, // on "C", error
-        0, // on "D", error
-        0, // on "H", error
-        0, // on "M", error
-        0, // on "[", error
-        0, // on "[1J", error
-        0, // on "[1K", error
-        0, // on "[2J", error
-        0, // on "[2K", error
-        0, // on "[7h", error
-        0, // on "[7l", error
-        0, // on "[;H", error
-        0, // on "[;f", error
-        0, // on "[>", error
-        0, // on "[>0c", error
-        0, // on "[A", error
-        0, // on "[B", error
-        0, // on "[C", error
-        0, // on "[D", error
-        0, // on "[H", error
-        0, // on "[J", error
-        0, // on "[K", error
-        0, // on "[f", error
-        0, // on "[r", error
-        0, // on "[s", error
-        0, // on "[u", error
-        0, // on "c", error
-        0, // on "f", error
-        0, // on "m", error
-        43, // on r#"[0-9]+"#, goto 42
-        0, // on r#"[A-Z]"#, error
-        0, // on r#"[\\x1B-\\x1B]"#, error
-        0, // on r#"[a-z]"#, error
-        // State 34
-        0, // on "7", error
-        0, // on "8", error
-        0, // on ";", error
-        0, // on ";0c", error
-        0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1493,12 +1487,55 @@ mod __parse__CursorUse {
         0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
         0, // on r#"[a-z]"#, error
-        // State 35
+        // State 34
         0, // on "7", error
         0, // on "8", error
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
+        0, // on "H", error
+        0, // on "M", error
+        0, // on "[", error
+        0, // on "[1J", error
+        0, // on "[1K", error
+        0, // on "[2J", error
+        0, // on "[2K", error
+        0, // on "[7h", error
+        0, // on "[7l", error
+        0, // on "[;H", error
+        0, // on "[;f", error
+        0, // on "[>", error
+        0, // on "[>0c", error
+        0, // on "[A", error
+        0, // on "[B", error
+        0, // on "[C", error
+        0, // on "[D", error
+        0, // on "[H", error
+        0, // on "[J", error
+        0, // on "[K", error
+        0, // on "[f", error
+        0, // on "[r", error
+        0, // on "[s", error
+        0, // on "[u", error
+        0, // on "c", error
+        0, // on "f", error
+        0, // on "m", error
+        45, // on r#"[0-9]+"#, goto 44
+        0, // on r#"[A-Z]"#, error
+        0, // on r#"[\\x1B-\\x1B]"#, error
+        0, // on r#"[a-z]"#, error
+        // State 35
+        0, // on "7", error
+        0, // on "8", error
+        46, // on ";", goto 45
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1537,13 +1574,14 @@ mod __parse__CursorUse {
         // State 36
         0, // on "7", error
         0, // on "8", error
-        46, // on ";", goto 45
+        0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
-        47, // on "A", goto 46
-        48, // on "B", goto 47
-        49, // on "C", goto 48
-        50, // on "D", goto 49
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
         0, // on "H", error
         0, // on "M", error
         0, // on "[", error
@@ -1570,21 +1608,22 @@ mod __parse__CursorUse {
         0, // on "[u", error
         0, // on "c", error
         0, // on "f", error
-        51, // on "m", goto 50
+        0, // on "m", error
         0, // on r#"[0-9]+"#, error
-        39, // on r#"[A-Z]"#, goto 38
+        0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
-        40, // on r#"[a-z]"#, goto 39
+        0, // on r#"[a-z]"#, error
         // State 37
         0, // on "7", error
         0, // on "8", error
-        -44, // on ";", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
-        -44, // on "A", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
-        -44, // on "B", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
-        -44, // on "C", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
-        -44, // on "D", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
         0, // on "H", error
         0, // on "M", error
         0, // on "[", error
@@ -1611,21 +1650,22 @@ mod __parse__CursorUse {
         0, // on "[u", error
         0, // on "c", error
         0, // on "f", error
-        -44, // on "m", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        0, // on "m", error
         0, // on r#"[0-9]+"#, error
-        -44, // on r#"[A-Z]"#, reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
-        -44, // on r#"[a-z]"#, reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        0, // on r#"[a-z]"#, error
         // State 38
         0, // on "7", error
         0, // on "8", error
-        0, // on ";", error
+        49, // on ";", goto 48
         0, // on ";0c", error
         0, // on ";c", error
-        0, // on "A", error
-        0, // on "B", error
-        0, // on "C", error
-        0, // on "D", error
+        0, // on ">", error
+        50, // on "A", goto 49
+        51, // on "B", goto 50
+        52, // on "C", goto 51
+        53, // on "D", goto 52
         0, // on "H", error
         0, // on "M", error
         0, // on "[", error
@@ -1652,21 +1692,22 @@ mod __parse__CursorUse {
         0, // on "[u", error
         0, // on "c", error
         0, // on "f", error
-        0, // on "m", error
+        54, // on "m", goto 53
         0, // on r#"[0-9]+"#, error
-        0, // on r#"[A-Z]"#, error
+        41, // on r#"[A-Z]"#, goto 40
         0, // on r#"[\\x1B-\\x1B]"#, error
-        0, // on r#"[a-z]"#, error
+        42, // on r#"[a-z]"#, goto 41
         // State 39
         0, // on "7", error
         0, // on "8", error
-        0, // on ";", error
+        -46, // on ";", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
         0, // on ";0c", error
         0, // on ";c", error
-        0, // on "A", error
-        0, // on "B", error
-        0, // on "C", error
-        0, // on "D", error
+        0, // on ">", error
+        -46, // on "A", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        -46, // on "B", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        -46, // on "C", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        -46, // on "D", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
         0, // on "H", error
         0, // on "M", error
         0, // on "[", error
@@ -1693,17 +1734,18 @@ mod __parse__CursorUse {
         0, // on "[u", error
         0, // on "c", error
         0, // on "f", error
-        0, // on "m", error
+        -46, // on "m", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
         0, // on r#"[0-9]+"#, error
-        0, // on r#"[A-Z]"#, error
+        -46, // on r#"[A-Z]"#, reduce `Num = r#"[0-9]+"# => ActionFn(1);`
         0, // on r#"[\\x1B-\\x1B]"#, error
-        0, // on r#"[a-z]"#, error
+        -46, // on r#"[a-z]"#, reduce `Num = r#"[0-9]+"# => ActionFn(1);`
         // State 40
         0, // on "7", error
         0, // on "8", error
-        52, // on ";", goto 51
+        0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1743,8 +1785,9 @@ mod __parse__CursorUse {
         0, // on "7", error
         0, // on "8", error
         0, // on ";", error
-        53, // on ";0c", goto 52
-        54, // on ";c", goto 53
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1783,9 +1826,10 @@ mod __parse__CursorUse {
         // State 42
         0, // on "7", error
         0, // on "8", error
-        0, // on ";", error
-        -44, // on ";0c", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
-        -44, // on ";c", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        55, // on ";", goto 54
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1825,8 +1869,9 @@ mod __parse__CursorUse {
         0, // on "7", error
         0, // on "8", error
         0, // on ";", error
-        0, // on ";0c", error
-        0, // on ";c", error
+        56, // on ";0c", goto 55
+        57, // on ";c", goto 56
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1866,8 +1911,9 @@ mod __parse__CursorUse {
         0, // on "7", error
         0, // on "8", error
         0, // on ";", error
-        0, // on ";0c", error
-        0, // on ";c", error
+        -46, // on ";0c", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        -46, // on ";c", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1909,6 +1955,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1940,7 +1987,7 @@ mod __parse__CursorUse {
         0, // on "c", error
         0, // on "f", error
         0, // on "m", error
-        56, // on r#"[0-9]+"#, goto 55
+        45, // on r#"[0-9]+"#, goto 44
         0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
         0, // on r#"[a-z]"#, error
@@ -1950,6 +1997,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -1991,6 +2039,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2032,6 +2081,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2063,7 +2113,7 @@ mod __parse__CursorUse {
         0, // on "c", error
         0, // on "f", error
         0, // on "m", error
-        0, // on r#"[0-9]+"#, error
+        60, // on r#"[0-9]+"#, goto 59
         0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
         0, // on r#"[a-z]"#, error
@@ -2073,6 +2123,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2114,6 +2165,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2155,6 +2207,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2186,7 +2239,7 @@ mod __parse__CursorUse {
         0, // on "c", error
         0, // on "f", error
         0, // on "m", error
-        43, // on r#"[0-9]+"#, goto 42
+        0, // on r#"[0-9]+"#, error
         0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
         0, // on r#"[a-z]"#, error
@@ -2196,6 +2249,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2237,6 +2291,7 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2278,11 +2333,12 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
         0, // on "D", error
-        58, // on "H", goto 57
+        0, // on "H", error
         0, // on "M", error
         0, // on "[", error
         0, // on "[1J", error
@@ -2307,9 +2363,9 @@ mod __parse__CursorUse {
         0, // on "[s", error
         0, // on "[u", error
         0, // on "c", error
-        59, // on "f", goto 58
+        0, // on "f", error
         0, // on "m", error
-        0, // on r#"[0-9]+"#, error
+        45, // on r#"[0-9]+"#, goto 44
         0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
         0, // on r#"[a-z]"#, error
@@ -2319,11 +2375,12 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
         0, // on "D", error
-        -44, // on "H", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        0, // on "H", error
         0, // on "M", error
         0, // on "[", error
         0, // on "[1J", error
@@ -2348,7 +2405,7 @@ mod __parse__CursorUse {
         0, // on "[s", error
         0, // on "[u", error
         0, // on "c", error
-        -44, // on "f", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        0, // on "f", error
         0, // on "m", error
         0, // on r#"[0-9]+"#, error
         0, // on r#"[A-Z]"#, error
@@ -2358,8 +2415,9 @@ mod __parse__CursorUse {
         0, // on "7", error
         0, // on "8", error
         0, // on ";", error
-        60, // on ";0c", goto 59
-        61, // on ";c", goto 60
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2399,8 +2457,9 @@ mod __parse__CursorUse {
         0, // on "7", error
         0, // on "8", error
         0, // on ";", error
-        0, // on ";0c", error
-        0, // on ";c", error
+        62, // on ";0c", goto 61
+        63, // on ";c", goto 62
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2442,11 +2501,12 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
         0, // on "D", error
-        0, // on "H", error
+        64, // on "H", goto 63
         0, // on "M", error
         0, // on "[", error
         0, // on "[1J", error
@@ -2471,7 +2531,7 @@ mod __parse__CursorUse {
         0, // on "[s", error
         0, // on "[u", error
         0, // on "c", error
-        0, // on "f", error
+        65, // on "f", goto 64
         0, // on "m", error
         0, // on r#"[0-9]+"#, error
         0, // on r#"[A-Z]"#, error
@@ -2483,6 +2543,49 @@ mod __parse__CursorUse {
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
+        -46, // on "H", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        0, // on "M", error
+        0, // on "[", error
+        0, // on "[1J", error
+        0, // on "[1K", error
+        0, // on "[2J", error
+        0, // on "[2K", error
+        0, // on "[7h", error
+        0, // on "[7l", error
+        0, // on "[;H", error
+        0, // on "[;f", error
+        0, // on "[>", error
+        0, // on "[>0c", error
+        0, // on "[A", error
+        0, // on "[B", error
+        0, // on "[C", error
+        0, // on "[D", error
+        0, // on "[H", error
+        0, // on "[J", error
+        0, // on "[K", error
+        0, // on "[f", error
+        0, // on "[r", error
+        0, // on "[s", error
+        0, // on "[u", error
+        0, // on "c", error
+        -46, // on "f", reduce `Num = r#"[0-9]+"# => ActionFn(1);`
+        0, // on "m", error
+        0, // on r#"[0-9]+"#, error
+        0, // on r#"[A-Z]"#, error
+        0, // on r#"[\\x1B-\\x1B]"#, error
+        0, // on r#"[a-z]"#, error
+        // State 60
+        0, // on "7", error
+        0, // on "8", error
+        0, // on ";", error
+        66, // on ";0c", goto 65
+        67, // on ";c", goto 66
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2518,12 +2621,223 @@ mod __parse__CursorUse {
         0, // on r#"[A-Z]"#, error
         0, // on r#"[\\x1B-\\x1B]"#, error
         0, // on r#"[a-z]"#, error
-        // State 60
+        // State 61
         0, // on "7", error
         0, // on "8", error
         0, // on ";", error
         0, // on ";0c", error
         0, // on ";c", error
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
+        0, // on "H", error
+        0, // on "M", error
+        0, // on "[", error
+        0, // on "[1J", error
+        0, // on "[1K", error
+        0, // on "[2J", error
+        0, // on "[2K", error
+        0, // on "[7h", error
+        0, // on "[7l", error
+        0, // on "[;H", error
+        0, // on "[;f", error
+        0, // on "[>", error
+        0, // on "[>0c", error
+        0, // on "[A", error
+        0, // on "[B", error
+        0, // on "[C", error
+        0, // on "[D", error
+        0, // on "[H", error
+        0, // on "[J", error
+        0, // on "[K", error
+        0, // on "[f", error
+        0, // on "[r", error
+        0, // on "[s", error
+        0, // on "[u", error
+        0, // on "c", error
+        0, // on "f", error
+        0, // on "m", error
+        0, // on r#"[0-9]+"#, error
+        0, // on r#"[A-Z]"#, error
+        0, // on r#"[\\x1B-\\x1B]"#, error
+        0, // on r#"[a-z]"#, error
+        // State 62
+        0, // on "7", error
+        0, // on "8", error
+        0, // on ";", error
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
+        0, // on "H", error
+        0, // on "M", error
+        0, // on "[", error
+        0, // on "[1J", error
+        0, // on "[1K", error
+        0, // on "[2J", error
+        0, // on "[2K", error
+        0, // on "[7h", error
+        0, // on "[7l", error
+        0, // on "[;H", error
+        0, // on "[;f", error
+        0, // on "[>", error
+        0, // on "[>0c", error
+        0, // on "[A", error
+        0, // on "[B", error
+        0, // on "[C", error
+        0, // on "[D", error
+        0, // on "[H", error
+        0, // on "[J", error
+        0, // on "[K", error
+        0, // on "[f", error
+        0, // on "[r", error
+        0, // on "[s", error
+        0, // on "[u", error
+        0, // on "c", error
+        0, // on "f", error
+        0, // on "m", error
+        0, // on r#"[0-9]+"#, error
+        0, // on r#"[A-Z]"#, error
+        0, // on r#"[\\x1B-\\x1B]"#, error
+        0, // on r#"[a-z]"#, error
+        // State 63
+        0, // on "7", error
+        0, // on "8", error
+        0, // on ";", error
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
+        0, // on "H", error
+        0, // on "M", error
+        0, // on "[", error
+        0, // on "[1J", error
+        0, // on "[1K", error
+        0, // on "[2J", error
+        0, // on "[2K", error
+        0, // on "[7h", error
+        0, // on "[7l", error
+        0, // on "[;H", error
+        0, // on "[;f", error
+        0, // on "[>", error
+        0, // on "[>0c", error
+        0, // on "[A", error
+        0, // on "[B", error
+        0, // on "[C", error
+        0, // on "[D", error
+        0, // on "[H", error
+        0, // on "[J", error
+        0, // on "[K", error
+        0, // on "[f", error
+        0, // on "[r", error
+        0, // on "[s", error
+        0, // on "[u", error
+        0, // on "c", error
+        0, // on "f", error
+        0, // on "m", error
+        0, // on r#"[0-9]+"#, error
+        0, // on r#"[A-Z]"#, error
+        0, // on r#"[\\x1B-\\x1B]"#, error
+        0, // on r#"[a-z]"#, error
+        // State 64
+        0, // on "7", error
+        0, // on "8", error
+        0, // on ";", error
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
+        0, // on "H", error
+        0, // on "M", error
+        0, // on "[", error
+        0, // on "[1J", error
+        0, // on "[1K", error
+        0, // on "[2J", error
+        0, // on "[2K", error
+        0, // on "[7h", error
+        0, // on "[7l", error
+        0, // on "[;H", error
+        0, // on "[;f", error
+        0, // on "[>", error
+        0, // on "[>0c", error
+        0, // on "[A", error
+        0, // on "[B", error
+        0, // on "[C", error
+        0, // on "[D", error
+        0, // on "[H", error
+        0, // on "[J", error
+        0, // on "[K", error
+        0, // on "[f", error
+        0, // on "[r", error
+        0, // on "[s", error
+        0, // on "[u", error
+        0, // on "c", error
+        0, // on "f", error
+        0, // on "m", error
+        0, // on r#"[0-9]+"#, error
+        0, // on r#"[A-Z]"#, error
+        0, // on r#"[\\x1B-\\x1B]"#, error
+        0, // on r#"[a-z]"#, error
+        // State 65
+        0, // on "7", error
+        0, // on "8", error
+        0, // on ";", error
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
+        0, // on "A", error
+        0, // on "B", error
+        0, // on "C", error
+        0, // on "D", error
+        0, // on "H", error
+        0, // on "M", error
+        0, // on "[", error
+        0, // on "[1J", error
+        0, // on "[1K", error
+        0, // on "[2J", error
+        0, // on "[2K", error
+        0, // on "[7h", error
+        0, // on "[7l", error
+        0, // on "[;H", error
+        0, // on "[;f", error
+        0, // on "[>", error
+        0, // on "[>0c", error
+        0, // on "[A", error
+        0, // on "[B", error
+        0, // on "[C", error
+        0, // on "[D", error
+        0, // on "[H", error
+        0, // on "[J", error
+        0, // on "[K", error
+        0, // on "[f", error
+        0, // on "[r", error
+        0, // on "[s", error
+        0, // on "[u", error
+        0, // on "c", error
+        0, // on "f", error
+        0, // on "m", error
+        0, // on r#"[0-9]+"#, error
+        0, // on r#"[A-Z]"#, error
+        0, // on r#"[\\x1B-\\x1B]"#, error
+        0, // on r#"[a-z]"#, error
+        // State 66
+        0, // on "7", error
+        0, // on "8", error
+        0, // on ";", error
+        0, // on ";0c", error
+        0, // on ";c", error
+        0, // on ">", error
         0, // on "A", error
         0, // on "B", error
         0, // on "C", error
@@ -2562,66 +2876,72 @@ mod __parse__CursorUse {
     ];
     const __EOF_ACTION: &'static [i32] = &[
         0, // on EOF, error
-        -45, // on EOF, reduce `__CursorUse = CursorUse => ActionFn(0);`
+        -47, // on EOF, reduce `__CursorUse = CursorUse => ActionFn(0);`
         0, // on EOF, error
         0, // on EOF, error
         0, // on EOF, error
         0, // on EOF, error
-        -25, // on EOF, reduce `CursorUse = Esc, "7" => ActionFn(29);`
-        -27, // on EOF, reduce `CursorUse = Esc, "8" => ActionFn(31);`
-        -28, // on EOF, reduce `CursorUse = Esc, "D" => ActionFn(32);`
-        -29, // on EOF, reduce `CursorUse = Esc, "M" => ActionFn(33);`
+        -27, // on EOF, reduce `CursorUse = Esc, "7" => ActionFn(31);`
+        -29, // on EOF, reduce `CursorUse = Esc, "8" => ActionFn(33);`
         0, // on EOF, error
-        -34, // on EOF, reduce `CursorUse = Esc, "[1J" => ActionFn(38);`
-        -31, // on EOF, reduce `CursorUse = Esc, "[1K" => ActionFn(35);`
-        -35, // on EOF, reduce `CursorUse = Esc, "[2J" => ActionFn(39);`
-        -32, // on EOF, reduce `CursorUse = Esc, "[2K" => ActionFn(36);`
+        -30, // on EOF, reduce `CursorUse = Esc, "D" => ActionFn(34);`
+        -31, // on EOF, reduce `CursorUse = Esc, "M" => ActionFn(35);`
+        0, // on EOF, error
+        -36, // on EOF, reduce `CursorUse = Esc, "[1J" => ActionFn(40);`
+        -33, // on EOF, reduce `CursorUse = Esc, "[1K" => ActionFn(37);`
+        -37, // on EOF, reduce `CursorUse = Esc, "[2J" => ActionFn(41);`
+        -34, // on EOF, reduce `CursorUse = Esc, "[2K" => ActionFn(38);`
         -1, // on EOF, reduce `CursorUse = Esc, "[7h" => ActionFn(5);`
         -2, // on EOF, reduce `CursorUse = Esc, "[7l" => ActionFn(6);`
-        -14, // on EOF, reduce `CursorUse = Esc, "[;H" => ActionFn(18);`
-        -15, // on EOF, reduce `CursorUse = Esc, "[;f" => ActionFn(19);`
+        -16, // on EOF, reduce `CursorUse = Esc, "[;H" => ActionFn(20);`
+        -17, // on EOF, reduce `CursorUse = Esc, "[;f" => ActionFn(21);`
         0, // on EOF, error
         -4, // on EOF, reduce `CursorUse = Esc, "[>0c" => ActionFn(8);`
-        -20, // on EOF, reduce `CursorUse = Esc, "[A" => ActionFn(24);`
-        -21, // on EOF, reduce `CursorUse = Esc, "[B" => ActionFn(25);`
-        -22, // on EOF, reduce `CursorUse = Esc, "[C" => ActionFn(26);`
-        -23, // on EOF, reduce `CursorUse = Esc, "[D" => ActionFn(27);`
-        -12, // on EOF, reduce `CursorUse = Esc, "[H" => ActionFn(16);`
-        -33, // on EOF, reduce `CursorUse = Esc, "[J" => ActionFn(37);`
-        -30, // on EOF, reduce `CursorUse = Esc, "[K" => ActionFn(34);`
-        -13, // on EOF, reduce `CursorUse = Esc, "[f" => ActionFn(17);`
+        -22, // on EOF, reduce `CursorUse = Esc, "[A" => ActionFn(26);`
+        -23, // on EOF, reduce `CursorUse = Esc, "[B" => ActionFn(27);`
+        -24, // on EOF, reduce `CursorUse = Esc, "[C" => ActionFn(28);`
+        -25, // on EOF, reduce `CursorUse = Esc, "[D" => ActionFn(29);`
+        -14, // on EOF, reduce `CursorUse = Esc, "[H" => ActionFn(18);`
+        -35, // on EOF, reduce `CursorUse = Esc, "[J" => ActionFn(39);`
+        -32, // on EOF, reduce `CursorUse = Esc, "[K" => ActionFn(36);`
+        -15, // on EOF, reduce `CursorUse = Esc, "[f" => ActionFn(19);`
         -3, // on EOF, reduce `CursorUse = Esc, "[r" => ActionFn(7);`
-        -24, // on EOF, reduce `CursorUse = Esc, "[s" => ActionFn(28);`
-        -26, // on EOF, reduce `CursorUse = Esc, "[u" => ActionFn(30);`
-        -9, // on EOF, reduce `CursorUse = Esc, "c" => ActionFn(13);`
-        0, // on EOF, error
-        -39, // on EOF, reduce `CursorUse = Esc, "[", Maj => ActionFn(43);`
-        -40, // on EOF, reduce `CursorUse = Esc, "[", Min => ActionFn(44);`
+        -26, // on EOF, reduce `CursorUse = Esc, "[s" => ActionFn(30);`
+        -28, // on EOF, reduce `CursorUse = Esc, "[u" => ActionFn(32);`
+        -11, // on EOF, reduce `CursorUse = Esc, "c" => ActionFn(15);`
         0, // on EOF, error
         0, // on EOF, error
-        -42, // on EOF, reduce `Maj = r#"[A-Z]"# => ActionFn(3);`
-        -43, // on EOF, reduce `Min = r#"[a-z]"# => ActionFn(4);`
+        -41, // on EOF, reduce `CursorUse = Esc, "[", Maj => ActionFn(45);`
+        -42, // on EOF, reduce `CursorUse = Esc, "[", Min => ActionFn(46);`
+        0, // on EOF, error
+        0, // on EOF, error
+        -44, // on EOF, reduce `Maj = r#"[A-Z]"# => ActionFn(3);`
+        -45, // on EOF, reduce `Min = r#"[a-z]"# => ActionFn(4);`
         0, // on EOF, error
         0, // on EOF, error
         0, // on EOF, error
-        -37, // on EOF, reduce `CursorUse = Esc, "[", Num, Maj => ActionFn(41);`
-        -38, // on EOF, reduce `CursorUse = Esc, "[", Num, Min => ActionFn(42);`
         0, // on EOF, error
-        -16, // on EOF, reduce `CursorUse = Esc, "[", Num, "A" => ActionFn(20);`
-        -17, // on EOF, reduce `CursorUse = Esc, "[", Num, "B" => ActionFn(21);`
-        -18, // on EOF, reduce `CursorUse = Esc, "[", Num, "C" => ActionFn(22);`
-        -19, // on EOF, reduce `CursorUse = Esc, "[", Num, "D" => ActionFn(23);`
-        -36, // on EOF, reduce `CursorUse = Esc, "[", Num, "m" => ActionFn(40);`
+        -39, // on EOF, reduce `CursorUse = Esc, "[", Num, Maj => ActionFn(43);`
+        -40, // on EOF, reduce `CursorUse = Esc, "[", Num, Min => ActionFn(44);`
+        0, // on EOF, error
+        -18, // on EOF, reduce `CursorUse = Esc, "[", Num, "A" => ActionFn(22);`
+        -19, // on EOF, reduce `CursorUse = Esc, "[", Num, "B" => ActionFn(23);`
+        -20, // on EOF, reduce `CursorUse = Esc, "[", Num, "C" => ActionFn(24);`
+        -21, // on EOF, reduce `CursorUse = Esc, "[", Num, "D" => ActionFn(25);`
+        -38, // on EOF, reduce `CursorUse = Esc, "[", Num, "m" => ActionFn(42);`
         0, // on EOF, error
         -6, // on EOF, reduce `CursorUse = Num, ";", Num, ";0c" => ActionFn(10);`
         -5, // on EOF, reduce `CursorUse = Num, ";", Num, ";c" => ActionFn(9);`
         0, // on EOF, error
         0, // on EOF, error
         0, // on EOF, error
-        -10, // on EOF, reduce `CursorUse = Esc, "[", Num, ";", Num, "H" => ActionFn(14);`
-        -11, // on EOF, reduce `CursorUse = Esc, "[", Num, ";", Num, "f" => ActionFn(15);`
-        -8, // on EOF, reduce `CursorUse = Esc, "[>", Num, ";", Num, ";0c" => ActionFn(12);`
-        -7, // on EOF, reduce `CursorUse = Esc, "[>", Num, ";", Num, ";c" => ActionFn(11);`
+        0, // on EOF, error
+        -8, // on EOF, reduce `CursorUse = Esc, ">", Num, ";", Num, ";0c" => ActionFn(12);`
+        -7, // on EOF, reduce `CursorUse = Esc, ">", Num, ";", Num, ";c" => ActionFn(11);`
+        -12, // on EOF, reduce `CursorUse = Esc, "[", Num, ";", Num, "H" => ActionFn(16);`
+        -13, // on EOF, reduce `CursorUse = Esc, "[", Num, ";", Num, "f" => ActionFn(17);`
+        -10, // on EOF, reduce `CursorUse = Esc, "[>", Num, ";", Num, ";0c" => ActionFn(14);`
+        -9, // on EOF, reduce `CursorUse = Esc, "[>", Num, ";", Num, ";c" => ActionFn(13);`
     ];
     const __GOTO: &'static [i32] = &[
         // State 0
@@ -2685,7 +3005,7 @@ mod __parse__CursorUse {
         0, // on Esc, error
         0, // on Maj, error
         0, // on Min, error
-        0, // on Num, error
+        36, // on Num, goto 35
         0, // on __CursorUse, error
         // State 9
         0, // on CursorUse, error
@@ -2697,16 +3017,16 @@ mod __parse__CursorUse {
         // State 10
         0, // on CursorUse, error
         0, // on Esc, error
-        35, // on Maj, goto 34
-        36, // on Min, goto 35
-        37, // on Num, goto 36
+        0, // on Maj, error
+        0, // on Min, error
+        0, // on Num, error
         0, // on __CursorUse, error
         // State 11
         0, // on CursorUse, error
         0, // on Esc, error
-        0, // on Maj, error
-        0, // on Min, error
-        0, // on Num, error
+        37, // on Maj, goto 36
+        38, // on Min, goto 37
+        39, // on Num, goto 38
         0, // on __CursorUse, error
         // State 12
         0, // on CursorUse, error
@@ -2762,14 +3082,14 @@ mod __parse__CursorUse {
         0, // on Esc, error
         0, // on Maj, error
         0, // on Min, error
-        41, // on Num, goto 40
+        0, // on Num, error
         0, // on __CursorUse, error
         // State 20
         0, // on CursorUse, error
         0, // on Esc, error
         0, // on Maj, error
         0, // on Min, error
-        0, // on Num, error
+        43, // on Num, goto 42
         0, // on __CursorUse, error
         // State 21
         0, // on CursorUse, error
@@ -2860,14 +3180,14 @@ mod __parse__CursorUse {
         0, // on Esc, error
         0, // on Maj, error
         0, // on Min, error
-        42, // on Num, goto 41
+        0, // on Num, error
         0, // on __CursorUse, error
         // State 34
         0, // on CursorUse, error
         0, // on Esc, error
         0, // on Maj, error
         0, // on Min, error
-        0, // on Num, error
+        44, // on Num, goto 43
         0, // on __CursorUse, error
         // State 35
         0, // on CursorUse, error
@@ -2879,8 +3199,8 @@ mod __parse__CursorUse {
         // State 36
         0, // on CursorUse, error
         0, // on Esc, error
-        44, // on Maj, goto 43
-        45, // on Min, goto 44
+        0, // on Maj, error
+        0, // on Min, error
         0, // on Num, error
         0, // on __CursorUse, error
         // State 37
@@ -2893,8 +3213,8 @@ mod __parse__CursorUse {
         // State 38
         0, // on CursorUse, error
         0, // on Esc, error
-        0, // on Maj, error
-        0, // on Min, error
+        47, // on Maj, goto 46
+        48, // on Min, goto 47
         0, // on Num, error
         0, // on __CursorUse, error
         // State 39
@@ -2944,7 +3264,7 @@ mod __parse__CursorUse {
         0, // on Esc, error
         0, // on Maj, error
         0, // on Min, error
-        55, // on Num, goto 54
+        58, // on Num, goto 57
         0, // on __CursorUse, error
         // State 46
         0, // on CursorUse, error
@@ -2965,7 +3285,7 @@ mod __parse__CursorUse {
         0, // on Esc, error
         0, // on Maj, error
         0, // on Min, error
-        0, // on Num, error
+        59, // on Num, goto 58
         0, // on __CursorUse, error
         // State 49
         0, // on CursorUse, error
@@ -2986,7 +3306,7 @@ mod __parse__CursorUse {
         0, // on Esc, error
         0, // on Maj, error
         0, // on Min, error
-        57, // on Num, goto 56
+        0, // on Num, error
         0, // on __CursorUse, error
         // State 52
         0, // on CursorUse, error
@@ -3007,7 +3327,7 @@ mod __parse__CursorUse {
         0, // on Esc, error
         0, // on Maj, error
         0, // on Min, error
-        0, // on Num, error
+        61, // on Num, goto 60
         0, // on __CursorUse, error
         // State 55
         0, // on CursorUse, error
@@ -3045,6 +3365,48 @@ mod __parse__CursorUse {
         0, // on Num, error
         0, // on __CursorUse, error
         // State 60
+        0, // on CursorUse, error
+        0, // on Esc, error
+        0, // on Maj, error
+        0, // on Min, error
+        0, // on Num, error
+        0, // on __CursorUse, error
+        // State 61
+        0, // on CursorUse, error
+        0, // on Esc, error
+        0, // on Maj, error
+        0, // on Min, error
+        0, // on Num, error
+        0, // on __CursorUse, error
+        // State 62
+        0, // on CursorUse, error
+        0, // on Esc, error
+        0, // on Maj, error
+        0, // on Min, error
+        0, // on Num, error
+        0, // on __CursorUse, error
+        // State 63
+        0, // on CursorUse, error
+        0, // on Esc, error
+        0, // on Maj, error
+        0, // on Min, error
+        0, // on Num, error
+        0, // on __CursorUse, error
+        // State 64
+        0, // on CursorUse, error
+        0, // on Esc, error
+        0, // on Maj, error
+        0, // on Min, error
+        0, // on Num, error
+        0, // on __CursorUse, error
+        // State 65
+        0, // on CursorUse, error
+        0, // on Esc, error
+        0, // on Maj, error
+        0, // on Min, error
+        0, // on Num, error
+        0, // on __CursorUse, error
+        // State 66
         0, // on CursorUse, error
         0, // on Esc, error
         0, // on Maj, error
@@ -3108,6 +3470,7 @@ mod __parse__CursorUse {
                 (_, (37, _), _) if true => 37,
                 (_, (38, _), _) if true => 38,
                 (_, (39, _), _) if true => 39,
+                (_, (40, _), _) if true => 40,
                 _ => {
                     return Err(__lalrpop_util::ParseError::UnrecognizedToken {
                         token: Some(__lookahead),
@@ -3117,7 +3480,7 @@ mod __parse__CursorUse {
             };
             loop {
                 let __state = *__states.last().unwrap() as usize;
-                let __action = __ACTION[__state * 40 + __integer];
+                let __action = __ACTION[__state * 41 + __integer];
                 if __action > 0 {
                     let __symbol = match __integer {
                         0 => match __lookahead.1 {
@@ -3141,143 +3504,147 @@ mod __parse__CursorUse {
                             _ => unreachable!(),
                         },
                         5 => match __lookahead.1 {
-                            (5, __tok0) => __Symbol::Term_22A_22(__tok0),
+                            (5, __tok0) => __Symbol::Term_22_3e_22(__tok0),
                             _ => unreachable!(),
                         },
                         6 => match __lookahead.1 {
-                            (6, __tok0) => __Symbol::Term_22B_22(__tok0),
+                            (6, __tok0) => __Symbol::Term_22A_22(__tok0),
                             _ => unreachable!(),
                         },
                         7 => match __lookahead.1 {
-                            (7, __tok0) => __Symbol::Term_22C_22(__tok0),
+                            (7, __tok0) => __Symbol::Term_22B_22(__tok0),
                             _ => unreachable!(),
                         },
                         8 => match __lookahead.1 {
-                            (8, __tok0) => __Symbol::Term_22D_22(__tok0),
+                            (8, __tok0) => __Symbol::Term_22C_22(__tok0),
                             _ => unreachable!(),
                         },
                         9 => match __lookahead.1 {
-                            (9, __tok0) => __Symbol::Term_22H_22(__tok0),
+                            (9, __tok0) => __Symbol::Term_22D_22(__tok0),
                             _ => unreachable!(),
                         },
                         10 => match __lookahead.1 {
-                            (10, __tok0) => __Symbol::Term_22M_22(__tok0),
+                            (10, __tok0) => __Symbol::Term_22H_22(__tok0),
                             _ => unreachable!(),
                         },
                         11 => match __lookahead.1 {
-                            (11, __tok0) => __Symbol::Term_22_5b_22(__tok0),
+                            (11, __tok0) => __Symbol::Term_22M_22(__tok0),
                             _ => unreachable!(),
                         },
                         12 => match __lookahead.1 {
-                            (12, __tok0) => __Symbol::Term_22_5b1J_22(__tok0),
+                            (12, __tok0) => __Symbol::Term_22_5b_22(__tok0),
                             _ => unreachable!(),
                         },
                         13 => match __lookahead.1 {
-                            (13, __tok0) => __Symbol::Term_22_5b1K_22(__tok0),
+                            (13, __tok0) => __Symbol::Term_22_5b1J_22(__tok0),
                             _ => unreachable!(),
                         },
                         14 => match __lookahead.1 {
-                            (14, __tok0) => __Symbol::Term_22_5b2J_22(__tok0),
+                            (14, __tok0) => __Symbol::Term_22_5b1K_22(__tok0),
                             _ => unreachable!(),
                         },
                         15 => match __lookahead.1 {
-                            (15, __tok0) => __Symbol::Term_22_5b2K_22(__tok0),
+                            (15, __tok0) => __Symbol::Term_22_5b2J_22(__tok0),
                             _ => unreachable!(),
                         },
                         16 => match __lookahead.1 {
-                            (16, __tok0) => __Symbol::Term_22_5b7h_22(__tok0),
+                            (16, __tok0) => __Symbol::Term_22_5b2K_22(__tok0),
                             _ => unreachable!(),
                         },
                         17 => match __lookahead.1 {
-                            (17, __tok0) => __Symbol::Term_22_5b7l_22(__tok0),
+                            (17, __tok0) => __Symbol::Term_22_5b7h_22(__tok0),
                             _ => unreachable!(),
                         },
                         18 => match __lookahead.1 {
-                            (18, __tok0) => __Symbol::Term_22_5b_3bH_22(__tok0),
+                            (18, __tok0) => __Symbol::Term_22_5b7l_22(__tok0),
                             _ => unreachable!(),
                         },
                         19 => match __lookahead.1 {
-                            (19, __tok0) => __Symbol::Term_22_5b_3bf_22(__tok0),
+                            (19, __tok0) => __Symbol::Term_22_5b_3bH_22(__tok0),
                             _ => unreachable!(),
                         },
                         20 => match __lookahead.1 {
-                            (20, __tok0) => __Symbol::Term_22_5b_3e_22(__tok0),
+                            (20, __tok0) => __Symbol::Term_22_5b_3bf_22(__tok0),
                             _ => unreachable!(),
                         },
                         21 => match __lookahead.1 {
-                            (21, __tok0) => __Symbol::Term_22_5b_3e0c_22(__tok0),
+                            (21, __tok0) => __Symbol::Term_22_5b_3e_22(__tok0),
                             _ => unreachable!(),
                         },
                         22 => match __lookahead.1 {
-                            (22, __tok0) => __Symbol::Term_22_5bA_22(__tok0),
+                            (22, __tok0) => __Symbol::Term_22_5b_3e0c_22(__tok0),
                             _ => unreachable!(),
                         },
                         23 => match __lookahead.1 {
-                            (23, __tok0) => __Symbol::Term_22_5bB_22(__tok0),
+                            (23, __tok0) => __Symbol::Term_22_5bA_22(__tok0),
                             _ => unreachable!(),
                         },
                         24 => match __lookahead.1 {
-                            (24, __tok0) => __Symbol::Term_22_5bC_22(__tok0),
+                            (24, __tok0) => __Symbol::Term_22_5bB_22(__tok0),
                             _ => unreachable!(),
                         },
                         25 => match __lookahead.1 {
-                            (25, __tok0) => __Symbol::Term_22_5bD_22(__tok0),
+                            (25, __tok0) => __Symbol::Term_22_5bC_22(__tok0),
                             _ => unreachable!(),
                         },
                         26 => match __lookahead.1 {
-                            (26, __tok0) => __Symbol::Term_22_5bH_22(__tok0),
+                            (26, __tok0) => __Symbol::Term_22_5bD_22(__tok0),
                             _ => unreachable!(),
                         },
                         27 => match __lookahead.1 {
-                            (27, __tok0) => __Symbol::Term_22_5bJ_22(__tok0),
+                            (27, __tok0) => __Symbol::Term_22_5bH_22(__tok0),
                             _ => unreachable!(),
                         },
                         28 => match __lookahead.1 {
-                            (28, __tok0) => __Symbol::Term_22_5bK_22(__tok0),
+                            (28, __tok0) => __Symbol::Term_22_5bJ_22(__tok0),
                             _ => unreachable!(),
                         },
                         29 => match __lookahead.1 {
-                            (29, __tok0) => __Symbol::Term_22_5bf_22(__tok0),
+                            (29, __tok0) => __Symbol::Term_22_5bK_22(__tok0),
                             _ => unreachable!(),
                         },
                         30 => match __lookahead.1 {
-                            (30, __tok0) => __Symbol::Term_22_5br_22(__tok0),
+                            (30, __tok0) => __Symbol::Term_22_5bf_22(__tok0),
                             _ => unreachable!(),
                         },
                         31 => match __lookahead.1 {
-                            (31, __tok0) => __Symbol::Term_22_5bs_22(__tok0),
+                            (31, __tok0) => __Symbol::Term_22_5br_22(__tok0),
                             _ => unreachable!(),
                         },
                         32 => match __lookahead.1 {
-                            (32, __tok0) => __Symbol::Term_22_5bu_22(__tok0),
+                            (32, __tok0) => __Symbol::Term_22_5bs_22(__tok0),
                             _ => unreachable!(),
                         },
                         33 => match __lookahead.1 {
-                            (33, __tok0) => __Symbol::Term_22c_22(__tok0),
+                            (33, __tok0) => __Symbol::Term_22_5bu_22(__tok0),
                             _ => unreachable!(),
                         },
                         34 => match __lookahead.1 {
-                            (34, __tok0) => __Symbol::Term_22f_22(__tok0),
+                            (34, __tok0) => __Symbol::Term_22c_22(__tok0),
                             _ => unreachable!(),
                         },
                         35 => match __lookahead.1 {
-                            (35, __tok0) => __Symbol::Term_22m_22(__tok0),
+                            (35, __tok0) => __Symbol::Term_22f_22(__tok0),
                             _ => unreachable!(),
                         },
                         36 => match __lookahead.1 {
-                            (36, __tok0) => __Symbol::Termr_23_22_5b0_2d9_5d_2b_22_23(__tok0),
+                            (36, __tok0) => __Symbol::Term_22m_22(__tok0),
                             _ => unreachable!(),
                         },
                         37 => match __lookahead.1 {
-                            (37, __tok0) => __Symbol::Termr_23_22_5bA_2dZ_5d_22_23(__tok0),
+                            (37, __tok0) => __Symbol::Termr_23_22_5b0_2d9_5d_2b_22_23(__tok0),
                             _ => unreachable!(),
                         },
                         38 => match __lookahead.1 {
-                            (38, __tok0) => __Symbol::Termr_23_22_5b_5c_5cx1B_2d_5c_5cx1B_5d_22_23(__tok0),
+                            (38, __tok0) => __Symbol::Termr_23_22_5bA_2dZ_5d_22_23(__tok0),
                             _ => unreachable!(),
                         },
                         39 => match __lookahead.1 {
-                            (39, __tok0) => __Symbol::Termr_23_22_5ba_2dz_5d_22_23(__tok0),
+                            (39, __tok0) => __Symbol::Termr_23_22_5b_5c_5cx1B_2d_5c_5cx1B_5d_22_23(__tok0),
+                            _ => unreachable!(),
+                        },
+                        40 => match __lookahead.1 {
+                            (40, __tok0) => __Symbol::Termr_23_22_5ba_2dz_5d_22_23(__tok0),
                             _ => unreachable!(),
                         },
                         _ => unreachable!(),
@@ -3401,12 +3768,12 @@ mod __parse__CursorUse {
                 0
             }
             7 => {
-                // CursorUse = Esc, "[>", Num, ";", Num, ";c" => ActionFn(11);
+                // CursorUse = Esc, ">", Num, ";", Num, ";c" => ActionFn(11);
                 let __sym5 = __pop_Term_22_3bc_22(__symbols);
                 let __sym4 = __pop_NtNum(__symbols);
                 let __sym3 = __pop_Term_22_3b_22(__symbols);
                 let __sym2 = __pop_NtNum(__symbols);
-                let __sym1 = __pop_Term_22_5b_3e_22(__symbols);
+                let __sym1 = __pop_Term_22_3e_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym5.2.clone();
@@ -3417,12 +3784,12 @@ mod __parse__CursorUse {
                 0
             }
             8 => {
-                // CursorUse = Esc, "[>", Num, ";", Num, ";0c" => ActionFn(12);
+                // CursorUse = Esc, ">", Num, ";", Num, ";0c" => ActionFn(12);
                 let __sym5 = __pop_Term_22_3b0c_22(__symbols);
                 let __sym4 = __pop_NtNum(__symbols);
                 let __sym3 = __pop_Term_22_3b_22(__symbols);
                 let __sym2 = __pop_NtNum(__symbols);
-                let __sym1 = __pop_Term_22_5b_3e_22(__symbols);
+                let __sym1 = __pop_Term_22_3e_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym5.2.clone();
@@ -3433,24 +3800,28 @@ mod __parse__CursorUse {
                 0
             }
             9 => {
-                // CursorUse = Esc, "c" => ActionFn(13);
-                let __sym1 = __pop_Term_22c_22(__symbols);
+                // CursorUse = Esc, "[>", Num, ";", Num, ";c" => ActionFn(13);
+                let __sym5 = __pop_Term_22_3bc_22(__symbols);
+                let __sym4 = __pop_NtNum(__symbols);
+                let __sym3 = __pop_Term_22_3b_22(__symbols);
+                let __sym2 = __pop_NtNum(__symbols);
+                let __sym1 = __pop_Term_22_5b_3e_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
-                let __end = __sym1.2.clone();
-                let __nt = super::__action13::<>(input, __sym0, __sym1);
+                let __end = __sym5.2.clone();
+                let __nt = super::__action13::<>(input, __sym0, __sym1, __sym2, __sym3, __sym4, __sym5);
                 let __states_len = __states.len();
-                __states.truncate(__states_len - 2);
+                __states.truncate(__states_len - 6);
                 __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
                 0
             }
             10 => {
-                // CursorUse = Esc, "[", Num, ";", Num, "H" => ActionFn(14);
-                let __sym5 = __pop_Term_22H_22(__symbols);
+                // CursorUse = Esc, "[>", Num, ";", Num, ";0c" => ActionFn(14);
+                let __sym5 = __pop_Term_22_3b0c_22(__symbols);
                 let __sym4 = __pop_NtNum(__symbols);
                 let __sym3 = __pop_Term_22_3b_22(__symbols);
                 let __sym2 = __pop_NtNum(__symbols);
-                let __sym1 = __pop_Term_22_5b_22(__symbols);
+                let __sym1 = __pop_Term_22_5b_3e_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym5.2.clone();
@@ -3461,7 +3832,35 @@ mod __parse__CursorUse {
                 0
             }
             11 => {
-                // CursorUse = Esc, "[", Num, ";", Num, "f" => ActionFn(15);
+                // CursorUse = Esc, "c" => ActionFn(15);
+                let __sym1 = __pop_Term_22c_22(__symbols);
+                let __sym0 = __pop_NtEsc(__symbols);
+                let __start = __sym0.0.clone();
+                let __end = __sym1.2.clone();
+                let __nt = super::__action15::<>(input, __sym0, __sym1);
+                let __states_len = __states.len();
+                __states.truncate(__states_len - 2);
+                __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
+                0
+            }
+            12 => {
+                // CursorUse = Esc, "[", Num, ";", Num, "H" => ActionFn(16);
+                let __sym5 = __pop_Term_22H_22(__symbols);
+                let __sym4 = __pop_NtNum(__symbols);
+                let __sym3 = __pop_Term_22_3b_22(__symbols);
+                let __sym2 = __pop_NtNum(__symbols);
+                let __sym1 = __pop_Term_22_5b_22(__symbols);
+                let __sym0 = __pop_NtEsc(__symbols);
+                let __start = __sym0.0.clone();
+                let __end = __sym5.2.clone();
+                let __nt = super::__action16::<>(input, __sym0, __sym1, __sym2, __sym3, __sym4, __sym5);
+                let __states_len = __states.len();
+                __states.truncate(__states_len - 6);
+                __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
+                0
+            }
+            13 => {
+                // CursorUse = Esc, "[", Num, ";", Num, "f" => ActionFn(17);
                 let __sym5 = __pop_Term_22f_22(__symbols);
                 let __sym4 = __pop_NtNum(__symbols);
                 let __sym3 = __pop_Term_22_3b_22(__symbols);
@@ -3470,39 +3869,15 @@ mod __parse__CursorUse {
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym5.2.clone();
-                let __nt = super::__action15::<>(input, __sym0, __sym1, __sym2, __sym3, __sym4, __sym5);
+                let __nt = super::__action17::<>(input, __sym0, __sym1, __sym2, __sym3, __sym4, __sym5);
                 let __states_len = __states.len();
                 __states.truncate(__states_len - 6);
                 __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
                 0
             }
-            12 => {
-                // CursorUse = Esc, "[H" => ActionFn(16);
-                let __sym1 = __pop_Term_22_5bH_22(__symbols);
-                let __sym0 = __pop_NtEsc(__symbols);
-                let __start = __sym0.0.clone();
-                let __end = __sym1.2.clone();
-                let __nt = super::__action16::<>(input, __sym0, __sym1);
-                let __states_len = __states.len();
-                __states.truncate(__states_len - 2);
-                __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
-                0
-            }
-            13 => {
-                // CursorUse = Esc, "[f" => ActionFn(17);
-                let __sym1 = __pop_Term_22_5bf_22(__symbols);
-                let __sym0 = __pop_NtEsc(__symbols);
-                let __start = __sym0.0.clone();
-                let __end = __sym1.2.clone();
-                let __nt = super::__action17::<>(input, __sym0, __sym1);
-                let __states_len = __states.len();
-                __states.truncate(__states_len - 2);
-                __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
-                0
-            }
             14 => {
-                // CursorUse = Esc, "[;H" => ActionFn(18);
-                let __sym1 = __pop_Term_22_5b_3bH_22(__symbols);
+                // CursorUse = Esc, "[H" => ActionFn(18);
+                let __sym1 = __pop_Term_22_5bH_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3513,8 +3888,8 @@ mod __parse__CursorUse {
                 0
             }
             15 => {
-                // CursorUse = Esc, "[;f" => ActionFn(19);
-                let __sym1 = __pop_Term_22_5b_3bf_22(__symbols);
+                // CursorUse = Esc, "[f" => ActionFn(19);
+                let __sym1 = __pop_Term_22_5bf_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3525,36 +3900,32 @@ mod __parse__CursorUse {
                 0
             }
             16 => {
-                // CursorUse = Esc, "[", Num, "A" => ActionFn(20);
-                let __sym3 = __pop_Term_22A_22(__symbols);
-                let __sym2 = __pop_NtNum(__symbols);
-                let __sym1 = __pop_Term_22_5b_22(__symbols);
+                // CursorUse = Esc, "[;H" => ActionFn(20);
+                let __sym1 = __pop_Term_22_5b_3bH_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
-                let __end = __sym3.2.clone();
-                let __nt = super::__action20::<>(input, __sym0, __sym1, __sym2, __sym3);
+                let __end = __sym1.2.clone();
+                let __nt = super::__action20::<>(input, __sym0, __sym1);
                 let __states_len = __states.len();
-                __states.truncate(__states_len - 4);
+                __states.truncate(__states_len - 2);
                 __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
                 0
             }
             17 => {
-                // CursorUse = Esc, "[", Num, "B" => ActionFn(21);
-                let __sym3 = __pop_Term_22B_22(__symbols);
-                let __sym2 = __pop_NtNum(__symbols);
-                let __sym1 = __pop_Term_22_5b_22(__symbols);
+                // CursorUse = Esc, "[;f" => ActionFn(21);
+                let __sym1 = __pop_Term_22_5b_3bf_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
-                let __end = __sym3.2.clone();
-                let __nt = super::__action21::<>(input, __sym0, __sym1, __sym2, __sym3);
+                let __end = __sym1.2.clone();
+                let __nt = super::__action21::<>(input, __sym0, __sym1);
                 let __states_len = __states.len();
-                __states.truncate(__states_len - 4);
+                __states.truncate(__states_len - 2);
                 __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
                 0
             }
             18 => {
-                // CursorUse = Esc, "[", Num, "C" => ActionFn(22);
-                let __sym3 = __pop_Term_22C_22(__symbols);
+                // CursorUse = Esc, "[", Num, "A" => ActionFn(22);
+                let __sym3 = __pop_Term_22A_22(__symbols);
                 let __sym2 = __pop_NtNum(__symbols);
                 let __sym1 = __pop_Term_22_5b_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
@@ -3567,8 +3938,8 @@ mod __parse__CursorUse {
                 0
             }
             19 => {
-                // CursorUse = Esc, "[", Num, "D" => ActionFn(23);
-                let __sym3 = __pop_Term_22D_22(__symbols);
+                // CursorUse = Esc, "[", Num, "B" => ActionFn(23);
+                let __sym3 = __pop_Term_22B_22(__symbols);
                 let __sym2 = __pop_NtNum(__symbols);
                 let __sym1 = __pop_Term_22_5b_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
@@ -3581,32 +3952,36 @@ mod __parse__CursorUse {
                 0
             }
             20 => {
-                // CursorUse = Esc, "[A" => ActionFn(24);
-                let __sym1 = __pop_Term_22_5bA_22(__symbols);
+                // CursorUse = Esc, "[", Num, "C" => ActionFn(24);
+                let __sym3 = __pop_Term_22C_22(__symbols);
+                let __sym2 = __pop_NtNum(__symbols);
+                let __sym1 = __pop_Term_22_5b_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
-                let __end = __sym1.2.clone();
-                let __nt = super::__action24::<>(input, __sym0, __sym1);
+                let __end = __sym3.2.clone();
+                let __nt = super::__action24::<>(input, __sym0, __sym1, __sym2, __sym3);
                 let __states_len = __states.len();
-                __states.truncate(__states_len - 2);
+                __states.truncate(__states_len - 4);
                 __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
                 0
             }
             21 => {
-                // CursorUse = Esc, "[B" => ActionFn(25);
-                let __sym1 = __pop_Term_22_5bB_22(__symbols);
+                // CursorUse = Esc, "[", Num, "D" => ActionFn(25);
+                let __sym3 = __pop_Term_22D_22(__symbols);
+                let __sym2 = __pop_NtNum(__symbols);
+                let __sym1 = __pop_Term_22_5b_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
-                let __end = __sym1.2.clone();
-                let __nt = super::__action25::<>(input, __sym0, __sym1);
+                let __end = __sym3.2.clone();
+                let __nt = super::__action25::<>(input, __sym0, __sym1, __sym2, __sym3);
                 let __states_len = __states.len();
-                __states.truncate(__states_len - 2);
+                __states.truncate(__states_len - 4);
                 __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
                 0
             }
             22 => {
-                // CursorUse = Esc, "[C" => ActionFn(26);
-                let __sym1 = __pop_Term_22_5bC_22(__symbols);
+                // CursorUse = Esc, "[A" => ActionFn(26);
+                let __sym1 = __pop_Term_22_5bA_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3617,8 +3992,8 @@ mod __parse__CursorUse {
                 0
             }
             23 => {
-                // CursorUse = Esc, "[D" => ActionFn(27);
-                let __sym1 = __pop_Term_22_5bD_22(__symbols);
+                // CursorUse = Esc, "[B" => ActionFn(27);
+                let __sym1 = __pop_Term_22_5bB_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3629,8 +4004,8 @@ mod __parse__CursorUse {
                 0
             }
             24 => {
-                // CursorUse = Esc, "[s" => ActionFn(28);
-                let __sym1 = __pop_Term_22_5bs_22(__symbols);
+                // CursorUse = Esc, "[C" => ActionFn(28);
+                let __sym1 = __pop_Term_22_5bC_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3641,8 +4016,8 @@ mod __parse__CursorUse {
                 0
             }
             25 => {
-                // CursorUse = Esc, "7" => ActionFn(29);
-                let __sym1 = __pop_Term_227_22(__symbols);
+                // CursorUse = Esc, "[D" => ActionFn(29);
+                let __sym1 = __pop_Term_22_5bD_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3653,8 +4028,8 @@ mod __parse__CursorUse {
                 0
             }
             26 => {
-                // CursorUse = Esc, "[u" => ActionFn(30);
-                let __sym1 = __pop_Term_22_5bu_22(__symbols);
+                // CursorUse = Esc, "[s" => ActionFn(30);
+                let __sym1 = __pop_Term_22_5bs_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3665,8 +4040,8 @@ mod __parse__CursorUse {
                 0
             }
             27 => {
-                // CursorUse = Esc, "8" => ActionFn(31);
-                let __sym1 = __pop_Term_228_22(__symbols);
+                // CursorUse = Esc, "7" => ActionFn(31);
+                let __sym1 = __pop_Term_227_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3677,8 +4052,8 @@ mod __parse__CursorUse {
                 0
             }
             28 => {
-                // CursorUse = Esc, "D" => ActionFn(32);
-                let __sym1 = __pop_Term_22D_22(__symbols);
+                // CursorUse = Esc, "[u" => ActionFn(32);
+                let __sym1 = __pop_Term_22_5bu_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3689,8 +4064,8 @@ mod __parse__CursorUse {
                 0
             }
             29 => {
-                // CursorUse = Esc, "M" => ActionFn(33);
-                let __sym1 = __pop_Term_22M_22(__symbols);
+                // CursorUse = Esc, "8" => ActionFn(33);
+                let __sym1 = __pop_Term_228_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3701,8 +4076,8 @@ mod __parse__CursorUse {
                 0
             }
             30 => {
-                // CursorUse = Esc, "[K" => ActionFn(34);
-                let __sym1 = __pop_Term_22_5bK_22(__symbols);
+                // CursorUse = Esc, "D" => ActionFn(34);
+                let __sym1 = __pop_Term_22D_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3713,8 +4088,8 @@ mod __parse__CursorUse {
                 0
             }
             31 => {
-                // CursorUse = Esc, "[1K" => ActionFn(35);
-                let __sym1 = __pop_Term_22_5b1K_22(__symbols);
+                // CursorUse = Esc, "M" => ActionFn(35);
+                let __sym1 = __pop_Term_22M_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3725,8 +4100,8 @@ mod __parse__CursorUse {
                 0
             }
             32 => {
-                // CursorUse = Esc, "[2K" => ActionFn(36);
-                let __sym1 = __pop_Term_22_5b2K_22(__symbols);
+                // CursorUse = Esc, "[K" => ActionFn(36);
+                let __sym1 = __pop_Term_22_5bK_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3737,8 +4112,8 @@ mod __parse__CursorUse {
                 0
             }
             33 => {
-                // CursorUse = Esc, "[J" => ActionFn(37);
-                let __sym1 = __pop_Term_22_5bJ_22(__symbols);
+                // CursorUse = Esc, "[1K" => ActionFn(37);
+                let __sym1 = __pop_Term_22_5b1K_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3749,8 +4124,8 @@ mod __parse__CursorUse {
                 0
             }
             34 => {
-                // CursorUse = Esc, "[1J" => ActionFn(38);
-                let __sym1 = __pop_Term_22_5b1J_22(__symbols);
+                // CursorUse = Esc, "[2K" => ActionFn(38);
+                let __sym1 = __pop_Term_22_5b2K_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3761,8 +4136,8 @@ mod __parse__CursorUse {
                 0
             }
             35 => {
-                // CursorUse = Esc, "[2J" => ActionFn(39);
-                let __sym1 = __pop_Term_22_5b2J_22(__symbols);
+                // CursorUse = Esc, "[J" => ActionFn(39);
+                let __sym1 = __pop_Term_22_5bJ_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym1.2.clone();
@@ -3773,36 +4148,32 @@ mod __parse__CursorUse {
                 0
             }
             36 => {
-                // CursorUse = Esc, "[", Num, "m" => ActionFn(40);
-                let __sym3 = __pop_Term_22m_22(__symbols);
-                let __sym2 = __pop_NtNum(__symbols);
-                let __sym1 = __pop_Term_22_5b_22(__symbols);
+                // CursorUse = Esc, "[1J" => ActionFn(40);
+                let __sym1 = __pop_Term_22_5b1J_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
-                let __end = __sym3.2.clone();
-                let __nt = super::__action40::<>(input, __sym0, __sym1, __sym2, __sym3);
+                let __end = __sym1.2.clone();
+                let __nt = super::__action40::<>(input, __sym0, __sym1);
                 let __states_len = __states.len();
-                __states.truncate(__states_len - 4);
+                __states.truncate(__states_len - 2);
                 __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
                 0
             }
             37 => {
-                // CursorUse = Esc, "[", Num, Maj => ActionFn(41);
-                let __sym3 = __pop_NtMaj(__symbols);
-                let __sym2 = __pop_NtNum(__symbols);
-                let __sym1 = __pop_Term_22_5b_22(__symbols);
+                // CursorUse = Esc, "[2J" => ActionFn(41);
+                let __sym1 = __pop_Term_22_5b2J_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
-                let __end = __sym3.2.clone();
-                let __nt = super::__action41::<>(input, __sym0, __sym1, __sym2, __sym3);
+                let __end = __sym1.2.clone();
+                let __nt = super::__action41::<>(input, __sym0, __sym1);
                 let __states_len = __states.len();
-                __states.truncate(__states_len - 4);
+                __states.truncate(__states_len - 2);
                 __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
                 0
             }
             38 => {
-                // CursorUse = Esc, "[", Num, Min => ActionFn(42);
-                let __sym3 = __pop_NtMin(__symbols);
+                // CursorUse = Esc, "[", Num, "m" => ActionFn(42);
+                let __sym3 = __pop_Term_22m_22(__symbols);
                 let __sym2 = __pop_NtNum(__symbols);
                 let __sym1 = __pop_Term_22_5b_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
@@ -3815,32 +4186,60 @@ mod __parse__CursorUse {
                 0
             }
             39 => {
-                // CursorUse = Esc, "[", Maj => ActionFn(43);
+                // CursorUse = Esc, "[", Num, Maj => ActionFn(43);
+                let __sym3 = __pop_NtMaj(__symbols);
+                let __sym2 = __pop_NtNum(__symbols);
+                let __sym1 = __pop_Term_22_5b_22(__symbols);
+                let __sym0 = __pop_NtEsc(__symbols);
+                let __start = __sym0.0.clone();
+                let __end = __sym3.2.clone();
+                let __nt = super::__action43::<>(input, __sym0, __sym1, __sym2, __sym3);
+                let __states_len = __states.len();
+                __states.truncate(__states_len - 4);
+                __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
+                0
+            }
+            40 => {
+                // CursorUse = Esc, "[", Num, Min => ActionFn(44);
+                let __sym3 = __pop_NtMin(__symbols);
+                let __sym2 = __pop_NtNum(__symbols);
+                let __sym1 = __pop_Term_22_5b_22(__symbols);
+                let __sym0 = __pop_NtEsc(__symbols);
+                let __start = __sym0.0.clone();
+                let __end = __sym3.2.clone();
+                let __nt = super::__action44::<>(input, __sym0, __sym1, __sym2, __sym3);
+                let __states_len = __states.len();
+                __states.truncate(__states_len - 4);
+                __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
+                0
+            }
+            41 => {
+                // CursorUse = Esc, "[", Maj => ActionFn(45);
                 let __sym2 = __pop_NtMaj(__symbols);
                 let __sym1 = __pop_Term_22_5b_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym2.2.clone();
-                let __nt = super::__action43::<>(input, __sym0, __sym1, __sym2);
+                let __nt = super::__action45::<>(input, __sym0, __sym1, __sym2);
                 let __states_len = __states.len();
                 __states.truncate(__states_len - 3);
                 __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
                 0
             }
-            40 => {
-                // CursorUse = Esc, "[", Min => ActionFn(44);
+            42 => {
+                // CursorUse = Esc, "[", Min => ActionFn(46);
                 let __sym2 = __pop_NtMin(__symbols);
                 let __sym1 = __pop_Term_22_5b_22(__symbols);
                 let __sym0 = __pop_NtEsc(__symbols);
                 let __start = __sym0.0.clone();
                 let __end = __sym2.2.clone();
-                let __nt = super::__action44::<>(input, __sym0, __sym1, __sym2);
+                let __nt = super::__action46::<>(input, __sym0, __sym1, __sym2);
                 let __states_len = __states.len();
                 __states.truncate(__states_len - 3);
                 __symbols.push((__start, __Symbol::NtCursorUse(__nt), __end));
                 0
             }
-            41 => {
+            43 => {
                 // Esc = r#"[\\x1B-\\x1B]"# => ActionFn(2);
                 let __sym0 = __pop_Termr_23_22_5b_5c_5cx1B_2d_5c_5cx1B_5d_22_23(__symbols);
                 let __start = __sym0.0.clone();
@@ -3851,7 +4250,7 @@ mod __parse__CursorUse {
                 __symbols.push((__start, __Symbol::NtEsc(__nt), __end));
                 1
             }
-            42 => {
+            44 => {
                 // Maj = r#"[A-Z]"# => ActionFn(3);
                 let __sym0 = __pop_Termr_23_22_5bA_2dZ_5d_22_23(__symbols);
                 let __start = __sym0.0.clone();
@@ -3862,7 +4261,7 @@ mod __parse__CursorUse {
                 __symbols.push((__start, __Symbol::NtMaj(__nt), __end));
                 2
             }
-            43 => {
+            45 => {
                 // Min = r#"[a-z]"# => ActionFn(4);
                 let __sym0 = __pop_Termr_23_22_5ba_2dz_5d_22_23(__symbols);
                 let __start = __sym0.0.clone();
@@ -3873,7 +4272,7 @@ mod __parse__CursorUse {
                 __symbols.push((__start, __Symbol::NtMin(__nt), __end));
                 3
             }
-            44 => {
+            46 => {
                 // Num = r#"[0-9]+"# => ActionFn(1);
                 let __sym0 = __pop_Termr_23_22_5b0_2d9_5d_2b_22_23(__symbols);
                 let __start = __sym0.0.clone();
@@ -3884,7 +4283,7 @@ mod __parse__CursorUse {
                 __symbols.push((__start, __Symbol::NtNum(__nt), __end));
                 4
             }
-            45 => {
+            47 => {
                 // __CursorUse = CursorUse => ActionFn(0);
                 let __sym0 = __pop_NtCursorUse(__symbols);
                 let __start = __sym0.0.clone();
@@ -3946,6 +4345,16 @@ mod __parse__CursorUse {
     ) -> (usize, &'input str, usize) {
         match __symbols.pop().unwrap() {
             (__l, __Symbol::Term_22_3bc_22(__v), __r) => (__l, __v, __r),
+            _ => panic!("symbol type mismatch")
+        }
+    }
+    fn __pop_Term_22_3e_22<
+      'input,
+    >(
+        __symbols: &mut ::std::vec::Vec<(usize,__Symbol<'input>,usize)>
+    ) -> (usize, &'input str, usize) {
+        match __symbols.pop().unwrap() {
+            (__l, __Symbol::Term_22_3e_22(__v), __r) => (__l, __v, __r),
             _ => panic!("symbol type mismatch")
         }
     }
@@ -4378,12 +4787,12 @@ mod __intern_token {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
                         27 => /* '\u{1b}' */ {
-                            __current_match = Some((38, __index + 1));
+                            __current_match = Some((39, __index + 1));
                             __current_state = 1;
                             continue;
                         }
                         48 ... 54 => {
-                            __current_match = Some((36, __index + __ch.len_utf8()));
+                            __current_match = Some((37, __index + __ch.len_utf8()));
                             __current_state = 2;
                             continue;
                         }
@@ -4398,7 +4807,7 @@ mod __intern_token {
                             continue;
                         }
                         57 => /* '9' */ {
-                            __current_match = Some((36, __index + 1));
+                            __current_match = Some((37, __index + 1));
                             __current_state = 2;
                             continue;
                         }
@@ -4407,89 +4816,94 @@ mod __intern_token {
                             __current_state = 5;
                             continue;
                         }
-                        65 => /* 'A' */ {
+                        62 => /* '>' */ {
                             __current_match = Some((5, __index + 1));
                             __current_state = 6;
                             continue;
                         }
-                        66 => /* 'B' */ {
+                        65 => /* 'A' */ {
                             __current_match = Some((6, __index + 1));
                             __current_state = 7;
                             continue;
                         }
-                        67 => /* 'C' */ {
+                        66 => /* 'B' */ {
                             __current_match = Some((7, __index + 1));
                             __current_state = 8;
                             continue;
                         }
-                        68 => /* 'D' */ {
+                        67 => /* 'C' */ {
                             __current_match = Some((8, __index + 1));
                             __current_state = 9;
                             continue;
                         }
-                        69 ... 71 => {
-                            __current_match = Some((37, __index + __ch.len_utf8()));
+                        68 => /* 'D' */ {
+                            __current_match = Some((9, __index + 1));
                             __current_state = 10;
                             continue;
                         }
-                        72 => /* 'H' */ {
-                            __current_match = Some((9, __index + 1));
+                        69 ... 71 => {
+                            __current_match = Some((38, __index + __ch.len_utf8()));
                             __current_state = 11;
                             continue;
                         }
-                        73 ... 76 => {
-                            __current_match = Some((37, __index + __ch.len_utf8()));
-                            __current_state = 10;
-                            continue;
-                        }
-                        77 => /* 'M' */ {
+                        72 => /* 'H' */ {
                             __current_match = Some((10, __index + 1));
                             __current_state = 12;
                             continue;
                         }
-                        78 ... 90 => {
-                            __current_match = Some((37, __index + __ch.len_utf8()));
-                            __current_state = 10;
+                        73 ... 76 => {
+                            __current_match = Some((38, __index + __ch.len_utf8()));
+                            __current_state = 11;
                             continue;
                         }
-                        91 => /* '[' */ {
+                        77 => /* 'M' */ {
                             __current_match = Some((11, __index + 1));
                             __current_state = 13;
                             continue;
                         }
-                        97 ... 98 => {
-                            __current_match = Some((39, __index + __ch.len_utf8()));
+                        78 ... 90 => {
+                            __current_match = Some((38, __index + __ch.len_utf8()));
+                            __current_state = 11;
+                            continue;
+                        }
+                        91 => /* '[' */ {
+                            __current_match = Some((12, __index + 1));
                             __current_state = 14;
                             continue;
                         }
-                        99 => /* 'c' */ {
-                            __current_match = Some((33, __index + 1));
+                        97 ... 98 => {
+                            __current_match = Some((40, __index + __ch.len_utf8()));
                             __current_state = 15;
                             continue;
                         }
-                        100 ... 101 => {
-                            __current_match = Some((39, __index + __ch.len_utf8()));
-                            __current_state = 14;
-                            continue;
-                        }
-                        102 => /* 'f' */ {
+                        99 => /* 'c' */ {
                             __current_match = Some((34, __index + 1));
                             __current_state = 16;
                             continue;
                         }
-                        103 ... 108 => {
-                            __current_match = Some((39, __index + __ch.len_utf8()));
-                            __current_state = 14;
+                        100 ... 101 => {
+                            __current_match = Some((40, __index + __ch.len_utf8()));
+                            __current_state = 15;
                             continue;
                         }
-                        109 => /* 'm' */ {
+                        102 => /* 'f' */ {
                             __current_match = Some((35, __index + 1));
                             __current_state = 17;
                             continue;
                         }
+                        103 ... 108 => {
+                            __current_match = Some((40, __index + __ch.len_utf8()));
+                            __current_state = 15;
+                            continue;
+                        }
+                        109 => /* 'm' */ {
+                            __current_match = Some((36, __index + 1));
+                            __current_state = 18;
+                            continue;
+                        }
                         110 ... 122 => {
-                            __current_match = Some((39, __index + __ch.len_utf8()));
-                            __current_state = 14;
+                            __current_match = Some((40, __index + __ch.len_utf8()));
+                            __current_state = 15;
                             continue;
                         }
                         _ => {
@@ -4509,8 +4923,8 @@ mod __intern_token {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
                         48 ... 57 => {
-                            __current_match = Some((36, __index + __ch.len_utf8()));
-                            __current_state = 19;
+                            __current_match = Some((37, __index + __ch.len_utf8()));
+                            __current_state = 20;
                             continue;
                         }
                         _ => {
@@ -4522,8 +4936,8 @@ mod __intern_token {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
                         48 ... 57 => {
-                            __current_match = Some((36, __index + __ch.len_utf8()));
-                            __current_state = 19;
+                            __current_match = Some((37, __index + __ch.len_utf8()));
+                            __current_state = 20;
                             continue;
                         }
                         _ => {
@@ -4535,8 +4949,8 @@ mod __intern_token {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
                         48 ... 57 => {
-                            __current_match = Some((36, __index + __ch.len_utf8()));
-                            __current_state = 19;
+                            __current_match = Some((37, __index + __ch.len_utf8()));
+                            __current_state = 20;
                             continue;
                         }
                         _ => {
@@ -4548,12 +4962,12 @@ mod __intern_token {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
                         48 => /* '0' */ {
-                            __current_state = 20;
+                            __current_state = 21;
                             continue;
                         }
                         99 => /* 'c' */ {
                             __current_match = Some((4, __index + 1));
-                            __current_state = 21;
+                            __current_state = 22;
                             continue;
                         }
                         _ => {
@@ -4620,82 +5034,6 @@ mod __intern_token {
                 13 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
-                        49 => /* '1' */ {
-                            __current_state = 22;
-                            continue;
-                        }
-                        50 => /* '2' */ {
-                            __current_state = 23;
-                            continue;
-                        }
-                        55 => /* '7' */ {
-                            __current_state = 24;
-                            continue;
-                        }
-                        59 => /* ';' */ {
-                            __current_state = 25;
-                            continue;
-                        }
-                        62 => /* '>' */ {
-                            __current_match = Some((20, __index + 1));
-                            __current_state = 26;
-                            continue;
-                        }
-                        65 => /* 'A' */ {
-                            __current_match = Some((22, __index + 1));
-                            __current_state = 27;
-                            continue;
-                        }
-                        66 => /* 'B' */ {
-                            __current_match = Some((23, __index + 1));
-                            __current_state = 28;
-                            continue;
-                        }
-                        67 => /* 'C' */ {
-                            __current_match = Some((24, __index + 1));
-                            __current_state = 29;
-                            continue;
-                        }
-                        68 => /* 'D' */ {
-                            __current_match = Some((25, __index + 1));
-                            __current_state = 30;
-                            continue;
-                        }
-                        72 => /* 'H' */ {
-                            __current_match = Some((26, __index + 1));
-                            __current_state = 31;
-                            continue;
-                        }
-                        74 => /* 'J' */ {
-                            __current_match = Some((27, __index + 1));
-                            __current_state = 32;
-                            continue;
-                        }
-                        75 => /* 'K' */ {
-                            __current_match = Some((28, __index + 1));
-                            __current_state = 33;
-                            continue;
-                        }
-                        102 => /* 'f' */ {
-                            __current_match = Some((29, __index + 1));
-                            __current_state = 34;
-                            continue;
-                        }
-                        114 => /* 'r' */ {
-                            __current_match = Some((30, __index + 1));
-                            __current_state = 35;
-                            continue;
-                        }
-                        115 => /* 's' */ {
-                            __current_match = Some((31, __index + 1));
-                            __current_state = 36;
-                            continue;
-                        }
-                        117 => /* 'u' */ {
-                            __current_match = Some((32, __index + 1));
-                            __current_state = 37;
-                            continue;
-                        }
                         _ => {
                             return __current_match;
                         }
@@ -4704,6 +5042,82 @@ mod __intern_token {
                 14 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
+                        49 => /* '1' */ {
+                            __current_state = 23;
+                            continue;
+                        }
+                        50 => /* '2' */ {
+                            __current_state = 24;
+                            continue;
+                        }
+                        55 => /* '7' */ {
+                            __current_state = 25;
+                            continue;
+                        }
+                        59 => /* ';' */ {
+                            __current_state = 26;
+                            continue;
+                        }
+                        62 => /* '>' */ {
+                            __current_match = Some((21, __index + 1));
+                            __current_state = 27;
+                            continue;
+                        }
+                        65 => /* 'A' */ {
+                            __current_match = Some((23, __index + 1));
+                            __current_state = 28;
+                            continue;
+                        }
+                        66 => /* 'B' */ {
+                            __current_match = Some((24, __index + 1));
+                            __current_state = 29;
+                            continue;
+                        }
+                        67 => /* 'C' */ {
+                            __current_match = Some((25, __index + 1));
+                            __current_state = 30;
+                            continue;
+                        }
+                        68 => /* 'D' */ {
+                            __current_match = Some((26, __index + 1));
+                            __current_state = 31;
+                            continue;
+                        }
+                        72 => /* 'H' */ {
+                            __current_match = Some((27, __index + 1));
+                            __current_state = 32;
+                            continue;
+                        }
+                        74 => /* 'J' */ {
+                            __current_match = Some((28, __index + 1));
+                            __current_state = 33;
+                            continue;
+                        }
+                        75 => /* 'K' */ {
+                            __current_match = Some((29, __index + 1));
+                            __current_state = 34;
+                            continue;
+                        }
+                        102 => /* 'f' */ {
+                            __current_match = Some((30, __index + 1));
+                            __current_state = 35;
+                            continue;
+                        }
+                        114 => /* 'r' */ {
+                            __current_match = Some((31, __index + 1));
+                            __current_state = 36;
+                            continue;
+                        }
+                        115 => /* 's' */ {
+                            __current_match = Some((32, __index + 1));
+                            __current_state = 37;
+                            continue;
+                        }
+                        117 => /* 'u' */ {
+                            __current_match = Some((33, __index + 1));
+                            __current_state = 38;
+                            continue;
+                        }
                         _ => {
                             return __current_match;
                         }
@@ -4744,11 +5158,6 @@ mod __intern_token {
                 19 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
-                        48 ... 57 => {
-                            __current_match = Some((36, __index + __ch.len_utf8()));
-                            __current_state = 19;
-                            continue;
-                        }
                         _ => {
                             return __current_match;
                         }
@@ -4757,9 +5166,9 @@ mod __intern_token {
                 20 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
-                        99 => /* 'c' */ {
-                            __current_match = Some((3, __index + 1));
-                            __current_state = 38;
+                        48 ... 57 => {
+                            __current_match = Some((37, __index + __ch.len_utf8()));
+                            __current_state = 20;
                             continue;
                         }
                         _ => {
@@ -4770,6 +5179,11 @@ mod __intern_token {
                 21 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
+                        99 => /* 'c' */ {
+                            __current_match = Some((3, __index + 1));
+                            __current_state = 39;
+                            continue;
+                        }
                         _ => {
                             return __current_match;
                         }
@@ -4778,16 +5192,6 @@ mod __intern_token {
                 22 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
-                        74 => /* 'J' */ {
-                            __current_match = Some((12, __index + 1));
-                            __current_state = 39;
-                            continue;
-                        }
-                        75 => /* 'K' */ {
-                            __current_match = Some((13, __index + 1));
-                            __current_state = 40;
-                            continue;
-                        }
                         _ => {
                             return __current_match;
                         }
@@ -4797,13 +5201,13 @@ mod __intern_token {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
                         74 => /* 'J' */ {
-                            __current_match = Some((14, __index + 1));
-                            __current_state = 41;
+                            __current_match = Some((13, __index + 1));
+                            __current_state = 40;
                             continue;
                         }
                         75 => /* 'K' */ {
-                            __current_match = Some((15, __index + 1));
-                            __current_state = 42;
+                            __current_match = Some((14, __index + 1));
+                            __current_state = 41;
                             continue;
                         }
                         _ => {
@@ -4814,14 +5218,14 @@ mod __intern_token {
                 24 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
-                        104 => /* 'h' */ {
-                            __current_match = Some((16, __index + 1));
-                            __current_state = 43;
+                        74 => /* 'J' */ {
+                            __current_match = Some((15, __index + 1));
+                            __current_state = 42;
                             continue;
                         }
-                        108 => /* 'l' */ {
-                            __current_match = Some((17, __index + 1));
-                            __current_state = 44;
+                        75 => /* 'K' */ {
+                            __current_match = Some((16, __index + 1));
+                            __current_state = 43;
                             continue;
                         }
                         _ => {
@@ -4832,14 +5236,14 @@ mod __intern_token {
                 25 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
-                        72 => /* 'H' */ {
-                            __current_match = Some((18, __index + 1));
-                            __current_state = 45;
+                        104 => /* 'h' */ {
+                            __current_match = Some((17, __index + 1));
+                            __current_state = 44;
                             continue;
                         }
-                        102 => /* 'f' */ {
-                            __current_match = Some((19, __index + 1));
-                            __current_state = 46;
+                        108 => /* 'l' */ {
+                            __current_match = Some((18, __index + 1));
+                            __current_state = 45;
                             continue;
                         }
                         _ => {
@@ -4850,7 +5254,13 @@ mod __intern_token {
                 26 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
-                        48 => /* '0' */ {
+                        72 => /* 'H' */ {
+                            __current_match = Some((19, __index + 1));
+                            __current_state = 46;
+                            continue;
+                        }
+                        102 => /* 'f' */ {
+                            __current_match = Some((20, __index + 1));
                             __current_state = 47;
                             continue;
                         }
@@ -4862,6 +5272,10 @@ mod __intern_token {
                 27 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
+                        48 => /* '0' */ {
+                            __current_state = 48;
+                            continue;
+                        }
                         _ => {
                             return __current_match;
                         }
@@ -5022,9 +5436,17 @@ mod __intern_token {
                 47 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
+                        _ => {
+                            return __current_match;
+                        }
+                    }
+                }
+                48 => {
+                    let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
+                    match __ch as u32 {
                         99 => /* 'c' */ {
-                            __current_match = Some((21, __index + 1));
-                            __current_state = 48;
+                            __current_match = Some((22, __index + 1));
+                            __current_state = 49;
                             continue;
                         }
                         _ => {
@@ -5032,7 +5454,7 @@ mod __intern_token {
                         }
                     }
                 }
-                48 => {
+                49 => {
                     let (__index, __ch) = match __chars.next() { Some(p) => p, None => return __current_match };
                     match __ch as u32 {
                         _ => {
@@ -5251,9 +5673,13 @@ pub fn __action13<
     input: &'input str,
     (_, n, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
+    (_, v, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
+    (_, w, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::TermReset
+    outp::Cursor::TermVersionOut(v, w)
 }
 
 #[allow(unused_variables)]
@@ -5263,13 +5689,13 @@ pub fn __action14<
     input: &'input str,
     (_, n, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
-    (_, x, _): (usize, u16, usize),
+    (_, v, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
-    (_, y, _): (usize, u16, usize),
+    (_, w, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::CursorGoto(x, y)
+    outp::Cursor::TermVersionOut(v, w)
 }
 
 #[allow(unused_variables)]
@@ -5279,6 +5705,18 @@ pub fn __action15<
     input: &'input str,
     (_, n, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
+) -> (outp::Cursor)
+{
+    outp::Cursor::TermReset
+}
+
+#[allow(unused_variables)]
+pub fn __action16<
+    'input,
+>(
+    input: &'input str,
+    (_, n, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
     (_, x, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
     (_, y, _): (usize, u16, usize),
@@ -5289,27 +5727,19 @@ pub fn __action15<
 }
 
 #[allow(unused_variables)]
-pub fn __action16<
-    'input,
->(
-    input: &'input str,
-    (_, n, _): (usize, u16, usize),
-    (_, _, _): (usize, &'input str, usize),
-) -> (outp::Cursor)
-{
-    outp::Cursor::CursorGoto(1, 1)
-}
-
-#[allow(unused_variables)]
 pub fn __action17<
     'input,
 >(
     input: &'input str,
     (_, n, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
+    (_, x, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
+    (_, y, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::CursorGoto(1, 1)
+    outp::Cursor::CursorGoto(x, y)
 }
 
 #[allow(unused_variables)]
@@ -5343,11 +5773,9 @@ pub fn __action20<
     input: &'input str,
     (_, n, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
-    (_, k, _): (usize, u16, usize),
-    (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::CursorUp(k)
+    outp::Cursor::CursorGoto(1, 1)
 }
 
 #[allow(unused_variables)]
@@ -5357,11 +5785,9 @@ pub fn __action21<
     input: &'input str,
     (_, n, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
-    (_, k, _): (usize, u16, usize),
-    (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::CursorDown(k)
+    outp::Cursor::CursorGoto(1, 1)
 }
 
 #[allow(unused_variables)]
@@ -5375,7 +5801,7 @@ pub fn __action22<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::CursorRight(k)
+    outp::Cursor::CursorUp(k)
 }
 
 #[allow(unused_variables)]
@@ -5389,7 +5815,7 @@ pub fn __action23<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::CursorLeft(k)
+    outp::Cursor::CursorDown(k)
 }
 
 #[allow(unused_variables)]
@@ -5399,9 +5825,11 @@ pub fn __action24<
     input: &'input str,
     (_, n, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
+    (_, k, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::CursorUp(1)
+    outp::Cursor::CursorRight(k)
 }
 
 #[allow(unused_variables)]
@@ -5411,9 +5839,11 @@ pub fn __action25<
     input: &'input str,
     (_, n, _): (usize, u16, usize),
     (_, _, _): (usize, &'input str, usize),
+    (_, k, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::CursorDown(1)
+    outp::Cursor::CursorLeft(k)
 }
 
 #[allow(unused_variables)]
@@ -5425,7 +5855,7 @@ pub fn __action26<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::CursorRight(1)
+    outp::Cursor::CursorUp(1)
 }
 
 #[allow(unused_variables)]
@@ -5437,7 +5867,7 @@ pub fn __action27<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::CursorLeft(1)
+    outp::Cursor::CursorDown(1)
 }
 
 #[allow(unused_variables)]
@@ -5449,7 +5879,7 @@ pub fn __action28<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::SaveCursor
+    outp::Cursor::CursorRight(1)
 }
 
 #[allow(unused_variables)]
@@ -5461,7 +5891,7 @@ pub fn __action29<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::SaveCursor
+    outp::Cursor::CursorLeft(1)
 }
 
 #[allow(unused_variables)]
@@ -5473,7 +5903,7 @@ pub fn __action30<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::RestoreCursor
+    outp::Cursor::SaveCursor
 }
 
 #[allow(unused_variables)]
@@ -5485,7 +5915,7 @@ pub fn __action31<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::RestoreCursor
+    outp::Cursor::SaveCursor
 }
 
 #[allow(unused_variables)]
@@ -5497,7 +5927,7 @@ pub fn __action32<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::ScrollUp
+    outp::Cursor::RestoreCursor
 }
 
 #[allow(unused_variables)]
@@ -5509,7 +5939,7 @@ pub fn __action33<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::ScrollDown
+    outp::Cursor::RestoreCursor
 }
 
 #[allow(unused_variables)]
@@ -5521,7 +5951,7 @@ pub fn __action34<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::EraseRightLine
+    outp::Cursor::ScrollUp
 }
 
 #[allow(unused_variables)]
@@ -5533,7 +5963,7 @@ pub fn __action35<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::EraseLeftLine
+    outp::Cursor::ScrollDown
 }
 
 #[allow(unused_variables)]
@@ -5545,7 +5975,7 @@ pub fn __action36<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::EraseLine
+    outp::Cursor::EraseRightLine
 }
 
 #[allow(unused_variables)]
@@ -5557,7 +5987,7 @@ pub fn __action37<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::EraseDown
+    outp::Cursor::EraseLeftLine
 }
 
 #[allow(unused_variables)]
@@ -5569,7 +5999,7 @@ pub fn __action38<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::EraseUp
+    outp::Cursor::EraseLine
 }
 
 #[allow(unused_variables)]
@@ -5581,11 +6011,35 @@ pub fn __action39<
     (_, _, _): (usize, &'input str, usize),
 ) -> (outp::Cursor)
 {
-    outp::Cursor::Clear
+    outp::Cursor::EraseDown
 }
 
 #[allow(unused_variables)]
 pub fn __action40<
+    'input,
+>(
+    input: &'input str,
+    (_, n, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
+) -> (outp::Cursor)
+{
+    outp::Cursor::EraseUp
+}
+
+#[allow(unused_variables)]
+pub fn __action41<
+    'input,
+>(
+    input: &'input str,
+    (_, n, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
+) -> (outp::Cursor)
+{
+    outp::Cursor::Clear
+}
+
+#[allow(unused_variables)]
+pub fn __action42<
     'input,
 >(
     input: &'input str,
@@ -5599,35 +6053,35 @@ pub fn __action40<
 }
 
 #[allow(unused_variables)]
-pub fn __action41<
-    'input,
->(
-    input: &'input str,
-    (_, n, _): (usize, u16, usize),
-    (_, _, _): (usize, &'input str, usize),
-    (_, r, _): (usize, u16, usize),
-    (_, c, _): (usize, char, usize),
-) -> (outp::Cursor)
-{
-    outp::Cursor::Unimplemented(r, c)
-}
-
-#[allow(unused_variables)]
-pub fn __action42<
-    'input,
->(
-    input: &'input str,
-    (_, n, _): (usize, u16, usize),
-    (_, _, _): (usize, &'input str, usize),
-    (_, r, _): (usize, u16, usize),
-    (_, c, _): (usize, char, usize),
-) -> (outp::Cursor)
-{
-    outp::Cursor::Unimplemented(r, c)
-}
-
-#[allow(unused_variables)]
 pub fn __action43<
+    'input,
+>(
+    input: &'input str,
+    (_, n, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
+    (_, r, _): (usize, u16, usize),
+    (_, c, _): (usize, char, usize),
+) -> (outp::Cursor)
+{
+    outp::Cursor::Unimplemented(r, c)
+}
+
+#[allow(unused_variables)]
+pub fn __action44<
+    'input,
+>(
+    input: &'input str,
+    (_, n, _): (usize, u16, usize),
+    (_, _, _): (usize, &'input str, usize),
+    (_, r, _): (usize, u16, usize),
+    (_, c, _): (usize, char, usize),
+) -> (outp::Cursor)
+{
+    outp::Cursor::Unimplemented(r, c)
+}
+
+#[allow(unused_variables)]
+pub fn __action45<
     'input,
 >(
     input: &'input str,
@@ -5640,7 +6094,7 @@ pub fn __action43<
 }
 
 #[allow(unused_variables)]
-pub fn __action44<
+pub fn __action46<
     'input,
 >(
     input: &'input str,

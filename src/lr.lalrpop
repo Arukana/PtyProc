@@ -26,7 +26,6 @@ Mouse: util::Mouse = {
 
 pub KeysUse: (util::Key) = {
 
-    <c:Key> => c,
     "m" => util::Key::Char(b'm'),
     "M" => util::Key::Char(b'M'),
     "!" => util::Key::Char(b'!'),
@@ -56,6 +55,7 @@ pub KeysUse: (util::Key) = {
     "|" => util::Key::Char(b'|'),
     "}" => util::Key::Char(125),
     "~" => util::Key::Char(b'~'),
+    <c:Key> => c,
 
     <n:Esc> => util::Key::Esc,
     <t:Tab> => util::Key::Tab,
@@ -65,6 +65,18 @@ pub KeysUse: (util::Key) = {
     <n:New> <c:Car> => util::Key::Enter,
     <c:Car> <n:New> => util::Key::Enter,
     <n:New> => util::Key::Enter,
+
+    <n:Esc> "A" => util::Key::Up,
+    <n:Esc> "B" => util::Key::Down,
+    <n:Esc> "C" => util::Key::Right,
+    <n:Esc> "D" => util::Key::Left,
+    <n:Esc> "F" => util::Key::End,
+
+    <n:Esc> "OA" => util::Key::Up,
+    <n:Esc> "OB" => util::Key::Down,
+    <n:Esc> "OC" => util::Key::Right,
+    <n:Esc> "OD" => util::Key::Left,
+    <n:Esc> "OF" => util::Key::End,
 
     <n:Esc> "[A" => util::Key::Up,
     <n:Esc> "[B" => util::Key::Down,
