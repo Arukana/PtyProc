@@ -52,8 +52,8 @@ pub CursorUse: (outp::Cursor) = {
   <n:Esc> "[1J" => outp::Cursor::EraseUp,
   <n:Esc> "[2J" => outp::Cursor::Clear,
 
-  <n:Esc> "[0m" => outp::Cursor::ClearAttribute(attr),
-  <n:Esc> "[m" => outp::Cursor::ClearAttribute(attr),
+  <n:Esc> "[0m" => outp::Cursor::ClearAttribute,
+  <n:Esc> "[m" => outp::Cursor::ClearAttribute,
   <n:Esc> "[" <attr:Num> "m" => outp::Cursor::Attribute(attr),
   
   <n:Esc> "[" <c:Maj> => outp::Cursor::Unimplemented(0, c),
