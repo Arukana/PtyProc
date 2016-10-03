@@ -3,13 +3,9 @@ use util;
 
 grammar; // This marks the file as a grammar for LALRPOP to generate code for.
 
-Num: i32 = <s:r"[-]?[0-9]+"> => i32::from_str(s).unwrap();
+Num: u16 = <s:r"[0-9]+"> => u16::from_str(s).unwrap();
 
-
-Mouse: util::Mouse = {
-    <s:r"[-]?[0-9]+"> => util::Mouse::new( i32::from_str(s).unwrap() ),
-};
-
-pub Term: (util::Mouse, i32, i32) = {
-    "<" <t:Mouse> ";" <x:Num> ";" <y:Num> "m" => (t, x, y),
+pub Term: util::Sequence = {
+    <s:r"[_a-zA-Z]*"> => util::Sequence::Out(s.to_string()), // Haha
+    "<^[[" <x:Num> ";" <y:Num> "Ha" => util::Sequence::Goto(x, y), // <^[[4;2Ha
 };
