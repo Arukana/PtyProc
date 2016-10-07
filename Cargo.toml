@@ -33,8 +33,3 @@ version       = "0.2"
 [dependencies.clippy]
 version       = "*"
 optional      = true
-
-[dependencies.example]
-git           = "https://github.com/adjivas/pty-shell-mode"
-branch        = "lr"
-version       = "*"
