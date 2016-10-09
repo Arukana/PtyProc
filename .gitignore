@@ -24,3 +24,6 @@ Cargo.lock
 *.bak
 *.bk
 *.orig
+
+# lalrpop
+src/input.rs

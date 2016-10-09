@@ -1,7 +1,6 @@
 pub mod mouse;
 pub mod key;
 
-use super::In;
 use ::libc;
 
 pub use self::mouse::Mouse;
@@ -16,10 +15,6 @@ pub enum Operate {
 }
 
 impl Operate {
-  /// The constructor method `new` returns evaluated Operate.
-  pub fn new(buf: &In) -> Self {
-    Operate::Key(Key::Enter)
-  }
 
   /// The accessor method `is_mouse` returns a Option for the Mouse Operate.
   pub fn is_mouse(&self) -> Option<Mouse> {

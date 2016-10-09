@@ -13,7 +13,7 @@ impl Termios {
   /// The constructor method `new` setups the terminal.
   pub fn new(fd: libc::c_int) -> Result<Self> {
     unsafe {
-      let mut config: libc::termios = mem::zeroed();
+      let config: libc::termios = mem::zeroed();
 
       libc::ioctl(
         fd,
@@ -51,7 +51,7 @@ impl Termios {
         (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
         &new_termios
       );
-      io::stdout().write(b"\x1b[?1002h\x1b[?1015h\x1b[?1006h").unwrap(); // MOUSE ON
+      io::stdout().write(super::SPEC_MOUSE_ON).unwrap(); // MOUSE ON
       Ok(())
     }
   }
@@ -70,12 +70,14 @@ impl Default for Termios {
 impl Drop for Termios {
   fn drop(&mut self) {
     unsafe {
-      if libc::ioctl(
-        self.fd,
-        (0x80000000 | (116 << 8) | 20 |
-        (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
-        &self.config
-      ).eq(&-1) {
+      if io::stdout().write(super::SPEC_MOUSE_OFF).is_err().bitor(
+        libc::ioctl(
+          self.fd,
+          (0x80000000 | (116 << 8) | 20 |
+          (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
+          &self.config
+        ).eq(&-1)
+      ) {
         panic!("{}", ::errno::errno());
       }
     }

@@ -9,4 +9,5 @@ extern crate errno;
 pub mod terminal;
 pub mod shell;
 pub mod prelude;
+mod input;
 mod fork;

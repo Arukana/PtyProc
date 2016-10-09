@@ -6,7 +6,6 @@ use ::libc;
 use super::Display;
 use super::device::DeviceState;
 use super::device::control::Control;
-use super::device::control::operate::Key;
 
 #[derive(Clone)]
 pub struct ShellState {
@@ -114,7 +113,6 @@ impl ShellState {
   pub fn with_device (
     &mut self,
     event: DeviceState,
-    fd: libc::c_int,
   ) -> io::Result<Self> {
     self.idle = event.is_idle();
     self.sig = event.is_signal();

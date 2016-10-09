@@ -6,7 +6,6 @@ pub mod device;
 
 use std::os::unix::io::AsRawFd;
 use std::io::{self, Write};
-use std::ops::BitOr;
 use std::mem;
 
 use ::libc;
@@ -114,11 +113,7 @@ impl io::Write for Shell {
 impl Drop for Shell {
   fn drop(&mut self) {
     unsafe {
-      if io::stdout().write(
-        b"\x1b[?1015l\x1b[?1002l\x1b[?1000l" // MOUSE OFF
-      ).is_err().bitor(
-        libc::close(self.speudo.as_raw_fd()).eq(&-1)
-      ) {
+      if libc::close(self.speudo.as_raw_fd()).eq(&-1) {
         unimplemented!()
       }
     }
@@ -132,10 +127,7 @@ impl Iterator for Shell {
     match self.device.next() {
       None => None,
       Some(event) => {
-        if let Some(state) = self.state.with_device(
-          event,
-          self.speudo.as_raw_fd(),
-        ).ok() {
+        if let Some(state) = self.state.with_device(event).ok() {
           self.mode_pass(&state);
           Some(state)
         }

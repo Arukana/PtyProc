@@ -4,6 +4,7 @@ use std::{fmt, str};
 
 use ::libc;
 use ::time;
+use ::input;
 
 pub use super::In;
 use self::operate::Operate;
@@ -14,10 +15,10 @@ pub struct Control {
   buf: In,
   /// Length.
   len: libc::size_t,
-  /// Operation.
-  operate: Operate,
   /// Time where the control was pressed.
   time: time::Tm,
+  /// Operation.
+  operate: Operate,
 }
 
 impl Control {
@@ -26,8 +27,10 @@ impl Control {
     Control {
       buf: buf,
       len: len,
-      operate: Operate::new(&buf),
       time: time::now(),
+      operate: input::parse_Operate(unsafe {
+        str::from_utf8_unchecked(&buf[..len])
+      }).unwrap(),
     }
   }
 
