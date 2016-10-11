@@ -6,7 +6,6 @@ authors = [
   "Jeremy PEPIN <jpepin@student.42.fr>"
 ]
 keywords = ["pty", "shell", "mode"]
-build = "build.rs"
 
 [features]
 default       = []

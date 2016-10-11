@@ -1,13 +1,11 @@
-pub mod chars;
-
 use ::libc;
 
-use self::chars::Char;
+pub use super::In;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Key {
     /// Unicode Character.
-    Utf8(Char),
+    Utf8,
     /// Enter.
     Enter,
     ///Tabulation.
@@ -84,4 +82,69 @@ pub enum Key {
     CtrlShiftUp,
     /// Control Shift Down arrow.
     CtrlShiftDown,
+}
+
+impl Key {
+  pub fn new(buf: &In, _: libc::size_t) -> Self {
+    match buf {
+      &[b'\x1B', b'\0', ..] => Key::Esc,
+      &[b'\t', b'\0', ..] => Key::Tab,
+      &[b'\x7F', b'\0', ..] => Key::Backspace, 
+      &[b'\x1B', b'O', b'P', b'\0', ..] => Key::F(1),
+      &[b'\x1B', b'O', b'Q', b'\0', ..] => Key::F(2),
+      &[b'\x1B', b'O', b'R', b'\0', ..] => Key::F(3),
+      &[b'\x1B', b'O', b'S', b'\0', ..] => Key::F(4),
+      &[b'\x1B', b'[', b'A', b'\0', ..] => Key::Up,
+      &[b'\x1B', b'[', b'B', b'\0', ..] => Key::Down,
+      &[b'\x1B', b'[', b'C', b'\0', ..] => Key::Right,
+      &[b'\x1B', b'[', b'D', b'\0', ..] => Key::Left,
+      &[b'\x1B', b'[', b'F', b'\0', ..] => Key::End,
+      &[b'\x1B', b'[', b'3', b'~', b'\0', ..] => Key::Delete,
+      &[b'\x1B', b'[', b'5', b'~', b'\0', ..] => Key::PageUp,
+      &[b'\x1B', b'[', b'6', b'~', b'\0', ..] => Key::PageDown,
+      &[b'\x1B', b'[', b'1', b'5', b'~', b'\0', ..] => Key::F(5),
+      &[b'\x1B', b'[', b'1', b'7', b'~', b'\0', ..] => Key::F(6),
+      &[b'\x1B', b'[', b'1', b'8', b'~', b'\0', ..] => Key::F(7),
+      &[b'\x1B', b'[', b'1', b'9', b'~', b'\0', ..] => Key::F(8),
+      &[b'\x1B', b'[', b'2', b'0', b'~', b'\0', ..] => Key::F(9),
+      &[b'\x1B', b'[', b'2', b'1', b'~', b'\0', ..] => Key::F(10),
+      &[b'\x1B', b'[', b'2', b'3', b'~', b'\0', ..] => Key::F(11),
+      &[b'\x1B', b'[', b'2', b'4', b'~', b'\0', ..] => Key::F(12),
+      &[b'\x1B', b'[', b'1', b';', b'2', b'P', b'\0', ..] => Key::F(13),
+      &[b'\x1B', b'[', b'1', b';', b'2', b'Q', b'\0', ..] => Key::F(14),
+      &[b'\x1B', b'[', b'1', b';', b'2', b'R', b'\0', ..] => Key::F(15),
+      &[b'\x1B', b'[', b'1', b';', b'2', b'S', b'\0', ..] => Key::F(16),
+      &[b'\n', b'?', b'\r', b'?', b'\n', b'\r', b'\0', ..] => Key::Enter,
+      &[b'\x1B', b'[', b'1', b';', b'2', b'A', b'\0', ..] => Key::ShiftUp,
+      &[b'\x1B', b'[', b'1', b';', b'2', b'B', b'\0', ..] => Key::ShiftDown,
+      &[b'\x1B', b'[', b'1', b';', b'2', b'C', b'\0', ..] => Key::ShiftRight,
+      &[b'\x1B', b'[', b'1', b';', b'2', b'D', b'\0', ..] => Key::ShiftLeft,
+      &[b'\x1B', b'[', b'1', b';', b'9', b'A', b'\0', ..] => Key::AltUp,
+      &[b'\x1B', b'[', b'1', b';', b'9', b'B', b'\0', ..] => Key::AltDown,
+      &[b'\x1B', b'[', b'1', b';', b'9', b'C', b'\0', ..] => Key::AltRight,
+      &[b'\x1B', b'[', b'1', b';', b'9', b'D', b'\0', ..] => Key::AltLeft,
+      &[b'\x1B', b'[', b'1', b';', b'5', b'A', b'\0', ..] => Key::CtrlUp,
+      &[b'\x1B', b'[', b'1', b';', b'5', b'B', b'\0', ..] => Key::CtrlDown,
+      &[b'\x1B', b'[', b'1', b';', b'5', b'C', b'\0', ..] => Key::CtrlRight,
+      &[b'\x1B', b'[', b'1', b';', b'5', b'D', b'\0', ..] => Key::CtrlLeft,
+      &[b'\x1B', b'[', b'1', b';', b'6', b'A', b'\0', ..] => Key::CtrlShiftUp,
+      &[b'\x1B', b'[', b'1', b';', b'6', b'B', b'\0', ..] => Key::CtrlShiftDown,
+      &[b'\x1B', b'[', b'1', b';', b'6', b'C', b'\0', ..] => Key::CtrlShiftRight,
+      &[b'\x1B', b'[', b'1', b';', b'6', b'D', b'\0', ..] => Key::CtrlShiftLeft,
+      &[b'\x1B', b'[', b'1', b';', b'1', b'0', b'A', b'\0', ..] => Key::AltShiftUp,
+      &[b'\x1B', b'[', b'1', b';', b'1', b'0', b'B', b'\0', ..] => Key::AltShiftDown,
+      &[b'\x1B', b'[', b'1', b';', b'1', b'0', b'C', b'\0', ..] => Key::AltShiftRight,
+      &[b'\x1B', b'[', b'1', b';', b'1', b'0', b'D', b'\0', ..] => Key::AltShiftLeft,
+      _ => Key::Utf8,
+    }
+  }
+
+  /// The accessor method `is_enter` returns an Option for the Enter Key.
+  pub fn is_enter(&self) -> Option<()> {
+    if self.eq(&Key::Enter) {
+      Some(())
+    } else {
+      None
+    }
+  }
 }

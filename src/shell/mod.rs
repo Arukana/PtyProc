@@ -25,6 +25,7 @@ use super::terminal::Termios;
 pub struct Shell {
   pid: libc::pid_t,
   mode: Mode,
+  #[allow(dead_code)]
   config: Termios,
   speudo: pty::Master,
   device: Device,

@@ -61,10 +61,10 @@ impl ShellState {
     }
   }
 
-  /// The accessor method `is_keydown` returns the KeyDown event.
-  pub fn is_keydown(&self) -> Option<libc::c_uchar> {
+  /// The accessor method `is_unicode` returns the KeyDown event.
+  pub fn is_unicode(&self) -> Option<&[libc::c_uchar]> {
     if let Some(ref event) = self.in_text {
-      event.is_char()
+      event.is_unicode()
     } else {
       None
     }

@@ -4,9 +4,10 @@ use std::{fmt, str};
 
 use ::libc;
 use ::time;
-use ::input;
 
 pub use super::In;
+pub use self::operate::key::Key;
+pub use self::operate::mouse::Mouse;
 use self::operate::Operate;
 
 #[derive(Clone, Copy, Debug)]
@@ -28,9 +29,7 @@ impl Control {
       buf: buf,
       len: len,
       time: time::now(),
-      operate: input::parse_Operate(unsafe {
-        str::from_utf8_unchecked(&buf[..len])
-      }).unwrap(),
+      operate: Operate::new(&buf, len),
     }
   }
 
@@ -40,29 +39,37 @@ impl Control {
   }
 
   /// The accessor method `as_timer` returns the Time.
-  pub fn as_operate(&self) -> &Operate {
-    &self.operate
-  }
-  /// The accessor method `as_timer` returns the Time.
   pub fn as_time(&self) -> &time::Tm {
     &self.time
   }
 
-  /// The accessor method `is_char` returns an Option for the Character Key.
-  pub fn is_char(&self) -> Option<libc::c_uchar> {
-    match self.buf {
-      [c, b'\0', ..] => Some(c),
-      _ => None,
+  pub fn is_unicode(&self) -> Option<&[libc::c_uchar]> {
+    if self.operate.is_key().is_some() {
+      Some(self.as_slice())
+    } else {
+      None
     }
   }
 
   /// The accessor method `is_enter` returns an Option for the Enter Key.
   pub fn is_enter(&self) -> Option<()> {
-    match self.buf {
-      [b'\r', b'\0', ..] |
-      [b'\n', b'\0', ..] => Some(()),
-      _ => None,
+    match self.operate.is_key() {
+      Some(key) => key.is_enter(),
+      None => None,
     }
+  }
+
+
+  /// The accessor method `is_key` returns an Option for 
+  /// the Key interface.
+  pub fn is_key(&self) -> Option<Key> {
+    self.operate.is_key()
+  }
+
+  /// The accessor method `is_mouse` returns an Option for 
+  /// the Mouse interface.
+  pub fn is_mouse(&self) -> Option<Mouse> {
+    self.operate.is_mouse()
   }
 }
 
