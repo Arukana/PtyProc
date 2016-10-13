@@ -1,7 +1,7 @@
-extern crate pty_shell_mode;
+extern crate pty_proc;
 extern crate libc;
 
-use pty_shell_mode::prelude as shell;
+use pty_proc::prelude as shell;
 
 use std::io::{self, Write};
 

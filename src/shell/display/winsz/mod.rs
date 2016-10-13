@@ -1,5 +1,7 @@
 mod err;
 
+use std::ops::Mul;
+
 use ::libc;
 pub use self::err::{WinszedError, Result};
 
@@ -31,12 +33,20 @@ impl Winszed {
     }
   }
 
+  /// The accessor function `get_row` returns the row size.
   pub fn get_row(&self) -> libc::size_t {
     self.ws_row as libc::size_t
   }
 
+  /// The accessor function `get_col` returns the colum size.
   pub fn get_col(&self) -> libc::size_t {
     self.ws_col as libc::size_t
+  }
+
+  /// The accessor function `get_row` returns the multiplication
+  /// of row by colum.
+  pub fn row_by_col(&self) -> libc::size_t {
+    self.get_row().mul(&self.get_col())
   }
 
   /// The method `from_winsized` changes the window size.

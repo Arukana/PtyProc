@@ -1,11 +1,19 @@
 [package]
-name = "pty-shell-mode"
+name = "pty-proc"
 version = "0.0.1"
 authors = [
   "adjivas <adjivas@users.noreply.github.com>",
   "Jeremy PEPIN <jpepin@student.42.fr>"
 ]
-keywords = ["pty", "shell", "mode"]
+keywords = ["pty", "shell", "mode", "proc"]
+
+[[bin]]
+name = "pty-proc"
+test = false
+
+[lib]
+test = false
+doctest = false
 
 [features]
 default       = []

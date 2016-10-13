@@ -1,10 +1,11 @@
 mod err;
 mod winsz;
 
+use std::ops::Add;
 use std::{io, fmt};
 
 use ::libc;
-use self::winsz::Winszed;
+pub use self::winsz::Winszed;
 pub use self::err::{DisplayError, Result};
 
 #[derive(Debug, Clone)]
@@ -19,17 +20,25 @@ impl Display {
     pub fn new(fd: libc::c_int) -> Result<Display> {
         match Winszed::new(fd) {
           Err(why) => Err(DisplayError::WinszedFail(why)),
-          Ok(size) => Ok(Display {
+          Ok(wsz) => Ok(Display::from_winszed(wsz)),
+        }
+    }
+
+    /// The constructor method `default` returns the `Display`'s interface
+    /// from shell.
+    pub fn from_winszed(size: Winszed) -> Display {
+        Display {
             size: size,
             screen: io::Cursor::new (
-              (0..{size.get_row().checked_mul(
-                size.get_col()
-              ).unwrap_or_default()})
-               .map(|_: usize| b'\x20')
-               .collect::<Vec<u8>>()
+              (0..size.row_by_col()).map(|_: usize| b'\x20')
+                                    .collect::<Vec<u8>>()
             ),
-          }),
         }
+    }
+
+    /// The accessor method `get_ref` returns a reference on screen vector.
+    pub fn get_ref(&self) -> &Vec<u8> {
+        self.screen.get_ref()
     }
 
     /// The method `resize` updates the size of the Display interface.
@@ -71,6 +80,10 @@ impl io::Write for Display {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match buf {
             &[] => Ok(0),
+            &[b'\x1B', b'[', b'>', b'0', b'c', ref next..] => {
+                println!("Cursor::TermVersionIn");
+                self.write(next)
+            },
             &[b'\x1B', b'[', b'7', b'h', ref next..] => {
                 println!("Cursor::LineWrap(true)");
                 self.write(next)
@@ -79,16 +92,36 @@ impl io::Write for Display {
                 println!("Cursor::LineWrap(false)");
                 self.write(next)
             },
+            &[b'\x1B', b'[', b';', b'H', ref next..] => {
+                println!("Cursor::CursorGoto(1, 1)");
+                self.write(next)
+            },
+            &[b'\x1B', b'[', b';', b'f', ref next..] => {
+                println!("Cursor::CursorGoto(1, 1)");
+                self.write(next)
+            },
+            &[b'\x1B', b'[', b'1', b'K', ref next..] => {
+                println!("Cursor::EraseLeftLine");
+                self.write(next)
+            },
+            &[b'\x1B', b'[', b'2', b'K', ref next..] => {
+                println!("Cursor::EraseLine");
+                self.write(next)
+            },
+            &[b'\x1B', b'[', b'1', b'J', ref next..] => {
+                println!("Cursor::EraseUp");
+                self.write(next)
+            },
+            &[b'\x1B', b'[', b'2', b'J', ref next..] => {
+                println!("Cursor::Clear");
+                self.write(next)
+            },
+            &[b'\x1B', b'[', b'0', b'm', ref next..] => {
+                println!("Cursor::ClearAttribute");
+                self.write(next)
+            },
             &[b'\x1B', b'[', b'r', ref next..] => {
                 println!("Cursor::ScrollEnable");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b'>', b'0', b'c', ref next..] => {
-                println!("Cursor::TermVersionIn");
-                self.write(next)
-            },
-            &[b'\x1B', b'c', ref next..] => {
-                println!("Cursor::TermReset");
                 self.write(next)
             },
             &[b'\x1B', b'[', b'H', ref next..] => {
@@ -96,14 +129,6 @@ impl io::Write for Display {
                 self.write(next)
             },
             &[b'\x1B', b'[', b'f', ref next..] => {
-                println!("Cursor::CursorGoto(1, 1)");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b';', b'H', ref next..] => {
-                println!("Cursor::CursorGoto(1, 1)");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b';', b'f', ref next..] => {
                 println!("Cursor::CursorGoto(1, 1)");
                 self.write(next)
             },
@@ -127,52 +152,16 @@ impl io::Write for Display {
                 println!("Cursor::SaveCursor");
                 self.write(next)
             },
-            &[b'\x1B', b'7', ref next..] => {
-                println!("Cursor::SaveCursor");
-                self.write(next)
-            },
             &[b'\x1B', b'[', b'u', ref next..] => {
                 println!("Cursor::RestoreCursor");
-                self.write(next)
-            },
-            &[b'\x1B', b'8', ref next..] => {
-                println!("Cursor::RestoreCursor");
-                self.write(next)
-            },
-            &[b'\x1B', b'D', ref next..] => {
-                println!("Cursor::ScrollUp");
-                self.write(next)
-            },
-            &[b'\x1B', b'M', ref next..] => {
-                println!("Cursor::ScrollDown");
                 self.write(next)
             },
             &[b'\x1B', b'[', b'K', ref next..] => {
                 println!("Cursor::EraseRightLine");
                 self.write(next)
             },
-            &[b'\x1B', b'[', b'1', b'K', ref next..] => {
-                println!("Cursor::EraseLeftLine");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b'2', b'K', ref next..] => {
-                println!("Cursor::EraseLine");
-                self.write(next)
-            },
             &[b'\x1B', b'[', b'J', ref next..] => {
                 println!("Cursor::EraseDown");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b'1', b'J', ref next..] => {
-                println!("Cursor::EraseUp");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b'2', b'J', ref next..] => {
-                println!("Cursor::Clear");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b'0', b'm', ref next..] => {
-                println!("Cursor::ClearAttribute");
                 self.write(next)
             },
             &[b'\x1B', b'[', b'm', ref next..] => {
@@ -224,7 +213,32 @@ impl io::Write for Display {
                     Ok(0)
                 }
             },
-            _ => Ok(0),
+            &[b'\x1B', b'7', ref next..] => {
+                println!("Cursor::SaveCursor");
+                self.write(next)
+            },
+            &[b'\x1B', b'c', ref next..] => {
+                println!("Cursor::TermReset");
+                self.write(next)
+            },
+            &[b'\x1B', b'8', ref next..] => {
+                println!("Cursor::RestoreCursor");
+                self.write(next)
+            },
+            &[b'\x1B', b'D', ref next..] => {
+                println!("Cursor::ScrollUp");
+                self.write(next)
+            },
+            &[b'\x1B', b'M', ref next..] => {
+                println!("Cursor::ScrollDown");
+                self.write(next)
+            },
+            &[first, ref next..] => self.screen.write(&[first])
+                                               .and_then(|f|
+                self.write(next).and_then(|n|
+                    Ok(f.add(&n))
+                )
+            ),
         }
     }
 

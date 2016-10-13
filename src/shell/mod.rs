@@ -1,8 +1,8 @@
-mod err;
-mod display;
-mod state;
+pub mod display;
 pub mod mode;
 pub mod device;
+mod err;
+mod state;
 
 use std::os::unix::io::AsRawFd;
 use std::io::{self, Write};
