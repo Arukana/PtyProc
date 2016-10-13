@@ -164,6 +164,26 @@ impl io::Write for Display {
                 println!("Cursor::EraseDown");
                 self.write(next)
             },
+            &[b'\x1B', b'7', ref next..] => {
+                println!("Cursor::SaveCursor");
+                self.write(next)
+            },
+            &[b'\x1B', b'c', ref next..] => {
+                println!("Cursor::TermReset");
+                self.write(next)
+            },
+            &[b'\x1B', b'8', ref next..] => {
+                println!("Cursor::RestoreCursor");
+                self.write(next)
+            },
+            &[b'\x1B', b'D', ref next..] => {
+                println!("Cursor::ScrollUp");
+                self.write(next)
+            },
+            &[b'\x1B', b'M', ref next..] => {
+                println!("Cursor::ScrollDown");
+                self.write(next)
+            },
             &[b'\x1B', b'[', b'>', ref next..] |
             &[b'\x1B', b'>', ref next..] |
             &[b'\x1B', b'[', ref next..] => {
@@ -209,26 +229,6 @@ impl io::Write for Display {
                          self.write(next).and_then(|n| Ok(f.add(&n)))
                     ),
                 }
-            },
-            &[b'\x1B', b'7', ref next..] => {
-                println!("Cursor::SaveCursor");
-                self.write(next)
-            },
-            &[b'\x1B', b'c', ref next..] => {
-                println!("Cursor::TermReset");
-                self.write(next)
-            },
-            &[b'\x1B', b'8', ref next..] => {
-                println!("Cursor::RestoreCursor");
-                self.write(next)
-            },
-            &[b'\x1B', b'D', ref next..] => {
-                println!("Cursor::ScrollUp");
-                self.write(next)
-            },
-            &[b'\x1B', b'M', ref next..] => {
-                println!("Cursor::ScrollDown");
-                self.write(next)
             },
             &[first, ref next..] => self.screen.write(&[first]).and_then(|f|
                 self.write(next).and_then(|n|
