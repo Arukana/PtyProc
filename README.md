@@ -1,6 +1,6 @@
 # PtyProc
 
-[![Build Status](https://travis-ci.org/adjivas/pty-proc.svg?branch=master)](https://travis-ci.org/adjivas/pty-proc)
+[![Build Status](https://travis-ci.org/adjivas/pty-proc.svg?style=flat-square&branch=master)](https://travis-ci.org/adjivas/pty-proc)
 
 #### How to use
 ```shell
@@ -16,15 +16,18 @@ cargo run
 ```shell
 pty-proc : crate
  ├── fork : private
+ ├── macros : private
  ├── prelude : public
  ├── shell : public
  │   ├── device : public
  │   │   ├── control : public
  │   │   │   └── operate : public
+ │   │   │       ├── err : private
  │   │   │       ├── key : public
  │   │   │       └── mouse : public
+ │   │   │           └── err : private
  │   │   └── state : private
- │   ├── display : private
+ │   ├── display : public
  │   │   ├── err : private
  │   │   └── winsz : private
  │   │       └── err : private
