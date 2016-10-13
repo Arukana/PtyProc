@@ -1,10 +1,10 @@
-# PtyShellMode
+# PtyProc
 
-[![Build Status](https://travis-ci.org/adjivas/pty-shell-mode.svg?branch=master)](https://travis-ci.org/adjivas/pty-shell-mode)
+[![Build Status](https://travis-ci.org/adjivas/pty-proc.svg?branch=master)](https://travis-ci.org/adjivas/pty-proc)
 
 #### How to use
 ```shell
-git clone https://github.com/adjivas/pty-shell-mode.git pty-shell-mode && cd pty-shell-mode
+git clone https://github.com/adjivas/pty-proc.git pty-proc && cd pty-proc
 cargo run
 ```
 
@@ -14,7 +14,7 @@ cargo run
 
 #### Module
 ```shell
-pty-shell-mode : crate
+pty-proc : crate
  ├── fork : private
  ├── prelude : public
  ├── shell : public
@@ -39,4 +39,4 @@ pty-shell-mode : crate
 #### Dependency
 Many thanks goes to:
 
-![Dependency](https://adjivas.github.io/pty-shell-mode/images/dependency.svg)
+![Dependency](https://adjivas.github.io/pty-proc/images/dependency.svg)
