@@ -1,7 +1,7 @@
 mod err;
 mod winsz;
 
-use std::ops::Add;
+use std::ops::{BitAnd, Add};
 use std::{io, fmt};
 
 use ::libc;
@@ -29,8 +29,8 @@ impl Display {
     pub fn from_winszed(size: Winszed) -> Display {
         Display {
             size: size,
-            screen: io::Cursor::new (
-              (0..size.row_by_col()).map(|_: usize| b'\x20')
+            screen: io::Cursor::new(
+              (0..size.row_by_col()).map(|_: usize| b' ')
                                     .collect::<Vec<u8>>()
             ),
         }
@@ -52,6 +52,17 @@ impl Display {
     /// The method `goto` moves the cursor position.
     pub fn goto(&mut self, index: libc::c_ulong) -> io::Result<usize> {
         self.screen.set_position(index);
+        Ok(0)
+    }
+
+    /// The method `clear` puges the screen vector.
+    pub fn clear(&mut self) -> io::Result<usize> {
+        self.goto(0).is_ok().bitand(
+          self.screen.get_mut().iter_mut().all(|mut term: &mut u8| {
+            *term = b' ';
+            true
+          })
+        );
         Ok(0)
     }
 }
@@ -90,20 +101,15 @@ impl io::Write for Display {
                 println!("Cursor::TermVersionIn");
                 self.write(next)
             },
-            &[b'\x1B', b'[', b'7', b'h', ref next..] => {
-                println!("Cursor::LineWrap(true)");
-                self.write(next)
-            },
+            &[b'\x1B', b'[', b'7', b'h', ref next..] |
             &[b'\x1B', b'[', b'7', b'l', ref next..] => {
-                println!("Cursor::LineWrap(false)");
+                println!("Cursor::LineWrap(true)");
                 self.write(next)
             },
             &[b'\x1B', b'[', b';', b'H', ref next..] |
             &[b'\x1B', b'[', b';', b'f', ref next..] | 
             &[b'\x1B', b'[', b'H', ref next..] |
-            &[b'\x1B', b'[', b'f', ref next..] => {
-                self.goto(0).and(self.write(next))
-            },
+            &[b'\x1B', b'[', b'f', ref next..] => self.goto(0).and(self.write(next)),
             &[b'\x1B', b'[', b'1', b'K', ref next..] => {
                 println!("Cursor::EraseLeftLine");
                 self.write(next)
@@ -116,11 +122,9 @@ impl io::Write for Display {
                 println!("Cursor::EraseUp");
                 self.write(next)
             },
-            &[b'\x1B', b'[', b'2', b'J', ref next..] => {
-                println!("Cursor::Clear");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b'0', b'm', ref next..] => {
+            &[b'\x1B', b'[', b'2', b'J', ref next..] => self.clear().and(self.write(next)),
+            &[b'\x1B', b'[', b'0', b'm', ref next..] |
+            &[b'\x1B', b'[', b'm', ref next..] => {
                 println!("Cursor::ClearAttribute");
                 self.write(next)
             },
@@ -160,10 +164,6 @@ impl io::Write for Display {
                 println!("Cursor::EraseDown");
                 self.write(next)
             },
-            &[b'\x1B', b'[', b'm', ref next..] => {
-                println!("Cursor::ClearAttribute");
-                self.write(next)
-            },
             &[b'\x1B', b'[', b'>', ref next..] |
             &[b'\x1B', b'>', ref next..] |
             &[b'\x1B', b'[', ref next..] => {
@@ -179,7 +179,9 @@ impl io::Write for Display {
                             println!("Cursor::CursorGoto({}, {})", x, y);
                             self.write(next)
                         },
-                        _ => Ok(0),
+                        next => self.screen.write(&[b'\x1B', b'[']).and_then(|f|
+                            self.write(next).and_then(|n| Ok(f.add(&n)))
+                        ),
                     }
                 } else if let Some((buf, i)) = c_i!(next) {
                     match buf {
@@ -203,10 +205,14 @@ impl io::Write for Display {
                             println!("Cursor::Attribute({});", i);
                             self.write(next)
                         },
-                        _ => Ok(0),
+                        next => self.screen.write(&[b'\x1B', b'[']).and_then(|f|
+                            self.write(next).and_then(|n| Ok(f.add(&n)))
+                        ),
                     }
                 } else {
-                    Ok(0)
+                    self.screen.write(&[b'\x1B', b'[']).and_then(|f|
+                        self.write(next).and_then(|n| Ok(f.add(&n)))
+                    )
                 }
             },
             &[b'\x1B', b'7', ref next..] => {
@@ -229,8 +235,7 @@ impl io::Write for Display {
                 println!("Cursor::ScrollDown");
                 self.write(next)
             },
-            &[first, ref next..] => self.screen.write(&[first])
-                                               .and_then(|f|
+            &[first, ref next..] => self.screen.write(&[first]).and_then(|f|
                 self.write(next).and_then(|n|
                     Ok(f.add(&n))
                 )
