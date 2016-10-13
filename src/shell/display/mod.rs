@@ -48,6 +48,12 @@ impl Display {
         Ok(size) => Ok(self.size = size),
       }
     }
+
+    /// The method `goto` moves the cursor position.
+    pub fn goto(&mut self, index: libc::c_ulong) -> io::Result<usize> {
+        self.screen.set_position(index);
+        Ok(0)
+    }
 }
 
 impl ExactSizeIterator for Display {
@@ -92,13 +98,11 @@ impl io::Write for Display {
                 println!("Cursor::LineWrap(false)");
                 self.write(next)
             },
-            &[b'\x1B', b'[', b';', b'H', ref next..] => {
-                println!("Cursor::CursorGoto(1, 1)");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b';', b'f', ref next..] => {
-                println!("Cursor::CursorGoto(1, 1)");
-                self.write(next)
+            &[b'\x1B', b'[', b';', b'H', ref next..] |
+            &[b'\x1B', b'[', b';', b'f', ref next..] | 
+            &[b'\x1B', b'[', b'H', ref next..] |
+            &[b'\x1B', b'[', b'f', ref next..] => {
+                self.goto(0).and(self.write(next))
             },
             &[b'\x1B', b'[', b'1', b'K', ref next..] => {
                 println!("Cursor::EraseLeftLine");
@@ -122,14 +126,6 @@ impl io::Write for Display {
             },
             &[b'\x1B', b'[', b'r', ref next..] => {
                 println!("Cursor::ScrollEnable");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b'H', ref next..] => {
-                println!("Cursor::CursorGoto(1, 1)");
-                self.write(next)
-            },
-            &[b'\x1B', b'[', b'f', ref next..] => {
-                println!("Cursor::CursorGoto(1, 1)");
                 self.write(next)
             },
             &[b'\x1B', b'[', b'A', ref next..] => {
