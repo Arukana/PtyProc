@@ -167,52 +167,47 @@ impl io::Write for Display {
             &[b'\x1B', b'[', b'>', ref next..] |
             &[b'\x1B', b'>', ref next..] |
             &[b'\x1B', b'[', ref next..] => {
-                if let Some((buf, (x, y))) = c_xy!(next) {
-                    match buf {
-                        &[b';', b'0', b'c', ref next..] |
-                        &[b';', b'c', ref next..] => {
-                            println!("Cursor::TermVersionOut({}, {})", x, y);
-                            self.write(next)
-                        },
-                        &[b'H', ref next..] |
-                        &[b'f', ref next..] => {
-                            println!("Cursor::CursorGoto({}, {})", x, y);
-                            self.write(next)
-                        },
-                        next => self.screen.write(&[b'\x1B', b'[']).and_then(|f|
-                            self.write(next).and_then(|n| Ok(f.add(&n)))
-                        ),
-                    }
-                } else if let Some((buf, i)) = c_i!(next) {
-                    match buf {
-                        &[b'A', ref next..] => {
-                            println!("Cursor::CursorUp({});", i);
-                            self.write(next)
-                        },
-                        &[b'B', ref next..] => {
-                            println!("Cursor::CursorDown({});", i);
-                            self.write(next)
-                        },
-                        &[b'C', ref next..] => {
-                            println!("Cursor::CursorRight({});", i);
-                            self.write(next)
-                        },
-                        &[b'D', ref next..] => {
-                            println!("Cursor::CursorLeft({});", i);
-                            self.write(next)
-                        },
-                        &[b'm', ref next..] => {
-                            println!("Cursor::Attribute({});", i);
-                            self.write(next)
-                        },
-                        next => self.screen.write(&[b'\x1B', b'[']).and_then(|f|
-                            self.write(next).and_then(|n| Ok(f.add(&n)))
-                        ),
-                    }
-                } else {
-                    self.screen.write(&[b'\x1B', b'[']).and_then(|f|
-                        self.write(next).and_then(|n| Ok(f.add(&n)))
-                    )
+                match parse_number!(next) {
+                    Some((Some(&b'A'), number, ref next)) => {
+                        println!("Cursor::CursorUp({});", number);
+                        self.write(next)
+                    },
+                    Some((Some(&b'B'), number, ref next)) => {
+                        println!("Cursor::CursorDown({});", number);
+                        self.write(next)
+                    },
+                    Some((Some(&b'C'), number, ref next)) => {
+                        println!("Cursor::CursorRight({});", number);
+                        self.write(next)
+                    },
+                    Some((Some(&b'D'), number, ref next)) => {
+                        println!("Cursor::CursorLeft({});", number);
+                        self.write(next)
+                    },
+                    Some((Some(&b'm'), number, ref next)) => {
+                        println!("Cursor::Attribute({});", number);
+                        self.write(next)
+                    },
+                    Some((Some(&b';'), x, ref next)) => {
+                        match parse_number!(next) {
+                            Some((Some(&b'H'), y, ref next)) |
+                            Some((Some(&b'f'), y, ref next)) => {
+                                println!("Cursor::CursorGoto({}, {})", x, y);
+                                self.write(next)
+                            },
+                            Some((Some(&b';'), y, &[b'0', b'c', ref next..])) |
+                            Some((Some(&b';'), y, &[b'c', ref next..])) => {
+                                println!("Cursor::TermVersionOut({}, {})", x, y);
+                                self.write(next)
+                            },
+                            _ => self.screen.write(&[b'\x1B', b'[', b';']).and_then(|f|
+                                 self.write(next).and_then(|n| Ok(f.add(&n)))
+                            ),
+                        }
+                    },
+                    _ => self.screen.write(&[b'\x1B', b'[']).and_then(|f|
+                         self.write(next).and_then(|n| Ok(f.add(&n)))
+                    ),
                 }
             },
             &[b'\x1B', b'7', ref next..] => {
