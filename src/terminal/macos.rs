@@ -3,6 +3,7 @@ use ::libc;
 use std::io::Result;
 use std::mem;
 use std::io::{self, Write};
+use std::ops::BitOr;
 
 pub struct Termios {
   fd: libc::c_int,
@@ -15,8 +16,7 @@ impl Termios {
     unsafe {
       let config: libc::termios = mem::zeroed();
 
-      libc::ioctl(
-        fd,
+      libc::ioctl(fd,
         (0x40000000 | (116 << 8) | 19 |
         (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
         &config
@@ -35,8 +35,7 @@ impl Termios {
     unsafe {
       let mut new_termios: libc::termios = mem::zeroed();
 
-      libc::ioctl(
-        self.fd,
+      libc::ioctl(self.fd,
         (0x40000000 | (116 << 8) | 19 |
         (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
         &new_termios
@@ -45,8 +44,7 @@ impl Termios {
       new_termios.c_lflag ^= !(libc::ECHO);
       new_termios.c_cc[libc::VMIN] = 1;
       new_termios.c_cc[libc::VTIME] = 0;
-      libc::ioctl(
-        self.fd,
+      libc::ioctl(self.fd,
         (0x80000000 | (116 << 8) | 20 |
         (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
         &new_termios
