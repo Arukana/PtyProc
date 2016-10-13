@@ -69,9 +69,7 @@ impl Display {
 
 impl ExactSizeIterator for Display {
     fn len(&self) -> usize {
-        self.size.get_col().checked_mul(
-          self.size.get_row()
-        ).unwrap_or_default()
+        self.size.row_by_col()
     }
 }
 
