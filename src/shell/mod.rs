@@ -34,7 +34,7 @@ pub struct Shell {
 
 impl Shell {
 
-  /// The constructor method `new` returns a shell interface according to 
+  /// The constructor method `new` returns a shell interface according to
   /// the command's option and a configured mode Line by Line.
   pub fn new (
     command: Option<&'static str>,

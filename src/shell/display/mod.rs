@@ -79,6 +79,7 @@ impl Display {
         Err(why) => Err(DisplayError::WinszedFail(why)),
         Ok(size) => Ok(self.size = size),
       }
+    }
 
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::c_ulong) -> io::Result<usize> {
@@ -327,7 +328,7 @@ impl io::Write for Display {
             &[b'\x1B', b'[', ref next..] =>
             { match parse_number!(next)
               { //------------- n GOTO ------------------
-                Some((Some(&b'A'), number, ref next)) =>
+                Some((Some(&b'A'), number, &[b'A', ref next..])) =>
                   { //println!("Cursor::CursorUp({});", number);
                     let col = self.size.get_col();
                     let pos = self.get_position();
