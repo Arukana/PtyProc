@@ -35,15 +35,15 @@ fn test_home()
   assert_eq!(display.write(b"\x1B[;Hnew").ok(), Some(3usize));
   assert_eq!(display.get_ref(), &vec![b'n', b'e', b'w', b' ', b' ', b' ']); }
 
-/*
 #[test]
 fn test_move()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.write(b"old").ok(), Some(3usize));
   assert_eq!(display.get_ref(), &vec![b'o', b'l', b'd', b' ', b' ', b' ']);
-  assert_eq!(display.write(b"\x1B[;Hnew").ok(), Some(3usize));
-  assert_eq!(display.get_ref(), &vec![b'n', b'e', b'w', b' ', b' ', b' ']); }
-*/
+  assert_eq!(display.write(b"\x1B[Dnew").ok(), Some(3usize));
+  assert_eq!(display.get_ref(), &vec![b'o', b'l', b'n', b'e', b'w', b' ']);
+  assert_eq!(display.write(b"\x1B[A\x1B[C\x1B[Ahello").ok(), Some(5usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'e', b'l', b'l', b'o', b' ']); }
 
 #[test]
 fn test_clear()
@@ -107,3 +107,14 @@ fn test_goto_out_limits_bottom()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b' ', b' ', b' ']);
   assert_eq!(display.write(b"\x1B[3;1H").ok(), Some(0usize)); }
+
+#[test]
+fn test_n_move()
+{ let mut display: Display = Display::from_winszed(SIZE);
+  assert_eq!(display.write(b"old").ok(), Some(3usize));
+  assert_eq!(display.get_ref(), &vec![b'o', b'l', b'd', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"\x1B[2Dnew").ok(), Some(3usize));
+  assert_eq!(display.get_ref(), &vec![b'o', b'n', b'e', b'w', b' ', b' ']);
+  assert_eq!(display.write(b"\x1B[1A\x1B[3C\x1B[1Ahello").ok(), Some(5usize));
+  assert_eq!(display.get_ref(), &vec![b'o', b'h', b'e', b'l', b'l', b'o']); }
+
