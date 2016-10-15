@@ -12,7 +12,6 @@ pub use self::err::{DisplayError, Result};
 pub struct Display {
     save_position: u64,
     line_wrap: bool,
-    scroll: bool,
     size: Winszed,
     screen: io::Cursor<Vec<u8>>,
 }
@@ -33,7 +32,6 @@ impl Display {
         Display {
             save_position: 0,
             line_wrap: true,
-            scroll: true,
             size: size,
             screen: io::Cursor::new(
               (0..size.row_by_col()).map(|_: usize| b' ')
@@ -67,13 +65,20 @@ impl Display {
       self.screen.position()
     }
 
-    /// The method `resize` updates the size of the Display interface.
+    /// The method `resize` updates the size of the output screen.
     pub fn resize(&mut self) -> Result<()> {
       match Winszed::new(0) {
         Err(why) => Err(DisplayError::WinszedFail(why)),
         Ok(size) => Ok(self.size = size),
       }
     }
+
+    /// The method `tricky_resize` updates the size of the output screen.
+    pub fn tricky_resize(&mut self) -> Result<()> {
+      match Winszed::new(0) {
+        Err(why) => Err(DisplayError::WinszedFail(why)),
+        Ok(size) => Ok(self.size = size),
+      }
 
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::c_ulong) -> io::Result<usize> {
@@ -369,7 +374,7 @@ impl io::Write for Display {
                     },
 
                     Some((Some(&b'r'), y, ref next)) =>
-                    { println!("Resize::({}, {})", x, y);
+                    { //println!("Resize::({}, {})", x, y);
                       self.write(next) },
 
                     _ => { println!("HHHHHH  {:?}  HHHHHH", buf);
