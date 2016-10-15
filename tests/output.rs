@@ -104,22 +104,10 @@ fn test_goto()
   assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b' ', b' ', b' ']);
   assert_eq!(display.write(b"hello").ok(), Some(5usize));
   assert_eq!(display.get_ref(), &vec![b'h', b'e', b'l', b'l', b'o', b' ']);
-  assert_eq!(display.write(b"\x1B[2;1Hx\x1B[1;3Hu").ok(), Some(2usize));
+  assert_eq!(display.write(b"\x1B[2;1Hx").ok(), Some(1usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'e', b'l', b'x', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[1;3Hu").ok(), Some(1usize));
   assert_eq!(display.get_ref(), &vec![b'h', b'e', b'u', b'x', b'o', b' ']); }
-
-#[test]
-#[should_panic]
-fn test_goto_out_limits_right()
-{ let mut display: Display = Display::from_winszed(SIZE);
-  assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b' ', b' ', b' ']);
-  assert_eq!(display.write(b"\x1B[2;4H").ok(), Some(0usize)); }
-
-#[test]
-#[should_panic]
-fn test_goto_out_limits_bottom()
-{ let mut display: Display = Display::from_winszed(SIZE);
-  assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b' ', b' ', b' ']);
-  assert_eq!(display.write(b"\x1B[3;1H").ok(), Some(0usize)); }
 
 #[test]
 fn test_n_move()
