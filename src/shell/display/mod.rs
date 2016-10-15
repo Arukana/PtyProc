@@ -10,8 +10,7 @@ pub use self::err::{DisplayError, Result};
 
 #[derive(Debug, Clone)]
 pub struct Display {
-    position: u64,
-    safe_position: u64,
+    save_position: u64,
     size: Winszed,
     screen: io::Cursor<Vec<u8>>,
 }
@@ -30,8 +29,7 @@ impl Display {
     /// from shell.
     pub fn from_winszed(size: Winszed) -> Display {
         Display {
-            position: 0,
-            safe_position: 0,
+            save_position: 0,
             size: size,
             screen: io::Cursor::new(
               (0..size.row_by_col()).map(|_: usize| b' ')
@@ -45,15 +43,13 @@ impl Display {
       self.screen.get_ref()
     }
 
-    /// The accessor method `get_position` returns the address of
-    /// the cursor-position variable of the structure Display
-    pub fn get_position(&mut self) -> &mut u64 {
-      &mut self.position
-    }
+    /// The accessor method `get_ref` returns a reference on screen vector.
+    pub fn get_mut(&mut self) -> &mut Vec<u8>
+    { self.screen.get_mut() }
 
-    /// The accessor method `get_current_position` returns the position
+    /// The accessor method `get_position` returns the position
     /// of the cursor into the screen vector
-    pub fn get_current_position(&self) -> u64 {
+    pub fn get_position(&self) -> u64 {
       self.screen.position()
     }
 
@@ -114,38 +110,87 @@ impl io::Write for Display {
 
             //------------ SETTINGS -------------
             &[b'\x1B', b'c', ref next..] =>
-              { println!("Cursor::TermReset");
+              { //println!("Cursor::TermReset");
                 self.write(next) },
             &[b'\x1B', b'[', b'>', b'0', b'c', ref next..] =>
-              { println!("Cursor::TermVersionIn");
+              { //println!("Cursor::TermVersionIn");
                 self.write(next) },
-            &[b'\x1B', b'[', b'7', b'h', ref next..] |
+            &[b'\x1B', b'[', b'7', b'h', ref next..] =>
+              { //println!("Cursor::LineWrap(true)");
+                self.write(next) },
             &[b'\x1B', b'[', b'7', b'l', ref next..] =>
-              { println!("Cursor::LineWrap(true)");
+              { //println!("Cursor::LineWrap(false)");
                 self.write(next) },
             &[b'\x1B', b'[', b'r', ref next..] =>
-              { println!("Cursor::ScrollEnable");
+              { //println!("Cursor::ScrollEnable");
                 self.write(next) },
 
             //------------ ERASE -----------------
             &[b'\x1B', b'[', b'K', ref next..] =>
-              { println!("Cursor::EraseRightLine");
+              { //println!("Cursor::EraseRightLine");
+                { let col = self.size.get_col();
+                  let pos = self.get_position();
+                  let mut get = col;
+                  if pos >= col as u64
+                  { get = pos as usize;
+                    while (get + 1) % col != 0
+                    { get += 1; }; }
+                  self.goto((get - 1) as u64);
+                  let coucou = self.get_mut();
+                  {pos as usize..get}.all(|i|
+                  { (*coucou)[i] = b' ';
+                    true }); }
                 self.write(next) },
             &[b'\x1B', b'[', b'1', b'K', ref next..] =>
-              { println!("Cursor::EraseLeftLine");
+              { //println!("Cursor::EraseLeftLine");
+                { let col = self.size.get_col();
+                  let pos = self.get_position();
+                  let mut get = 0;
+                  if pos >= col as u64
+                  { get = pos as usize;
+                    while get % col != 0
+                    { get -= 1; }; }
+                  let coucou = self.get_mut();
+                  {get..(pos + 1) as usize}.all(|i|
+                  { (*coucou)[i] = b' ';
+                    true }); }
                 self.write(next) },
-            &[b'\x1B', b'[', b'2', b'K', ref next..] |
-            &[b'\x1B', b'[', b'L', ref next..] =>
-              { println!("Cursor::EraseLine");
+            &[b'\x1B', b'[', b'2', b'K', ref next..] =>
+              { //println!("Cursor::EraseLine");
+                { let col = self.size.get_col();
+                  let mut pos = self.get_position();
+                  let mut get = 0;
+                  while pos as usize % col != 0
+                  { pos -= 1; };
+                  while (get + pos + 1) % col as u64 != 0
+                  { get += 1; };
+                  self.goto(get + pos);
+                  let coucou = self.get_mut();
+                  {pos as usize..(get + pos + 1) as usize}.all(|i|
+                  { (*coucou)[i] = b' ';
+                    true }); }
                 self.write(next) },
             &[b'\x1B', b'[', b'J', ref next..] =>
-              { println!("Cursor::EraseDown");
+              { //println!("Cursor::EraseDown");
                 self.write(next) },
             &[b'\x1B', b'[', b'1', b'J', ref next..] =>
-              { println!("Cursor::EraseUp");
+              { //println!("Cursor::EraseUp");
                 self.write(next) },
             &[b'\x1B', b'[', b'2', b'J', ref next..] =>
-              { self.clear().and(self.write(next)) },
+              { self.clear();
+                self.write(next) },
+
+            //------------ INSERT -----------------
+            &[b'\x1B', b'[', b'L', ref next..] =>
+              { println!("InsertEmptyLine");
+                { let col = self.size.get_col();
+                  let pos = self.get_position();
+                  let coucou = self.get_mut();
+                  {0..col}.all(|_|
+                  { (*coucou).pop();
+                    (*coucou).insert(pos as usize, b' ');
+                    true }); }
+                self.write(next) },
 
             //------------- GOTO ------------------
             &[b'\x1B', b'[', b';', b'H', ref next..] |
@@ -153,93 +198,106 @@ impl io::Write for Display {
             &[b'\x1B', b'[', b'H', ref next..] |
             &[b'\x1B', b'[', b'f', ref next..] |
             &[b'\x1B', b'[', b'?', b'6', b'l', ref next..] =>
-              { println!("Goto::Home");
-                self.goto(0).and(self.write(next)) },
+              { //println!("Goto::Home");
+                self.goto(0);
+                self.write(next) },
             &[b'\x1B', b'[', b'A', ref next..] |
             &[b'\x1B', b'O', b'A', ref next..] =>
-              { println!("Goto::Up(1)");
-                { let row = self.size.get_row();
-                  let pos: &mut u64 = self.get_position();
-                  *pos -= row as u64; }
+              { //println!("Goto::Up(1)");
+                let col = self.size.get_col();
+                let pos = self.get_position();
+                self.goto((pos - col as u64) as u64);
                 self.write(next) },
             &[b'\x1B', b'[', b'B', ref next..] |
             &[b'\x1B', b'O', b'B', ref next..] =>
-              { println!("Goto::Down(1)");
-                { let row = self.size.get_row();
-                  let pos: &mut u64 = self.get_position();
-                  *pos += row as u64; }
+              { //println!("Goto::Down(1)");
+                let col = self.size.get_col();
+                let pos = self.get_position();
+                self.goto((pos + col as u64) as u64);
                 self.write(next) },
             &[b'\x1B', b'[', b'C', ref next..] |
             &[b'\x1B', b'O', b'C', ref next..] =>
-              { println!("Goto::Right(1)");
-                { let pos: &mut u64 = self.get_position();
-                  *pos += 1; }
+              { //println!("Goto::Right(1)");
+                let pos = self.get_position();
+                self.goto((pos + 1) as u64);
                 self.write(next) },
             &[b'\x1B', b'[', b'D', ref next..] |
             &[b'\x1B', b'O', b'D', ref next..] |
             &[b'\x08', ref next..] =>
-              { println!("Goto::Left(1)");
-                { let pos: &mut u64 = self.get_position();
-                  *pos -= 1; }
+              { //println!("Goto::Left(1)");
+                let pos = self.get_position();
+                self.goto((pos - 1) as u64);
                 self.write(next) },
 
             //--------- POSITION SAVE ----------
             &[b'\x1B', b'[', b's', ref next..] |
             &[b'\x1B', b'7', ref next..] =>
-              { println!("Cursor::SaveCursor");
+              { //println!("Cursor::SaveCursor");
                 self.write(next) },
             &[b'\x1B', b'[', b'u', ref next..] |
             &[b'\x1B', b'8', ref next..] =>
-              { println!("Cursor::RestoreCursor");
+              { //println!("Cursor::RestoreCursor");
                 self.write(next) },
 
             //------------- SCROLL ---------------
             &[b'\x1B', b'D', ref next..] =>
-              { println!("Cursor::ScrollUp");
+              { //println!("Cursor::ScrollUp");
                 self.write(next) },
             &[b'\x1B', b'M', ref next..] =>
-              { println!("Cursor::ScrollDown");
+              { //println!("Cursor::ScrollDown");
                 self.write(next) },
 
             //------------ CL ATTR -------------
             &[b'\x1B', b'[', b'0', b'm', ref next..] |
             &[b'\x1B', b'[', b'm', ref next..] =>
-              { println!("Cursor::ClearAttribute");
+              { //println!("Cursor::ClearAttribute");
                 self.write(next) },
 
             &[b'\x1B', b'[', ref next..] =>
             { match parse_number!(next)
               { //------------- n GOTO ------------------
                 Some((Some(&b'A'), number, ref next)) =>
-                  { println!("Cursor::CursorUp({});", number);
+                  { //println!("Cursor::CursorUp({});", number);
+                    let col = self.size.get_col();
+                    let pos = self.get_position();
+                    self.goto((pos - (number * col as u16) as u64) as u64);
                     self.write(next) },
                 Some((Some(&b'B'), number, ref next)) =>
-                  { println!("Cursor::CursorDown({});", number);
+                  { //println!("Cursor::CursorDown({});", number);
+                    let col = self.size.get_col();
+                    let pos = self.get_position();
+                    self.goto((pos + (number * col as u16) as u64) as u64);
                     self.write(next) },
                 Some((Some(&b'C'), number, ref next)) =>
-                  { println!("Cursor::CursorRight({});", number);
-                    { let pos: &mut u64 = self.get_position();
-                      *pos += 1; }
+                  { //println!("Cursor::CursorRight({});", number);
+                    let pos = self.get_position();
+                    self.goto((pos + number as u64) as u64);
                     self.write(next) },
                 Some((Some(&b'D'), number, ref next)) =>
-                  { println!("Cursor::CursorLeft({});", number);
-                    { let pos: &mut u64 = self.get_position();
-                      *pos -= 1; }
+                  { //println!("Cursor::CursorLeft({});", number);
+                    let pos = self.get_position();
+                    self.goto((pos + number as u64) as u64);
                     self.write(next) },
 
                     Some((Some(&b'm'), number, ref next)) =>
-                      { println!("Cursor::Attribute({});", number);
+                      { //println!("Cursor::Attribute({});", number);
                         self.write(next) },
                     Some((Some(&b';'), x, ref next)) => {
                         match parse_number!(next) {
                             Some((Some(&b'H'), y, ref next)) |
                             Some((Some(&b'f'), y, ref next)) => {
                                 println!("Cursor::CursorGoto({}, {})", x, y);
+                                let row = self.size.get_row();
+                                let col = self.size.get_col();
+                                if x <= row as u16 && y <= col as u16
+                                { self.goto(((y - 1) + ((x - 1) * (col as u16 - 1))) as u64); }
+                                else
+                                { panic!("Coordinates out of terminal limits : ({}, {})", y, x); }
                                 self.write(next)
                             },
                             Some((Some(&b';'), y, &[b'0', b'c', ref next..])) |
                             Some((Some(&b';'), y, &[b'c', ref next..])) => {
-                                println!("Cursor::TermVersionOut({}, {})", x, y);
+                                //println!("Cursor::TermVersionOut({}, {})", x, y);
                                 self.write(next)
                             },
 
@@ -247,9 +305,10 @@ impl io::Write for Display {
                             { println!("Resize::({}, {})", x, y);
                               self.write(next) },
 
-                            _ => self.screen.write(&[b'\x1B', b'[', b';']).and_then(|f|
+                            _ => { println!("HHHHHH  {:?}  HHHHHH", buf);
+                            self.screen.write(&[b'\x1B', b'[', b';']).and_then(|f|
                                  self.write(next).and_then(|n| Ok(f.add(&n)))
-                            ),
+                            )},
                         }
                     },
                     _ => self.screen.write(&[b'\x1B', b'[']).and_then(|f|
@@ -262,10 +321,7 @@ impl io::Write for Display {
             &[b'\x0D', ref next..] =>
               { self.write(next) },
             &[first, ref next..] => 
-              { if first >= 32
-                { let pos: &mut u64 = self.get_position();
-                  *pos += 1; }
-                self.screen.write(&[first]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) },
+              { self.screen.write(&[first]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) },
         }
     }
 

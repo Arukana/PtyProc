@@ -7,8 +7,7 @@ use pty_proc::prelude::*;
 use std::io::{self, Write};
 
 fn main()
-{ 
-  let mut display: Display = Display::new(0).unwrap();
+{ let mut display: Display = Display::new(0).unwrap();
   display.clear();
   print!("{}{}", display, "\x1B[1;1H");
   let mut shell: shell::Shell = shell::Shell::from_mode(None, shell::Mode::Character).unwrap();
