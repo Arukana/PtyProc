@@ -118,3 +118,28 @@ fn test_n_move()
   assert_eq!(display.write(b"\x1B[1A\x1B[3C\x1B[1Ahello").ok(), Some(5usize));
   assert_eq!(display.get_ref(), &vec![b'o', b'h', b'e', b'l', b'l', b'o']); }
 
+#[test]
+fn test_position_save()
+{ let mut display: Display = Display::from_winszed(SIZE);
+  assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"h\x1B[sello").ok(), Some(5usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[uQ").ok(), Some(1usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'Q', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[;Hh\x1B[sel\x1B[slo").ok(), Some(5usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[uJ\x1B[uK").ok(), Some(2usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'e', b'l', b'K', b'o', b' ']); }
+
+#[test]
+fn test_scroll()
+{ let mut display: Display = Display::from_winszed(SIZE);
+  assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"h\x1B[sello").ok(), Some(5usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1BD").ok(), Some(0usize));
+  assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b'h', b'e', b'l']);
+  assert_eq!(display.write(b"\x1B[;Hhi").ok(), Some(2usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'i', b' ', b'h', b'e', b'l']);
+  assert_eq!(display.write(b"\x1BM").ok(), Some(0usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'e', b'l', b' ', b' ', b' ']); }

@@ -43,7 +43,10 @@ impl Display {
       self.screen.get_ref()
     }
 
-    /// The accessor method `get_ref` returns a reference on screen vector.
+    pub fn get_save(&mut self) -> &mut u64
+    { &mut self.save_position }
+
+    /// The accessor method `get_mut` returns a reference on screen vector.
     pub fn get_mut(&mut self) -> &mut Vec<u8>
     { self.screen.get_mut() }
 
@@ -233,18 +236,37 @@ impl io::Write for Display {
             &[b'\x1B', b'[', b's', ref next..] |
             &[b'\x1B', b'7', ref next..] =>
               { //println!("Cursor::SaveCursor");
+                { let pos = self.get_position();
+                  let save = self.get_save();
+                  *save = pos; }
                 self.write(next) },
             &[b'\x1B', b'[', b'u', ref next..] |
             &[b'\x1B', b'8', ref next..] =>
               { //println!("Cursor::RestoreCursor");
+                { let pos =
+                  { let restore = self.get_save();
+                    *restore };
+                  self.goto(pos); }
                 self.write(next) },
 
             //------------- SCROLL ---------------
             &[b'\x1B', b'D', ref next..] =>
               { //println!("Cursor::ScrollUp");
+                { let col = self.size.get_col();
+                  let coucou = self.get_mut();
+                  {0..col}.all(|i|
+                  { (*coucou).pop();
+                    (*coucou).insert(i, b' ');
+                    true }); }
                 self.write(next) },
             &[b'\x1B', b'M', ref next..] =>
               { //println!("Cursor::ScrollDown");
+                { let col = self.size.get_col();
+                  let coucou = self.get_mut();
+                  {0..col}.all(|_|
+                  { (*coucou).remove(0);
+                    (*coucou).push(b' ');
+                    true }); }
                 self.write(next) },
 
             //------------ CL ATTR -------------
