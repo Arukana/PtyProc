@@ -13,7 +13,7 @@ macro_rules! parse_number {
             u16::from_str_radix(str::from_utf8_unchecked(term), 10)
         } {
             let next: &[u8] = &$coordinate[index..];
-            Some((next.first(), number, next))
+            Some((number, next))
         }
         else {
             None

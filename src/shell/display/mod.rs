@@ -328,37 +328,37 @@ impl io::Write for Display {
             &[b'\x1B', b'[', ref next..] =>
             { match parse_number!(next)
               { //------------- n GOTO ------------------
-                Some((Some(&b'A'), number, &[_, ref next..])) =>
+                Some((number, &[b'A', ref next..])) =>
                   { //println!("Cursor::CursorUp({});", number);
                     let col = self.size.get_col();
                     let pos = self.get_position();
                     self.goto((pos - (number * col as u16) as u64) as u64);
                     self.write(next) },
-                Some((Some(&b'B'), number, &[_, ref next..])) =>
+                Some((number, &[b'B', ref next..])) =>
                   { //println!("Cursor::CursorDown({});", number);
                     let col = self.size.get_col();
                     let pos = self.get_position();
                     self.goto((pos + (number * col as u16) as u64) as u64);
                     self.write(next) },
-                Some((Some(&b'C'), number, &[_, ref next..])) =>
+                Some((number, &[b'C', ref next..])) =>
                   { //println!("Cursor::CursorRight({});", number);
                     let pos = self.get_position();
                     self.goto((pos + number as u64) as u64);
                     self.write(next) },
-                Some((Some(&b'D'), number, &[_, ref next..])) =>
+                Some((number, &[b'D', ref next..])) =>
                   { //println!("Cursor::CursorLeft({});", number);
                     let pos = self.get_position();
                     self.goto((pos - number as u64) as u64);
                     self.write(next) },
 
-                Some((Some(&b'm'), number, &[_, ref next..])) =>
+                Some((number, &[b'm', ref next..])) =>
                   { //println!("Cursor::Attribute({});", number);
                     self.write(next) },
 
-                Some((Some(&b';'), x, &[_, ref next..])) => {
+                Some((x, &[b';', ref next..])) => {
                   match parse_number!(next) {
-                    Some((Some(&b'H'), c, &[_, ref next..])) |
-                    Some((Some(&b'f'), c, &[_, ref next..])) => {
+                    Some((c, &[b'H', ref next..])) |
+                    Some((c, &[b'f', ref next..])) => {
                       //println!("Cursor::CursorGoto({}, {})", x, c);
                       let row = self.size.get_row();
                       let col = self.size.get_col();
@@ -369,13 +369,13 @@ impl io::Write for Display {
                       self.write(next)
                     },
 
-                    Some((Some(&b';'), y, &[b'0', b'c', ref next..])) |
-                    Some((Some(&b';'), y, &[b'c', ref next..])) => {
+                    Some((y, &[b';', b'0', b'c', ref next..])) |
+                    Some((y, &[b';', b'c', ref next..])) => {
                       //println!("Cursor::TermVersionOut({}, {})", x, y);
                       self.write(next)
                     },
 
-                    Some((Some(&b'r'), y, &[_, ref next..])) =>
+                    Some((y, &[b'r', ref next..])) =>
                     { //println!("Resize::({}, {})", x, y);
                       self.write(next) },
 
