@@ -77,6 +77,19 @@ fn test_erase_line()
   assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b' ', b' ', b' ']); }
 
 #[test]
+fn test_erase_up_down()
+{ let mut display: Display = Display::from_winszed(SIZE);
+  assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"hello").ok(), Some(5usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[D\x1B[D\x1B[1J").ok(), Some(0usize));
+  assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b' ', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[;Hhey").ok(), Some(3usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b'e', b'y', b' ', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[D\x1B[D\x1B[J").ok(), Some(0usize));
+  assert_eq!(display.get_ref(), &vec![b'h', b' ', b' ', b' ', b' ', b' ']); }
+
+#[test]
 fn test_insert_empty_line()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.get_ref(), &vec![b' ', b' ', b' ', b' ', b' ', b' ']);

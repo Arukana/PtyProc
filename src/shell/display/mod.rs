@@ -11,6 +11,8 @@ pub use self::err::{DisplayError, Result};
 #[derive(Debug, Clone)]
 pub struct Display {
     save_position: u64,
+    line_wrap: bool,
+    scroll: bool,
     size: Winszed,
     screen: io::Cursor<Vec<u8>>,
 }
@@ -30,6 +32,8 @@ impl Display {
     pub fn from_winszed(size: Winszed) -> Display {
         Display {
             save_position: 0,
+            line_wrap: true,
+            scroll: true,
             size: size,
             screen: io::Cursor::new(
               (0..size.row_by_col()).map(|_: usize| b' ')
@@ -43,6 +47,13 @@ impl Display {
       self.screen.get_ref()
     }
 
+    /// The accessor method `get_wrap` returns a mutable reference on
+    /// the variable 'line_wrap'
+    pub fn get_wrap(&mut self) -> &mut bool
+    { &mut self.line_wrap }
+
+    /// The accessor method `get_save` returns a mutable reference on
+    /// the variable 'save_position'
     pub fn get_save(&mut self) -> &mut u64
     { &mut self.save_position }
 
@@ -120,9 +131,13 @@ impl io::Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'7', b'h', ref next..] =>
               { //println!("Cursor::LineWrap(true)");
+                { let wrap: &mut bool = self.get_wrap();
+                  *wrap = true; }
                 self.write(next) },
             &[b'\x1B', b'[', b'7', b'l', ref next..] =>
               { //println!("Cursor::LineWrap(false)");
+                { let wrap: &mut bool = self.get_wrap();
+                  *wrap = false; }
                 self.write(next) },
             &[b'\x1B', b'[', b'r', ref next..] =>
               { //println!("Cursor::ScrollEnable");
@@ -175,9 +190,20 @@ impl io::Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'J', ref next..] =>
               { //println!("Cursor::EraseDown");
+                { let pos = self.get_position();
+                  let len = { (*self.get_ref()).len() };
+                  let coucou = self.get_mut();
+                  {pos as usize..len}.all(|i|
+                  { (*coucou)[i] = b' ';
+                    true }); }
                 self.write(next) },
             &[b'\x1B', b'[', b'1', b'J', ref next..] =>
               { //println!("Cursor::EraseUp");
+                { let pos = self.get_position();
+                  let coucou = self.get_mut();
+                  {0..(pos + 1) as usize}.all(|i|
+                  { (*coucou)[i] = b' ';
+                    true }); }
                 self.write(next) },
             &[b'\x1B', b'[', b'2', b'J', ref next..] =>
               { self.clear();
@@ -199,8 +225,8 @@ impl io::Write for Display {
             &[b'\x1B', b'[', b';', b'H', ref next..] |
             &[b'\x1B', b'[', b';', b'f', ref next..] | 
             &[b'\x1B', b'[', b'H', ref next..] |
-            &[b'\x1B', b'[', b'f', ref next..] |
-            &[b'\x1B', b'[', b'?', b'6', b'l', ref next..] =>
+            &[b'\x1B', b'[', b'f', ref next..] /*|
+            &[b'\x1B', b'[', b'?', b'6', b'l', ref next..]*/ =>
               { //println!("Goto::Home");
                 self.goto(0);
                 self.write(next) },
@@ -209,27 +235,45 @@ impl io::Write for Display {
               { //println!("Goto::Up(1)");
                 let col = self.size.get_col();
                 let pos = self.get_position();
-                self.goto((pos - col as u64) as u64);
+                let len = { (*self.get_ref()).len() };
+                if pos - col as u64 >= 0
+                { self.goto((pos - col as u64) as u64); }
+                else
+                { panic!("Cursor::CursorUp(1) moved the cursor out of screen limits"); }
                 self.write(next) },
             &[b'\x1B', b'[', b'B', ref next..] |
             &[b'\x1B', b'O', b'B', ref next..] =>
               { //println!("Goto::Down(1)");
                 let col = self.size.get_col();
                 let pos = self.get_position();
-                self.goto((pos + col as u64) as u64);
+                let len = { (*self.get_ref()).len() };
+                if (pos + col as u64) < len as u64
+                { self.goto((pos + col as u64) as u64); }
+                else
+                { panic!("Cursor::CursorDown(1) moved the cursor out of screen limits"); }
                 self.write(next) },
             &[b'\x1B', b'[', b'C', ref next..] |
             &[b'\x1B', b'O', b'C', ref next..] =>
               { //println!("Goto::Right(1)");
+                let col = self.size.get_col();
                 let pos = self.get_position();
-                self.goto((pos + 1) as u64);
+                let wrap = { *(self.get_wrap()) };
+                if pos + 1 % col as u64 != 0 || pos < col as u64 - 1 || wrap
+                { self.goto((pos + 1) as u64); }
+                else
+                { panic!("Cursor::CursorRight(1) moved the cursor out of screen limits"); }
                 self.write(next) },
             &[b'\x1B', b'[', b'D', ref next..] |
             &[b'\x1B', b'O', b'D', ref next..] |
             &[b'\x08', ref next..] =>
               { //println!("Goto::Left(1)");
+                let col = self.size.get_col();
                 let pos = self.get_position();
-                self.goto((pos - 1) as u64);
+                let wrap = { *(self.get_wrap()) };
+                if pos > 0 && (pos % col as u64 != 0 || wrap)
+                { self.goto((pos - 1) as u64); }
+                else
+                { panic!("Cursor::CursorLeft(1) moved the cursor out of screen limits"); }
                 self.write(next) },
 
             //--------- POSITION SAVE ----------
@@ -301,42 +345,43 @@ impl io::Write for Display {
                     self.goto((pos + number as u64) as u64);
                     self.write(next) },
 
-                    Some((Some(&b'm'), number, ref next)) =>
-                      { //println!("Cursor::Attribute({});", number);
-                        self.write(next) },
-                    Some((Some(&b';'), x, ref next)) => {
-                        match parse_number!(next) {
-                            Some((Some(&b'H'), y, ref next)) |
-                            Some((Some(&b'f'), y, ref next)) => {
-                                println!("Cursor::CursorGoto({}, {})", x, y);
-                                let row = self.size.get_row();
-                                let col = self.size.get_col();
-                                if x <= row as u16 && y <= col as u16
-                                { self.goto(((y - 1) + ((x - 1) * (col as u16 - 1))) as u64); }
-                                else
-                                { panic!("Coordinates out of terminal limits : ({}, {})", y, x); }
-                                self.write(next)
-                            },
-                            Some((Some(&b';'), y, &[b'0', b'c', ref next..])) |
-                            Some((Some(&b';'), y, &[b'c', ref next..])) => {
-                                //println!("Cursor::TermVersionOut({}, {})", x, y);
-                                self.write(next)
-                            },
-
-                            Some((Some(&b'r'), y, ref next)) =>
-                            { println!("Resize::({}, {})", x, y);
-                              self.write(next) },
-
-                            _ => { println!("HHHHHH  {:?}  HHHHHH", buf);
-                            self.screen.write(&[b'\x1B', b'[', b';']).and_then(|f|
-                                 self.write(next).and_then(|n| Ok(f.add(&n)))
-                            )},
-                        }
+                Some((Some(&b'm'), number, ref next)) =>
+                  { //println!("Cursor::Attribute({});", number);
+                    self.write(next) },
+                Some((Some(&b';'), x, ref next)) => {
+                  match parse_number!(next) {
+                    Some((Some(&b'H'), y, ref next)) |
+                    Some((Some(&b'f'), y, ref next)) => {
+                      println!("Cursor::CursorGoto({}, {})", x, y);
+                      let row = self.size.get_row();
+                      let col = self.size.get_col();
+                      if x <= row as u16 && y <= col as u16
+                      { self.goto(((y - 1) + ((x - 1) * (col as u16 - 1))) as u64); }
+                      else
+                      { panic!("Goto::CursorGoto({}, {}) moved the cursor out of screen limits", y, x); }
+                      self.write(next)
                     },
-                    _ => self.screen.write(&[b'\x1B', b'[']).and_then(|f|
-                         self.write(next).and_then(|n| Ok(f.add(&n)))
-                    ),
-                }
+
+                    Some((Some(&b';'), y, &[b'0', b'c', ref next..])) |
+                    Some((Some(&b';'), y, &[b'c', ref next..])) => {
+                      //println!("Cursor::TermVersionOut({}, {})", x, y);
+                      self.write(next)
+                    },
+
+                    Some((Some(&b'r'), y, ref next)) =>
+                    { println!("Resize::({}, {})", x, y);
+                      self.write(next) },
+
+                    _ => { println!("HHHHHH  {:?}  HHHHHH", buf);
+                      self.screen.write(&[b'\x1B', b'[', b';']).and_then(|f|
+                      self.write(next).and_then(|n| Ok(f.add(&n)))
+                    )},
+                  }
+                },
+                _ => self.screen.write(&[b'\x1B', b'[']).and_then(|f|
+                  self.write(next).and_then(|n| Ok(f.add(&n)))
+                ),
+              }
             },
             &[b'\x07', ref next..] =>
               { self.write(next) },
