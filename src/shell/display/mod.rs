@@ -3,6 +3,7 @@ mod winsz;
 
 use std::ops::{BitAnd, Add};
 use std::{io, fmt};
+use std::io::Write;
 
 use ::libc;
 pub use self::winsz::Winszed;
@@ -60,8 +61,7 @@ impl Display {
     /// The accessor method `is_oob` returns an option if 
     /// the tuple 'oob' points out of the output screen
     pub fn is_oob(&self) -> Option<()>
-    { println!("OOB::({}, {})", self.oob.0, self.oob.1);
-      if self.oob.0 >= 0 && self.oob.0 < self.size.get_col() as i64 &&
+    { if self.oob.0 >= 0 && self.oob.0 < self.size.get_col() as i64 &&
          self.oob.1 >= 0 && self.oob.1 < self.size.get_row() as i64
       { None }
       else
@@ -70,11 +70,19 @@ impl Display {
     /// The accessor method `is_border` returns a boolean if 
     /// the tuple 'oob' points to the last left bottom character
     pub fn is_border(&self) -> bool
-    { println!("BORD::({}, {})", self.oob.0, self.oob.1);
-      if self.oob.0 == self.size.get_col() as i64 && self.oob.1 == self.size.get_row() as i64 - 1
+    { if self.oob.0 == self.size.get_col() as i64 && self.oob.1 == self.size.get_row() as i64 - 1
       { true }
       else
       { false }}
+
+    /// The method `bell_or_goto` displays a bell or go to new coordinates
+    pub fn bell_or_goto(&mut self)
+    { if self.is_oob().is_some()
+      { self.write(&[b'\x07']); }
+      else
+      { let check = { *(self.out_of_bounds()) };
+        let col = self.size.get_col(); 
+        self.goto((check.0 + (check.1 * (col as i64))) as u64); }}
 
     /// The accessor method `get_save` returns a mutable reference on
     /// the variable 'save_position'
@@ -123,6 +131,84 @@ impl Display {
         );
         Ok(0)
     }
+
+    /// The method `goto_home` moves the cursor to the top left of the output screen.
+    pub fn goto_home(&mut self)
+    { //println!("Goto::Home");
+      { self.goto(0); }
+      { let oob: &mut (i64, i64) = self.out_of_bounds();
+        (*oob).0 = 0;
+        (*oob).1 = 0; }}
+
+    /// The method `goto_up` moves the cursor up.
+    pub fn goto_up(&mut self)
+    { //println!("Goto::Up(1)");
+      let col = self.size.get_col();
+      let pos = self.get_position();
+      let wrap = { *(self.get_wrap()) };
+      let len = { (*self.get_ref()).len() };
+      if !self.is_oob().is_some() && pos - col as u64 >= 0 && wrap
+      { { self.goto((pos - col as u64) as u64); }
+        let oob: &mut (i64, i64) = self.out_of_bounds();
+        (*oob).1 -= 1; }
+      else
+      { { let oob: &mut (i64, i64) = self.out_of_bounds();
+          (*oob).1 -= 1; }
+        self.bell_or_goto(); }}
+
+    /// The method `goto_down` moves the cursor down.
+    pub fn goto_down(&mut self)
+    { //println!("Goto::Down(1)");
+      let col = self.size.get_col();
+      let pos = self.get_position();
+      let wrap = { *(self.get_wrap()) };
+      let len = { (*self.get_ref()).len() };
+      if !self.is_oob().is_some() && (pos + col as u64) < len as u64 && wrap
+      { { self.goto((pos + col as u64) as u64); }
+        let oob: &mut (i64, i64) = self.out_of_bounds();
+        (*oob).1 += 1; }
+      else
+      { { let oob: &mut (i64, i64) = self.out_of_bounds();
+          (*oob).1 += 1; }
+        self.bell_or_goto(); }}
+
+    /// The method `goto_right` moves the cursor to its right.
+    /// If 'line_wrap' is true and the cursor is on the right border,
+    /// it moves the cursor to the next line's left border
+    pub fn goto_right(&mut self)
+    { //println!("Goto::Right(1)");
+      let col = self.size.get_col();
+      let pos = self.get_position();
+      let wrap = { *(self.get_wrap()) };
+      if !self.is_oob().is_some() && (pos + 1 % col as u64 != 0 || pos < col as u64 - 1 || wrap)
+      { { self.goto((pos + 1) as u64); }
+        let oob: &mut (i64, i64) = self.out_of_bounds();
+        if (*oob).0 == (col as i64) - 1
+        { (*oob).0 = 0;
+          (*oob).1 += 1; }}
+      else
+      { { let oob: &mut (i64, i64) = self.out_of_bounds();
+          (*oob).0 += 1; }
+        self.bell_or_goto(); }}
+
+    /// The method `goto_left` moves the cursor to its left.
+    /// If 'line_wrap' is true and the cursor is on the left border,
+    /// it moves the cursor to the previous line's right border
+    pub fn goto_left(&mut self)
+    { //println!("Goto::Left(1)");
+      let col = self.size.get_col();
+      let pos = self.get_position();
+      let wrap = { *(self.get_wrap()) };
+      if !self.is_oob().is_some() && pos > 0 && (pos % col as u64 != 0 || wrap)
+      { { self.goto((pos - 1) as u64); }
+        let oob: &mut (i64, i64) = self.out_of_bounds();
+        if (*oob).0 == 0
+        { (*oob).0 = (col as i64) - 1;
+          (*oob).1 -= 1; }}
+      else
+      { { let oob: &mut (i64, i64) = self.out_of_bounds();
+          (*oob).0 -= 1; }
+        self.bell_or_goto(); }}
 }
 
 impl ExactSizeIterator for Display {
@@ -248,7 +334,7 @@ impl io::Write for Display {
 
             //------------ INSERT -----------------
             &[b'\x1B', b'[', b'L', ref next..] =>
-              { println!("InsertEmptyLine");
+              { //println!("InsertEmptyLine");
                 if !self.is_oob().is_some()
                 { let col = self.size.get_col();
                   let pos = self.get_position();
@@ -263,102 +349,32 @@ impl io::Write for Display {
             &[b'\x1B', b'[', b';', b'H', ref next..] |
             &[b'\x1B', b'[', b';', b'f', ref next..] | 
             &[b'\x1B', b'[', b'H', ref next..] |
-            &[b'\x1B', b'[', b'f', ref next..] /*|
-            &[b'\x1B', b'[', b'?', b'6', b'l', ref next..]*/ =>
-              { //println!("Goto::Home");
-                { self.goto(0); }
-                { let oob: &mut (i64, i64) = self.out_of_bounds();
-                  (*oob).0 = 0;
-                  (*oob).1 = 0; }
+            &[b'\x1B', b'[', b'f', ref next..] =>
+              { self.goto_home();
                 self.write(next) },
             &[b'\x1B', b'[', b'A', ref next..] |
             &[b'\x1B', b'O', b'A', ref next..] =>
-              { //println!("Goto::Up(1)");
-                let col = self.size.get_col();
-                let pos = self.get_position();
-                let wrap = { *(self.get_wrap()) };
-                let len = { (*self.get_ref()).len() };
-                if !self.is_oob().is_some() && pos - col as u64 >= 0 && wrap
-                { { self.goto((pos - col as u64) as u64); }
-                  let oob: &mut (i64, i64) = self.out_of_bounds();
-                  (*oob).1 -= 1; }
-                else
-                { { let oob: &mut (i64, i64) = self.out_of_bounds();
-                    (*oob).1 -= 1; }
-                  if self.is_oob().is_some()
-                  { self.write(&[b'\x07']); }
-                  else
-                  { let check = { *(self.out_of_bounds()) };
-                    self.goto((check.0 + (check.1 * (col as i64))) as u64); }}
+              { self.goto_up();
                 self.write(next) },
             &[b'\x1B', b'[', b'B', ref next..] |
             &[b'\x1B', b'O', b'B', ref next..] =>
-              { //println!("Goto::Down(1)");
-                let col = self.size.get_col();
-                let pos = self.get_position();
-                let wrap = { *(self.get_wrap()) };
-                let len = { (*self.get_ref()).len() };
-                if !self.is_oob().is_some() && (pos + col as u64) < len as u64 && wrap
-                { { self.goto((pos + col as u64) as u64); }
-                  let oob: &mut (i64, i64) = self.out_of_bounds();
-                  (*oob).1 += 1; }
-                else
-                { { let oob: &mut (i64, i64) = self.out_of_bounds();
-                    (*oob).1 += 1; }
-                  if self.is_oob().is_some()
-                  { self.write(&[b'\x07']); }
-                  else
-                  { let check = { *(self.out_of_bounds()) };
-                    self.goto((check.0 + (check.1 * (col as i64))) as u64); }}
+              { self.goto_down();
                 self.write(next) },
             &[b'\x1B', b'[', b'C', ref next..] |
             &[b'\x1B', b'O', b'C', ref next..] =>
-              { //println!("Goto::Right(1)");
-                let col = self.size.get_col();
-                let pos = self.get_position();
-                let wrap = { *(self.get_wrap()) };
-                if !self.is_oob().is_some() && (pos + 1 % col as u64 != 0 || pos < col as u64 - 1 || wrap)
-                { { self.goto((pos + 1) as u64); }
-                  let oob: &mut (i64, i64) = self.out_of_bounds();
-                  if (*oob).0 == (col as i64) - 1
-                  { (*oob).0 = 0;
-                     (*oob).1 += 1; }}
-                else
-                { { let oob: &mut (i64, i64) = self.out_of_bounds();
-                    (*oob).0 += 1; }
-                  if self.is_oob().is_some()
-                  { self.write(&[b'\x07']); }
-                  else
-                  { let check = { *(self.out_of_bounds()) };
-                    self.goto((check.0 + (check.1 * (col as i64))) as u64); }}
+              { self.goto_right();
                 self.write(next) },
             &[b'\x1B', b'[', b'D', ref next..] |
             &[b'\x1B', b'O', b'D', ref next..] |
             &[b'\x08', ref next..] =>
-              { //println!("Goto::Left(1)");
-                let col = self.size.get_col();
-                let pos = self.get_position();
-                let wrap = { *(self.get_wrap()) };
-                if !self.is_oob().is_some() && pos > 0 && (pos % col as u64 != 0 || wrap)
-                { { self.goto((pos - 1) as u64); }
-                  let oob: &mut (i64, i64) = self.out_of_bounds();
-                  if (*oob).0 == 0
-                  { (*oob).0 = (col as i64) - 1;
-                    (*oob).1 -= 1; }}
-                else
-                { { let oob: &mut (i64, i64) = self.out_of_bounds();
-                    (*oob).0 -= 1; }
-                  if self.is_oob().is_some()
-                  { self.write(&[b'\x07']); }
-                  else
-                  { let check = { *(self.out_of_bounds()) };
-                    self.goto((check.0 + (check.1 * (col as i64))) as u64); }}
+              { self.goto_left();
                 self.write(next) },
 
             //--------- POSITION SAVE ----------
             &[b'\x1B', b'[', b's', ref next..] |
             &[b'\x1B', b'7', ref next..] =>
               { //println!("Cursor::SaveCursor");
+                if !self.is_oob().is_some()
                 { let pos = self.get_position();
                   let save = self.get_save();
                   *save = pos; }
@@ -381,9 +397,9 @@ impl io::Write for Display {
               { //println!("Cursor::ScrollUp");
                 { let col = self.size.get_col();
                   let coucou = self.get_mut();
-                  {0..col}.all(|i|
+                  {0..col}.all(|_|
                   { (*coucou).pop();
-                    (*coucou).insert(i, b' ');
+                    (*coucou).insert(0, b' ');
                     true }); }
                 self.write(next) },
             &[b'\x1B', b'M', ref next..] =>
@@ -406,26 +422,24 @@ impl io::Write for Display {
             { match parse_number!(next)
               { //------------- n GOTO ------------------
                 Some((number, &[b'A', ref next..])) =>
-                  { //println!("Cursor::CursorUp({});", number);
-                    let col = self.size.get_col();
-                    let pos = self.get_position();
-                    self.goto((pos - (number * col as u16) as u64) as u64);
+                  { {0..number}.all(|_|
+                    { self.goto_up();
+                      true });
                     self.write(next) },
                 Some((number, &[b'B', ref next..])) =>
-                  { //println!("Cursor::CursorDown({});", number);
-                    let col = self.size.get_col();
-                    let pos = self.get_position();
-                    self.goto((pos + (number * col as u16) as u64) as u64);
+                  { {0..number}.all(|_|
+                    { self.goto_down();
+                      true });
                     self.write(next) },
                 Some((number, &[b'C', ref next..])) =>
-                  { //println!("Cursor::CursorRight({});", number);
-                    let pos = self.get_position();
-                    self.goto((pos + number as u64) as u64);
+                  { {0..number}.all(|_|
+                    { self.goto_right();
+                      true });
                     self.write(next) },
                 Some((number, &[b'D', ref next..])) =>
-                  { //println!("Cursor::CursorLeft({});", number);
-                    let pos = self.get_position();
-                    self.goto((pos - number as u64) as u64);
+                  { {0..number}.all(|_|
+                    { self.goto_left();
+                      true });
                     self.write(next) },
 
                 Some((number, &[b'm', ref next..])) =>
@@ -435,16 +449,18 @@ impl io::Write for Display {
                 Some((x, &[b';', ref next..])) => {
                   match parse_number!(next) {
                     Some((c, &[b'H', ref next..])) |
-                    Some((c, &[b'f', ref next..])) => {
-                      //println!("Cursor::CursorGoto({}, {})", x, c);
+                    Some((c, &[b'f', ref next..])) =>
+                    { //println!("Cursor::CursorGoto({}, {})", c, x);
                       let row = self.size.get_row();
                       let col = self.size.get_col();
-                      if x <= row as u16 && c <= col as u16
+                      { let oob: &mut (i64, i64) = self.out_of_bounds();
+                        (*oob).0 = c as i64 - 1;
+                        (*oob).1 = x as i64 - 1; }
+                      if !self.is_oob().is_some()
                       { self.goto(((c - 1) + ((x - 1) * col as u16)) as u64); }
                       else
-                      { panic!("Goto::CursorGoto({}, {}) moved the cursor out of screen limits", x, c); }
-                      self.write(next)
-                    },
+                      { self.bell_or_goto(); }
+                      self.write(next) },
 
                     Some((y, &[b';', b'0', b'c', ref next..])) |
                     Some((y, &[b';', b'c', ref next..])) => {
