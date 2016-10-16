@@ -10,6 +10,7 @@ pub use self::err::{DisplayError, Result};
 
 #[derive(Debug, Clone)]
 pub struct Display {
+    oob: (i64, i64),
     save_position: u64,
     line_wrap: bool,
     size: Winszed,
@@ -30,6 +31,7 @@ impl Display {
     /// from shell.
     pub fn from_winszed(size: Winszed) -> Display {
         Display {
+            oob: (0, 0),
             save_position: 0,
             line_wrap: true,
             size: size,
@@ -49,6 +51,30 @@ impl Display {
     /// the variable 'line_wrap'
     pub fn get_wrap(&mut self) -> &mut bool
     { &mut self.line_wrap }
+
+    /// The accessor method `out_of_bounds` returns a mutable reference on
+    /// the tuple 'oob' and should be called every times the cursor moves
+    pub fn out_of_bounds(&mut self) -> &mut (i64, i64)
+    { &mut self.oob }
+
+    /// The accessor method `is_oob` returns an option if 
+    /// the tuple 'oob' points out of the output screen
+    pub fn is_oob(&self) -> Option<()>
+    { println!("OOB::({}, {})", self.oob.0, self.oob.1);
+      if self.oob.0 >= 0 && self.oob.0 < self.size.get_col() as i64 &&
+         self.oob.1 >= 0 && self.oob.1 < self.size.get_row() as i64
+      { None }
+      else
+      { Some(()) }}
+
+    /// The accessor method `is_border` returns a boolean if 
+    /// the tuple 'oob' points to the last left bottom character
+    pub fn is_border(&self) -> bool
+    { println!("BORD::({}, {})", self.oob.0, self.oob.1);
+      if self.oob.0 == self.size.get_col() as i64 && self.oob.1 == self.size.get_row() as i64 - 1
+      { true }
+      else
+      { false }}
 
     /// The accessor method `get_save` returns a mutable reference on
     /// the variable 'save_position'
@@ -241,22 +267,40 @@ impl io::Write for Display {
               { //println!("Goto::Up(1)");
                 let col = self.size.get_col();
                 let pos = self.get_position();
+                let wrap = { *(self.get_wrap()) };
                 let len = { (*self.get_ref()).len() };
-                if pos - col as u64 >= 0
-                { self.goto((pos - col as u64) as u64); }
+                if !self.is_oob().is_some() && pos - col as u64 >= 0 && wrap
+                { { self.goto((pos - col as u64) as u64); }
+                  let oob: &mut (i64, i64) = self.out_of_bounds();
+                  (*oob).1 -= 1; }
                 else
-                { panic!("Cursor::CursorUp(1) moved the cursor out of screen limits"); }
+                { { let oob: &mut (i64, i64) = self.out_of_bounds();
+                    (*oob).1 -= 1; }
+                  if self.is_oob().is_some()
+                  { self.write(&[b'\x07']); }
+                  else
+                  { let check = { *(self.out_of_bounds()) };
+                    self.goto((check.0 + (check.1 * (col as i64))) as u64); }}
                 self.write(next) },
             &[b'\x1B', b'[', b'B', ref next..] |
             &[b'\x1B', b'O', b'B', ref next..] =>
               { //println!("Goto::Down(1)");
                 let col = self.size.get_col();
                 let pos = self.get_position();
+                let wrap = { *(self.get_wrap()) };
                 let len = { (*self.get_ref()).len() };
-                if (pos + col as u64) < len as u64
-                { self.goto((pos + col as u64) as u64); }
+                if !self.is_oob().is_some() && (pos + col as u64) < len as u64 && wrap
+                { { self.goto((pos + col as u64) as u64); }
+                  let oob: &mut (i64, i64) = self.out_of_bounds();
+                  (*oob).1 += 1; }
                 else
-                { panic!("Cursor::CursorDown(1) moved the cursor out of screen limits"); }
+                { { let oob: &mut (i64, i64) = self.out_of_bounds();
+                    (*oob).1 += 1; }
+                  if self.is_oob().is_some()
+                  { self.write(&[b'\x07']); }
+                  else
+                  { let check = { *(self.out_of_bounds()) };
+                    self.goto((check.0 + (check.1 * (col as i64))) as u64); }}
                 self.write(next) },
             &[b'\x1B', b'[', b'C', ref next..] |
             &[b'\x1B', b'O', b'C', ref next..] =>
@@ -264,10 +308,20 @@ impl io::Write for Display {
                 let col = self.size.get_col();
                 let pos = self.get_position();
                 let wrap = { *(self.get_wrap()) };
-                if pos + 1 % col as u64 != 0 || pos < col as u64 - 1 || wrap
-                { self.goto((pos + 1) as u64); }
+                if !self.is_oob().is_some() && (pos + 1 % col as u64 != 0 || pos < col as u64 - 1 || wrap)
+                { { self.goto((pos + 1) as u64); }
+                  let oob: &mut (i64, i64) = self.out_of_bounds();
+                  if (*oob).0 == (col as i64) - 1
+                  { (*oob).0 = 0;
+                     (*oob).1 += 1; }}
                 else
-                { panic!("Cursor::CursorRight(1) moved the cursor out of screen limits"); }
+                { { let oob: &mut (i64, i64) = self.out_of_bounds();
+                    (*oob).0 += 1; }
+                  if self.is_oob().is_some()
+                  { self.write(&[b'\x07']); }
+                  else
+                  { let check = { *(self.out_of_bounds()) };
+                    self.goto((check.0 + (check.1 * (col as i64))) as u64); }}
                 self.write(next) },
             &[b'\x1B', b'[', b'D', ref next..] |
             &[b'\x1B', b'O', b'D', ref next..] |
@@ -276,10 +330,20 @@ impl io::Write for Display {
                 let col = self.size.get_col();
                 let pos = self.get_position();
                 let wrap = { *(self.get_wrap()) };
-                if pos > 0 && (pos % col as u64 != 0 || wrap)
-                { self.goto((pos - 1) as u64); }
+                if !self.is_oob().is_some() && pos > 0 && (pos % col as u64 != 0 || wrap)
+                { { self.goto((pos - 1) as u64); }
+                  let oob: &mut (i64, i64) = self.out_of_bounds();
+                  if (*oob).0 == 0
+                  { (*oob).0 = (col as i64) - 1;
+                    (*oob).1 -= 1; }}
                 else
-                { panic!("Cursor::CursorLeft(1) moved the cursor out of screen limits"); }
+                { { let oob: &mut (i64, i64) = self.out_of_bounds();
+                    (*oob).0 -= 1; }
+                  if self.is_oob().is_some()
+                  { self.write(&[b'\x07']); }
+                  else
+                  { let check = { *(self.out_of_bounds()) };
+                    self.goto((check.0 + (check.1 * (col as i64))) as u64); }}
                 self.write(next) },
 
             //--------- POSITION SAVE ----------
@@ -296,7 +360,11 @@ impl io::Write for Display {
                 { let pos =
                   { let restore = self.get_save();
                     *restore };
-                  self.goto(pos); }
+                  { self.goto(pos); }
+                  let len = { (*self.get_ref()).len() };
+                  let oob: &mut (i64, i64) = self.out_of_bounds();
+                  (*oob).0 = (pos % len as u64) as i64 - 1;
+                  (*oob).1 = (pos / len as u64) as i64; }
                 self.write(next) },
 
             //------------- SCROLL ---------------
@@ -390,12 +458,27 @@ impl io::Write for Display {
                 ),
               }
             },
-            &[b'\x07', ref next..] =>
+            &[b'\x07', ref next..] => //BELL \b
               { self.write(next) },
-            &[b'\x0D', ref next..] =>
+            &[b'\x0D', ref next..] => //BASE LINE \r
+              { self.write(next) },
+            &[b'\x0A', ref next..] => //DOWN \n
               { self.write(next) },
             &[first, ref next..] => 
-              { self.screen.write(&[first]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) },
+              { println!("FIRST::{}", first);
+                if !self.is_oob().is_some() || self.is_border()
+                { { let wrap = { *(self.get_wrap()) };
+                    let row = self.size.get_row();
+                    let col = self.size.get_col();
+                    let oob: &mut (i64, i64) = { self.out_of_bounds() };
+                    if (*oob).0 < col as i64 - 1 || ((*oob).0 == col as i64 - 1 && (*oob).1 == row as i64 - 1)
+                    { (*oob).0 += 1; }
+                    else if wrap && (*oob).1 < row as i64 - 1
+                    { (*oob).0 = 0;
+                      (*oob).1 += 1; }}
+                  self.screen.write(&[first]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
+                else
+                { self.write(next) }},
         }
     }
 
