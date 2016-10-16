@@ -11,6 +11,8 @@ pub use self::err::{DisplayError, Result};
 
 #[derive(Debug, Clone)]
 pub struct Display {
+    ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
+    region: (u16, u16),
     oob: (i64, i64),
     save_position: u64,
     line_wrap: bool,
@@ -32,6 +34,7 @@ impl Display {
     /// from shell.
     pub fn from_winszed(size: Winszed) -> Display {
         Display {
+            region: (0, 0),
             oob: (0, 0),
             save_position: 0,
             line_wrap: true,
@@ -213,7 +216,6 @@ impl Display {
     /// The method `goto_coord` moves the cursor to the given coordinates
     pub fn goto_coord(&mut self, x: u16, y: u16)
     { //println!("Cursor::CursorGoto({}, {})", x, y);
-      let row = self.size.get_row();
       let col = self.size.get_col();
       { let oob: &mut (i64, i64) = self.out_of_bounds();
         (*oob).0 = x as i64 - 1;
@@ -237,7 +239,7 @@ impl Display {
     /// The method `scroll_down` append an empty line on bottom of the screen
     /// (the cursor doesn't move)
     pub fn scroll_down(&mut self)
-    { //println!("Cursor::ScrollDown");
+    { println!("Cursor::ScrollDown");
       let col = self.size.get_col();
       let coucou = self.get_mut();
       {0..col}.all(|_|
@@ -548,20 +550,36 @@ impl io::Write for Display {
 
                     _ => 
                       { self.screen.write(&[b'\x1B', b'[', b';']).and_then(|f|
-                        self.write(next).and_then(|n| Ok(f.add(&n)) ))}, }},
+                        self.write(next).and_then(|n| Ok(f.add(&n))) )}, }},
                 _ => 
                   { self.screen.write(&[b'\x1B', b'[']).and_then(|f|
                     self.write(next).and_then(|n| Ok(f.add(&n))) )}, }},
             &[b'\x07', ref next..] => //BELL \b
-              { self.write(next) },
-            &[b'\x0D', ref next..] => //BASE LINE \r
-              { self.write(next) },
-            &[b'\x0A', ref next..] => //DOWN \n
-              { self.write(next) },
+              { println!("BELL!");
+                self.write(next) },
+            &[b'\x0D', ref next..] =>
+              { if !self.is_oob().is_some() || self.is_border()
+                { let x = { (*self.out_of_bounds()).0 };
+                println!("X::{}", x);
+                  {0..x}.all(|_|
+                  { self.goto_left();
+                    true }); }
+                                  let check = { *(self.out_of_bounds()) };
+                                  println!("CHECK({}, {})", check.0, check.1);
+                self.write(next) },
+            &[b'\x0A', ref next..] =>
+              { if !self.is_oob().is_some()
+                { let check = { (*(self.out_of_bounds())).1 };
+                  let row = self.size.get_row();
+                  if check < row as i64 - 1
+                  { self.goto_down(); }
+                  else
+                  { self.scroll_down(); }}
+                else if self.is_border()
+                { self.scroll_down(); }
+                self.write(next) },
             &[first, ref next..] => 
-              { self.print_char(first, next) },
-        }
-    }
+              { self.print_char(first, next) }, }}
 
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
