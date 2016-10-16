@@ -42,8 +42,14 @@ fn test_move()
   assert_eq!(display.get_ref(), &vec![b'o', b'l', b'd', b' ', b' ', b' ']);
   assert_eq!(display.write(b"\x1B[Dnew").ok(), Some(3usize));
   assert_eq!(display.get_ref(), &vec![b'o', b'l', b'n', b'e', b'w', b' ']);
-  assert_eq!(display.write(b"\x1B[A\x1B[C\x1B[Ahello").ok(), Some(5usize));
-  assert_eq!(display.get_ref(), &vec![b'h', b'e', b'l', b'l', b'o', b' ']); }
+  assert_eq!(display.write(b"\x1B[Aj\x1B[Ak").ok(), Some(2usize));
+  assert_eq!(display.get_ref(), &vec![b'k', b'l', b'j', b'e', b'w', b' ']);
+  assert_eq!(display.write(b"\x1B[CZ").ok(), Some(1usize));
+  assert_eq!(display.get_ref(), &vec![b'k', b'l', b'Z', b'e', b'w', b' ']);
+  assert_eq!(display.write(b"\x1B[D\x1B[BX").ok(), Some(1usize));
+  assert_eq!(display.get_ref(), &vec![b'k', b'l', b'Z', b'e', b'w', b'X']);
+  assert_eq!(display.write(b"\x1B[D\x1B[A\x1B[Dhello").ok(), Some(5usize));
+  assert_eq!(display.get_ref(), &vec![b'k', b'h', b'e', b'l', b'l', b'o']); }
 
 #[test]
 fn test_clear()
