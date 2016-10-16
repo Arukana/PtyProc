@@ -136,9 +136,9 @@ impl Display {
     pub fn goto_home(&mut self)
     { //println!("Goto::Home");
       { self.goto(0); }
-      { let oob: &mut (i64, i64) = self.out_of_bounds();
-        (*oob).0 = 0;
-        (*oob).1 = 0; }}
+      let oob: &mut (i64, i64) = self.out_of_bounds();
+      (*oob).0 = 0;
+      (*oob).1 = 0; }
 
     /// The method `goto_up` moves the cursor up.
     pub fn goto_up(&mut self)
@@ -209,6 +209,173 @@ impl Display {
       { { let oob: &mut (i64, i64) = self.out_of_bounds();
           (*oob).0 -= 1; }
         self.bell_or_goto(); }}
+
+    /// The method `goto_coord` moves the cursor to the given coordinates
+    pub fn goto_coord(&mut self, x: u16, y: u16)
+    { //println!("Cursor::CursorGoto({}, {})", x, y);
+      let row = self.size.get_row();
+      let col = self.size.get_col();
+      { let oob: &mut (i64, i64) = self.out_of_bounds();
+        (*oob).0 = x as i64 - 1;
+        (*oob).1 = y as i64 - 1; }
+      if !self.is_oob().is_some()
+      { self.goto(((x - 1) + ((y - 1) * col as u16)) as u64); }
+      else
+      { self.bell_or_goto(); }}
+
+    /// The method `scroll_up` insert an empty line on top of the screen
+    /// (the cursor doesn't move)
+    pub fn scroll_up(&mut self)
+    { //println!("Cursor::ScrollUp");
+      let col = self.size.get_col();
+      let coucou = self.get_mut();
+      {0..col}.all(|_|
+      { (*coucou).pop();
+        (*coucou).insert(0, b' ');
+        true }); }
+
+    /// The method `scroll_down` append an empty line on bottom of the screen
+    /// (the cursor doesn't move)
+    pub fn scroll_down(&mut self)
+    { //println!("Cursor::ScrollDown");
+      let col = self.size.get_col();
+      let coucou = self.get_mut();
+      {0..col}.all(|_|
+      { (*coucou).remove(0);
+        (*coucou).push(b' ');
+        true }); }
+
+    /// The method `save_position` save a position in the variable 'save_position' to get
+    /// restored with self.restore_position() described right after
+    /// If save_position() is called many times, only the newest safe will be kept.
+    pub fn save_position(&mut self)
+    { //println!("Cursor::SaveCursor");
+      if !self.is_oob().is_some()
+      { let pos = self.get_position();
+        let save = self.get_save();
+        *save = pos; }}
+
+    /// The method `restore_position` move the cursor to coordinates safe 
+    /// with self.save_position() described right before.
+    /// If no coordinates were safe, cursor moves to the top left of the output screen
+    pub fn restore_position(&mut self)
+    { //println!("Cursor::RestoreCursor");
+      let pos =
+      { let restore = self.get_save();
+        *restore };
+      { self.goto(pos); }
+      let len = { (*self.get_ref()).len() };
+      let oob: &mut (i64, i64) = self.out_of_bounds();
+      (*oob).0 = (pos % len as u64) as i64 - 1;
+      (*oob).1 = (pos / len as u64) as i64; }
+
+    /// The method `insert_empty_line` insert an empty line on the right of the cursor
+    /// (the cursor doesn't move)
+    pub fn insert_empty_line(&mut self)
+    { //println!("InsertEmptyLine");
+      if !self.is_oob().is_some()
+      { let col = self.size.get_col();
+        let pos = self.get_position();
+        let coucou = self.get_mut();
+        {0..col}.all(|_|
+        { (*coucou).pop();
+          (*coucou).insert(pos as usize, b' ');
+          true }); }}
+
+    /// The method `erase_right_line` erase the current line from the cursor
+    /// to the right border column
+    /// (char under the cursor included)
+    pub fn erase_right_line(&mut self)
+    { //println!("Cursor::EraseRightLine");
+      if !self.is_oob().is_some()
+      { let col = self.size.get_col();
+        let pos = self.get_position();
+        let mut get = col;
+        if pos >= col as u64
+        { get = pos as usize;
+          while (get + 1) % col != 0
+          { get += 1; }; }
+        self.goto((get - 1) as u64);
+        let coucou = self.get_mut();
+        {pos as usize..get}.all(|i|
+        { (*coucou)[i] = b' ';
+          true }); }}
+
+    /// The method `erase_left_line` erase the current line from the left border column
+    /// to the cursor
+    /// (char under the cursor included)
+    pub fn erase_left_line(&mut self)
+    { //println!("Cursor::EraseLeftLine");
+      if !self.is_oob().is_some()
+      { let col = self.size.get_col();
+        let pos = self.get_position();
+        let mut get = 0;
+        if pos >= col as u64
+        { get = pos as usize;
+          while get % col != 0
+          { get -= 1; }; }
+        let coucou = self.get_mut();
+        {get..(pos + 1) as usize}.all(|i|
+        { (*coucou)[i] = b' ';
+          true }); }}
+
+    /// The method `erase_line` erase the entire current line
+    pub fn erase_line(&mut self)
+    { //println!("Cursor::EraseLine");
+      if !self.is_oob().is_some()
+      { let col = self.size.get_col();
+        let mut pos = self.get_position();
+        let mut get = 0;
+        while pos as usize % col != 0
+        { pos -= 1; };
+        while (get + pos + 1) % col as u64 != 0
+        { get += 1; };
+        self.goto(get + pos);
+        let coucou = self.get_mut();
+        {pos as usize..(get + pos + 1) as usize}.all(|i|
+        { (*coucou)[i] = b' ';
+          true }); }}
+
+    /// The method `erase_down` erase all lines from the current line up to the top of the
+    /// screen, and erase the current line from the left border column to the cursor.
+    /// (char under the cursor included)
+    pub fn erase_up(&mut self)
+    { //println!("Cursor::EraseUp");
+      if !self.is_oob().is_some()
+      { let pos = self.get_position();
+        let coucou = self.get_mut();
+        {0..(pos + 1) as usize}.all(|i|
+        { (*coucou)[i] = b' ';
+          true }); }}
+
+    /// The method `erase_down` erase all lines from the current line down to the bottom
+    /// of the screen and erase the current line from the cursor to the right border column
+    /// (char under the cursor included)
+    pub fn erase_down(&mut self)
+    { //println!("Cursor::EraseDown");
+      if !self.is_oob().is_some()
+      { let pos = self.get_position();
+        let len = { (*self.get_ref()).len() };
+        let coucou = self.get_mut();
+        {pos as usize..len}.all(|i|
+        { (*coucou)[i] = b' ';
+          true }); }}
+
+    pub fn print_char(&mut self, first: u8, next: &[u8]) -> io::Result<usize>
+    { //println!("FIRST::{}", first);
+      if !self.is_oob().is_some() || self.is_border()
+      { { let wrap = { *(self.get_wrap()) };
+        let row = self.size.get_row();
+        let col = self.size.get_col();
+        let oob: &mut (i64, i64) = { self.out_of_bounds() };
+        if (*oob).0 < col as i64 - 1 || ((*oob).0 == col as i64 - 1 && (*oob).1 == row as i64 - 1)
+        { (*oob).0 += 1; }
+        else if wrap && (*oob).1 < row as i64 - 1
+        { (*oob).0 = 0;
+          (*oob).1 += 1; }}
+        self.screen.write(&[first]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
+      else
+      { self.write(next) }}
 }
 
 impl ExactSizeIterator for Display {
@@ -263,70 +430,19 @@ impl io::Write for Display {
 
             //------------ ERASE -----------------
             &[b'\x1B', b'[', b'K', ref next..] =>
-              { //println!("Cursor::EraseRightLine");
-                if !self.is_oob().is_some()
-                { let col = self.size.get_col();
-                  let pos = self.get_position();
-                  let mut get = col;
-                  if pos >= col as u64
-                  { get = pos as usize;
-                    while (get + 1) % col != 0
-                    { get += 1; }; }
-                  self.goto((get - 1) as u64);
-                  let coucou = self.get_mut();
-                  {pos as usize..get}.all(|i|
-                  { (*coucou)[i] = b' ';
-                    true }); }
+              { self.erase_right_line();
                 self.write(next) },
             &[b'\x1B', b'[', b'1', b'K', ref next..] =>
-              { //println!("Cursor::EraseLeftLine");
-                if !self.is_oob().is_some()
-                { let col = self.size.get_col();
-                  let pos = self.get_position();
-                  let mut get = 0;
-                  if pos >= col as u64
-                  { get = pos as usize;
-                    while get % col != 0
-                    { get -= 1; }; }
-                  let coucou = self.get_mut();
-                  {get..(pos + 1) as usize}.all(|i|
-                  { (*coucou)[i] = b' ';
-                    true }); }
+              { self.erase_left_line();
                 self.write(next) },
             &[b'\x1B', b'[', b'2', b'K', ref next..] =>
-              { //println!("Cursor::EraseLine");
-                if !self.is_oob().is_some()
-                { let col = self.size.get_col();
-                  let mut pos = self.get_position();
-                  let mut get = 0;
-                  while pos as usize % col != 0
-                  { pos -= 1; };
-                  while (get + pos + 1) % col as u64 != 0
-                  { get += 1; };
-                  self.goto(get + pos);
-                  let coucou = self.get_mut();
-                  {pos as usize..(get + pos + 1) as usize}.all(|i|
-                  { (*coucou)[i] = b' ';
-                    true }); }
+              { self.erase_line();
                 self.write(next) },
             &[b'\x1B', b'[', b'J', ref next..] =>
-              { //println!("Cursor::EraseDown");
-                if !self.is_oob().is_some()
-                { let pos = self.get_position();
-                  let len = { (*self.get_ref()).len() };
-                  let coucou = self.get_mut();
-                  {pos as usize..len}.all(|i|
-                  { (*coucou)[i] = b' ';
-                    true }); }
+              { self.erase_down();
                 self.write(next) },
             &[b'\x1B', b'[', b'1', b'J', ref next..] =>
-              { //println!("Cursor::EraseUp");
-                if !self.is_oob().is_some()
-                { let pos = self.get_position();
-                  let coucou = self.get_mut();
-                  {0..(pos + 1) as usize}.all(|i|
-                  { (*coucou)[i] = b' ';
-                    true }); }
+              { self.erase_up();
                 self.write(next) },
             &[b'\x1B', b'[', b'2', b'J', ref next..] =>
               { self.clear();
@@ -334,15 +450,7 @@ impl io::Write for Display {
 
             //------------ INSERT -----------------
             &[b'\x1B', b'[', b'L', ref next..] =>
-              { //println!("InsertEmptyLine");
-                if !self.is_oob().is_some()
-                { let col = self.size.get_col();
-                  let pos = self.get_position();
-                  let coucou = self.get_mut();
-                  {0..col}.all(|_|
-                  { (*coucou).pop();
-                    (*coucou).insert(pos as usize, b' ');
-                    true }); }
+              { self.insert_empty_line();
                 self.write(next) },
 
             //------------- GOTO ------------------
@@ -373,43 +481,19 @@ impl io::Write for Display {
             //--------- POSITION SAVE ----------
             &[b'\x1B', b'[', b's', ref next..] |
             &[b'\x1B', b'7', ref next..] =>
-              { //println!("Cursor::SaveCursor");
-                if !self.is_oob().is_some()
-                { let pos = self.get_position();
-                  let save = self.get_save();
-                  *save = pos; }
+              { self.save_position();
                 self.write(next) },
             &[b'\x1B', b'[', b'u', ref next..] |
             &[b'\x1B', b'8', ref next..] =>
-              { //println!("Cursor::RestoreCursor");
-                { let pos =
-                  { let restore = self.get_save();
-                    *restore };
-                  { self.goto(pos); }
-                  let len = { (*self.get_ref()).len() };
-                  let oob: &mut (i64, i64) = self.out_of_bounds();
-                  (*oob).0 = (pos % len as u64) as i64 - 1;
-                  (*oob).1 = (pos / len as u64) as i64; }
+              { self.restore_position();
                 self.write(next) },
 
             //------------- SCROLL ---------------
             &[b'\x1B', b'D', ref next..] =>
-              { //println!("Cursor::ScrollUp");
-                { let col = self.size.get_col();
-                  let coucou = self.get_mut();
-                  {0..col}.all(|_|
-                  { (*coucou).pop();
-                    (*coucou).insert(0, b' ');
-                    true }); }
+              { self.scroll_up();
                 self.write(next) },
             &[b'\x1B', b'M', ref next..] =>
-              { //println!("Cursor::ScrollDown");
-                { let col = self.size.get_col();
-                  let coucou = self.get_mut();
-                  {0..col}.all(|_|
-                  { (*coucou).remove(0);
-                    (*coucou).push(b' ');
-                    true }); }
+              { self.scroll_down();
                 self.write(next) },
 
             //------------ CL ATTR -------------
@@ -446,43 +530,28 @@ impl io::Write for Display {
                   { //println!("Cursor::Attribute({});", number);
                     self.write(next) },
 
-                Some((x, &[b';', ref next..])) => {
-                  match parse_number!(next) {
-                    Some((c, &[b'H', ref next..])) |
+                Some((x, &[b';', ref next..])) =>
+                { match parse_number!(next)
+                  { Some((c, &[b'H', ref next..])) |
                     Some((c, &[b'f', ref next..])) =>
-                    { //println!("Cursor::CursorGoto({}, {})", c, x);
-                      let row = self.size.get_row();
-                      let col = self.size.get_col();
-                      { let oob: &mut (i64, i64) = self.out_of_bounds();
-                        (*oob).0 = c as i64 - 1;
-                        (*oob).1 = x as i64 - 1; }
-                      if !self.is_oob().is_some()
-                      { self.goto(((c - 1) + ((x - 1) * col as u16)) as u64); }
-                      else
-                      { self.bell_or_goto(); }
-                      self.write(next) },
+                      { self.goto_coord(c, x);
+                        self.write(next) },
 
                     Some((y, &[b';', b'0', b'c', ref next..])) |
-                    Some((y, &[b';', b'c', ref next..])) => {
-                      //println!("Cursor::TermVersionOut({}, {})", x, y);
-                      self.write(next)
-                    },
+                    Some((y, &[b';', b'c', ref next..])) =>
+                      { //println!("Cursor::TermVersionOut({}, {})", x, y);
+                        self.write(next) },
 
                     Some((y, &[b'r', ref next..])) =>
-                    { //println!("Resize::({}, {})", x, y);
-                      self.write(next) },
+                      { //println!("Resize::({}, {})", x, y);
+                        self.write(next) },
 
-                    _ => { println!("HHHHHH  {:?}  HHHHHH", buf);
-                      self.screen.write(&[b'\x1B', b'[', b';']).and_then(|f|
-                      self.write(next).and_then(|n| Ok(f.add(&n)))
-                    )},
-                  }
-                },
-                _ => self.screen.write(&[b'\x1B', b'[']).and_then(|f|
-                  self.write(next).and_then(|n| Ok(f.add(&n)))
-                ),
-              }
-            },
+                    _ => 
+                      { self.screen.write(&[b'\x1B', b'[', b';']).and_then(|f|
+                        self.write(next).and_then(|n| Ok(f.add(&n)) ))}, }},
+                _ => 
+                  { self.screen.write(&[b'\x1B', b'[']).and_then(|f|
+                    self.write(next).and_then(|n| Ok(f.add(&n))) )}, }},
             &[b'\x07', ref next..] => //BELL \b
               { self.write(next) },
             &[b'\x0D', ref next..] => //BASE LINE \r
@@ -490,20 +559,7 @@ impl io::Write for Display {
             &[b'\x0A', ref next..] => //DOWN \n
               { self.write(next) },
             &[first, ref next..] => 
-              { println!("FIRST::{}", first);
-                if !self.is_oob().is_some() || self.is_border()
-                { { let wrap = { *(self.get_wrap()) };
-                    let row = self.size.get_row();
-                    let col = self.size.get_col();
-                    let oob: &mut (i64, i64) = { self.out_of_bounds() };
-                    if (*oob).0 < col as i64 - 1 || ((*oob).0 == col as i64 - 1 && (*oob).1 == row as i64 - 1)
-                    { (*oob).0 += 1; }
-                    else if wrap && (*oob).1 < row as i64 - 1
-                    { (*oob).0 = 0;
-                      (*oob).1 += 1; }}
-                  self.screen.write(&[first]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
-                else
-                { self.write(next) }},
+              { self.print_char(first, next) },
         }
     }
 
