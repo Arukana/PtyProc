@@ -11,6 +11,7 @@ cargo run
 #### Knowledge
 * [modes](https://en.wikipedia.org/wiki/Computer_terminal#Modes)
 * [speudotty](https://en.wikipedia.org/wiki/Pseudoterminal)
+* [control](http://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h2-Application-Program-Control-functions)
 
 #### Module
 ```shell

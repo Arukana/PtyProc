@@ -1,19 +1,28 @@
 mod err;
 mod winsz;
+pub mod cursor;
+pub mod control;
 
 use std::ops::{BitAnd, Add};
-use std::{io, fmt};
+use std::io::{self, Write};
+use std::fmt;
+use std::str;
 
 use ::libc;
+
 pub use self::winsz::Winszed;
 pub use self::err::{DisplayError, Result};
+use self::cursor::Cursor;
+use self::control::Control;
+
+pub type In = [libc::c_uchar; 16];
 
 #[derive(Debug, Clone)]
 pub struct Display {
-    save_position: u64,
+    save_position: libc::size_t,
     line_wrap: bool,
     size: Winszed,
-    screen: io::Cursor<Vec<u8>>,
+    screen: Cursor<Vec<Control>>,
 }
 
 impl Display {
@@ -33,16 +42,23 @@ impl Display {
             save_position: 0,
             line_wrap: true,
             size: size,
-            screen: io::Cursor::new(
-              (0..size.row_by_col()).map(|_: usize| b' ')
-                                    .collect::<Vec<u8>>()
+            screen: Cursor::new(
+              (0..size.row_by_col()).map(|_: usize|
+                                            Control::new(&[b' '][..])
+                                        ).collect::<Vec<Control>>()
             ),
         }
     }
 
-    /// The accessor method `get_ref` returns a reference on screen vector.
-    pub fn get_ref(&self) -> &Vec<u8> {
-      self.screen.get_ref()
+    pub fn get_ref(&self) -> Vec<libc::c_uchar> {
+        let mut screen: Vec<libc::c_uchar> = Vec::with_capacity(self.len());
+
+        self.screen.get_ref().iter().all(|control: &Control| {
+            let buf: &[u8] = control.get_ref();
+            screen.extend_from_slice(buf);
+            true
+        });
+        screen
     }
 
     /// The accessor method `get_wrap` returns a mutable reference on
@@ -52,16 +68,12 @@ impl Display {
 
     /// The accessor method `get_save` returns a mutable reference on
     /// the variable 'save_position'
-    pub fn get_save(&mut self) -> &mut u64
+    pub fn get_save(&mut self) -> &mut libc::size_t
     { &mut self.save_position }
-
-    /// The accessor method `get_mut` returns a reference on screen vector.
-    pub fn get_mut(&mut self) -> &mut Vec<u8>
-    { self.screen.get_mut() }
 
     /// The accessor method `get_position` returns the position
     /// of the cursor into the screen vector
-    pub fn get_position(&self) -> u64 {
+    pub fn get_position(&self) -> libc::size_t {
       self.screen.position()
     }
 
@@ -82,16 +94,16 @@ impl Display {
     }
 
     /// The method `goto` moves the cursor position
-    pub fn goto(&mut self, index: libc::c_ulong) -> io::Result<usize> {
+    pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
         self.screen.set_position(index);
         Ok(0)
     }
 
     /// The method `clear` puges the screen vector.
-    pub fn clear(&mut self) -> io::Result<usize> {
+    pub fn clear(&mut self) -> io::Result<libc::size_t> {
         self.goto(0).is_ok().bitand(
-          self.screen.get_mut().iter_mut().all(|mut term: &mut u8| {
-            *term = b' ';
+          self.screen.get_mut().iter_mut().all(|mut term: &mut Control| {
+            term.clear();
             true
           })
         );
@@ -115,9 +127,15 @@ impl Iterator for Display {
 
 impl fmt::Display for Display {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}",
-            String::from_utf8_lossy(&self.screen.get_ref()),
-        )
+        let mut screen: String = String::with_capacity(self.len());
+
+        screen.extend(
+            self.screen.get_ref().into_iter().map(|control| unsafe {
+               let ref character: &[u8] = control.get_ref();
+               str::from_utf8_unchecked(character)
+            }).collect::<Vec<&str>>()
+        );
+        write!(f, "{}", screen)
     }
 }
 
@@ -155,14 +173,14 @@ impl io::Write for Display {
                 { let col = self.size.get_col();
                   let pos = self.get_position();
                   let mut get = col;
-                  if pos >= col as u64
-                  { get = pos as usize;
+                  if pos >= col
+                  { get = pos;
                     while (get + 1) % col != 0
                     { get += 1; }; }
-                  self.goto((get - 1) as u64);
-                  let coucou = self.get_mut();
-                  {pos as usize..get}.all(|i|
-                  { (*coucou)[i] = b' ';
+                  self.goto((get - 1));
+                  let coucou = self.screen.get_mut();
+                  {pos..get}.all(|i|
+                  { (*coucou)[i].clear();
                     true }); }
                 self.write(next) },
             &[b'\x1B', b'[', b'1', b'K', ref next..] =>
@@ -170,13 +188,13 @@ impl io::Write for Display {
                 { let col = self.size.get_col();
                   let pos = self.get_position();
                   let mut get = 0;
-                  if pos >= col as u64
-                  { get = pos as usize;
+                  if pos >= col
+                  { get = pos;
                     while get % col != 0
                     { get -= 1; }; }
-                  let coucou = self.get_mut();
-                  {get..(pos + 1) as usize}.all(|i|
-                  { (*coucou)[i] = b' ';
+                  let coucou = self.screen.get_mut();
+                  {get..(pos + 1)}.all(|i|
+                  { (*coucou)[i].clear();
                     true }); }
                 self.write(next) },
             &[b'\x1B', b'[', b'2', b'K', ref next..] =>
@@ -184,31 +202,31 @@ impl io::Write for Display {
                 { let col = self.size.get_col();
                   let mut pos = self.get_position();
                   let mut get = 0;
-                  while pos as usize % col != 0
+                  while pos % col != 0
                   { pos -= 1; };
-                  while (get + pos + 1) % col as u64 != 0
+                  while (get + pos + 1) % col != 0
                   { get += 1; };
                   self.goto(get + pos);
-                  let coucou = self.get_mut();
-                  {pos as usize..(get + pos + 1) as usize}.all(|i|
-                  { (*coucou)[i] = b' ';
+                  let coucou = self.screen.get_mut();
+                  {pos..(get + pos + 1)}.all(|i|
+                  { (*coucou)[i].clear();
                     true }); }
                 self.write(next) },
             &[b'\x1B', b'[', b'J', ref next..] =>
               { //println!("Cursor::EraseDown");
                 { let pos = self.get_position();
-                  let len = { (*self.get_ref()).len() };
-                  let coucou = self.get_mut();
-                  {pos as usize..len}.all(|i|
-                  { (*coucou)[i] = b' ';
+                  let len = { (*self.screen.get_ref()).len() };
+                  let coucou = self.screen.get_mut();
+                  {pos..len}.all(|i|
+                  { (*coucou)[i].clear();
                     true }); }
                 self.write(next) },
             &[b'\x1B', b'[', b'1', b'J', ref next..] =>
               { //println!("Cursor::EraseUp");
                 { let pos = self.get_position();
-                  let coucou = self.get_mut();
-                  {0..(pos + 1) as usize}.all(|i|
-                  { (*coucou)[i] = b' ';
+                  let coucou = self.screen.get_mut();
+                  {0..(pos + 1)}.all(|i|
+                  { (*coucou)[i].clear();
                     true }); }
                 self.write(next) },
             &[b'\x1B', b'[', b'2', b'J', ref next..] =>
@@ -220,10 +238,10 @@ impl io::Write for Display {
               { println!("InsertEmptyLine");
                 { let col = self.size.get_col();
                   let pos = self.get_position();
-                  let coucou = self.get_mut();
+                  let coucou = self.screen.get_mut();
                   {0..col}.all(|_|
                   { (*coucou).pop();
-                    (*coucou).insert(pos as usize, b' ');
+                    (*coucou).insert(pos, Control::new(&[b' '][..]));
                     true }); }
                 self.write(next) },
 
@@ -241,9 +259,9 @@ impl io::Write for Display {
               { //println!("Goto::Up(1)");
                 let col = self.size.get_col();
                 let pos = self.get_position();
-                let len = { (*self.get_ref()).len() };
-                if pos - col as u64 >= 0
-                { self.goto((pos - col as u64) as u64); }
+                let len = { (*self.screen.get_ref()).len() };
+                if pos - col >= 0
+                { self.goto((pos - col)); }
                 else
                 { panic!("Cursor::CursorUp(1) moved the cursor out of screen limits"); }
                 self.write(next) },
@@ -252,9 +270,9 @@ impl io::Write for Display {
               { //println!("Goto::Down(1)");
                 let col = self.size.get_col();
                 let pos = self.get_position();
-                let len = { (*self.get_ref()).len() };
-                if (pos + col as u64) < len as u64
-                { self.goto((pos + col as u64) as u64); }
+                let len = { (*self.screen.get_ref()).len() };
+                if (pos + col) < len
+                { self.goto((pos + col)); }
                 else
                 { panic!("Cursor::CursorDown(1) moved the cursor out of screen limits"); }
                 self.write(next) },
@@ -264,8 +282,8 @@ impl io::Write for Display {
                 let col = self.size.get_col();
                 let pos = self.get_position();
                 let wrap = { *(self.get_wrap()) };
-                if pos + 1 % col as u64 != 0 || pos < col as u64 - 1 || wrap
-                { self.goto((pos + 1) as u64); }
+                if pos + 1 % col != 0 || pos < col - 1 || wrap
+                { self.goto((pos + 1)); }
                 else
                 { panic!("Cursor::CursorRight(1) moved the cursor out of screen limits"); }
                 self.write(next) },
@@ -276,8 +294,8 @@ impl io::Write for Display {
                 let col = self.size.get_col();
                 let pos = self.get_position();
                 let wrap = { *(self.get_wrap()) };
-                if pos > 0 && (pos % col as u64 != 0 || wrap)
-                { self.goto((pos - 1) as u64); }
+                if pos > 0 && (pos % col != 0 || wrap)
+                { self.goto((pos - 1)); }
                 else
                 { panic!("Cursor::CursorLeft(1) moved the cursor out of screen limits"); }
                 self.write(next) },
@@ -303,19 +321,19 @@ impl io::Write for Display {
             &[b'\x1B', b'D', ref next..] =>
               { //println!("Cursor::ScrollUp");
                 { let col = self.size.get_col();
-                  let coucou = self.get_mut();
+                  let coucou = self.screen.get_mut();
                   {0..col}.all(|i|
                   { (*coucou).pop();
-                    (*coucou).insert(i, b' ');
+                    (*coucou).insert(i, Control::new(&[b' '][..]));
                     true }); }
                 self.write(next) },
             &[b'\x1B', b'M', ref next..] =>
               { //println!("Cursor::ScrollDown");
                 { let col = self.size.get_col();
-                  let coucou = self.get_mut();
+                  let coucou = self.screen.get_mut();
                   {0..col}.all(|_|
                   { (*coucou).remove(0);
-                    (*coucou).push(b' ');
+                    (*coucou).push(Control::new(&[b' '][..]));
                     true }); }
                 self.write(next) },
 
@@ -330,25 +348,25 @@ impl io::Write for Display {
               { //------------- n GOTO ------------------
                 Some((number, &[b'A', ref next..])) =>
                   { //println!("Cursor::CursorUp({});", number);
-                    let col = self.size.get_col();
-                    let pos = self.get_position();
-                    self.goto((pos - (number * col as u16) as u64) as u64);
+                    let col: usize = self.size.get_col();
+                    let pos: usize = self.get_position();
+                    self.goto((pos - (number * col)));
                     self.write(next) },
                 Some((number, &[b'B', ref next..])) =>
                   { //println!("Cursor::CursorDown({});", number);
-                    let col = self.size.get_col();
-                    let pos = self.get_position();
-                    self.goto((pos + (number * col as u16) as u64) as u64);
+                    let col: usize = self.size.get_col();
+                    let pos: usize = self.get_position();
+                    self.goto((pos + (number * col)));
                     self.write(next) },
                 Some((number, &[b'C', ref next..])) =>
                   { //println!("Cursor::CursorRight({});", number);
-                    let pos = self.get_position();
-                    self.goto((pos + number as u64) as u64);
+                    let pos: usize = self.get_position();
+                    self.goto((pos + number));
                     self.write(next) },
                 Some((number, &[b'D', ref next..])) =>
                   { //println!("Cursor::CursorLeft({});", number);
-                    let pos = self.get_position();
-                    self.goto((pos - number as u64) as u64);
+                    let pos: usize = self.get_position();
+                    self.goto((pos - number));
                     self.write(next) },
 
                 Some((number, &[b'm', ref next..])) =>
@@ -360,10 +378,10 @@ impl io::Write for Display {
                     Some((c, &[b'H', ref next..])) |
                     Some((c, &[b'f', ref next..])) => {
                       //println!("Cursor::CursorGoto({}, {})", x, c);
-                      let row = self.size.get_row();
-                      let col = self.size.get_col();
-                      if x <= row as u16 && c <= col as u16
-                      { self.goto(((c - 1) + ((x - 1) * col as u16)) as u64); }
+                      let row: usize = self.size.get_row();
+                      let col: usize = self.size.get_col();
+                      if x <= row && c <= col
+                      { self.goto(((c - 1) + ((x - 1) * col))); }
                       else
                       { panic!("Goto::CursorGoto({}, {}) moved the cursor out of screen limits", x, c); }
                       self.write(next)
@@ -391,11 +409,21 @@ impl io::Write for Display {
               }
             },
             &[b'\x07', ref next..] =>
-              { self.write(next) },
+            { self.write(next) },
             &[b'\x0D', ref next..] =>
-              { self.write(next) },
-            &[first, ref next..] => 
-              { self.screen.write(&[first]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) },
+            { self.write(next) },
+            &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] => {
+              self.screen.write(&[u1, u2, u3, u4]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) ))
+            },
+            &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0', u3 @ b'\x80' ... b'\xBF', ref next..] => {
+              self.screen.write(&[u1, u2, u3]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) ))
+            },
+            &[u1 @ b'\xC2' ... b'\xDF', u2 @ b'\x80' ... b'\xBF', ref next..] => {
+              self.screen.write(&[u1, u2]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) ))
+            },
+            &[u1, ref next..] => {
+              self.screen.write(&[u1]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) ))
+            },
         }
     }
 

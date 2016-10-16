@@ -1,6 +1,7 @@
 pub mod display;
 pub mod mode;
 pub mod device;
+mod termios;
 mod err;
 mod state;
 
@@ -14,11 +15,10 @@ use ::pty::prelude as pty;
 
 use self::mode::Mode;
 use self::device::Device;
+use self::termios::Termios;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 pub use self::display::Display;
-
-use super::terminal::Termios;
 
 /// The struct `Shell` is the speudo terminal interface.
 

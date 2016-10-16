@@ -10,7 +10,7 @@ macro_rules! parse_number {
         );
         let term: &[u8] = &$coordinate[..index];
         if let Ok(number) = unsafe {
-            u16::from_str_radix(str::from_utf8_unchecked(term), 10)
+            usize::from_str_radix(str::from_utf8_unchecked(term), 10)
         } {
             let next: &[u8] = &$coordinate[index..];
             Some((number, next))

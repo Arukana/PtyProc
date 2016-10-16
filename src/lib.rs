@@ -12,6 +12,5 @@ extern crate errno;
 #[macro_use]
 mod macros;
 mod fork;
-pub mod terminal;
 pub mod shell;
 pub mod prelude;
