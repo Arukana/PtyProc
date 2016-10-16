@@ -178,6 +178,7 @@ impl io::Write for Display {
             //------------ ERASE -----------------
             &[b'\x1B', b'[', b'K', ref next..] =>
               { //println!("Cursor::EraseRightLine");
+                if !self.is_oob().is_some()
                 { let col = self.size.get_col();
                   let pos = self.get_position();
                   let mut get = col;
@@ -193,6 +194,7 @@ impl io::Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'1', b'K', ref next..] =>
               { //println!("Cursor::EraseLeftLine");
+                if !self.is_oob().is_some()
                 { let col = self.size.get_col();
                   let pos = self.get_position();
                   let mut get = 0;
@@ -207,6 +209,7 @@ impl io::Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'2', b'K', ref next..] =>
               { //println!("Cursor::EraseLine");
+                if !self.is_oob().is_some()
                 { let col = self.size.get_col();
                   let mut pos = self.get_position();
                   let mut get = 0;
@@ -222,6 +225,7 @@ impl io::Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'J', ref next..] =>
               { //println!("Cursor::EraseDown");
+                if !self.is_oob().is_some()
                 { let pos = self.get_position();
                   let len = { (*self.get_ref()).len() };
                   let coucou = self.get_mut();
@@ -231,6 +235,7 @@ impl io::Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'1', b'J', ref next..] =>
               { //println!("Cursor::EraseUp");
+                if !self.is_oob().is_some()
                 { let pos = self.get_position();
                   let coucou = self.get_mut();
                   {0..(pos + 1) as usize}.all(|i|
@@ -244,6 +249,7 @@ impl io::Write for Display {
             //------------ INSERT -----------------
             &[b'\x1B', b'[', b'L', ref next..] =>
               { println!("InsertEmptyLine");
+                if !self.is_oob().is_some()
                 { let col = self.size.get_col();
                   let pos = self.get_position();
                   let coucou = self.get_mut();
@@ -260,7 +266,10 @@ impl io::Write for Display {
             &[b'\x1B', b'[', b'f', ref next..] /*|
             &[b'\x1B', b'[', b'?', b'6', b'l', ref next..]*/ =>
               { //println!("Goto::Home");
-                self.goto(0);
+                { self.goto(0); }
+                { let oob: &mut (i64, i64) = self.out_of_bounds();
+                  (*oob).0 = 0;
+                  (*oob).1 = 0; }
                 self.write(next) },
             &[b'\x1B', b'[', b'A', ref next..] |
             &[b'\x1B', b'O', b'A', ref next..] =>
