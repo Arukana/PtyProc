@@ -197,7 +197,9 @@ impl Display {
       if !self.is_oob().is_some() && (pos + 1 % col as libc::size_t != 0 || pos < col as libc::size_t - 1 || wrap)
       { { self.goto((pos + 1) as libc::size_t); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
-        if (*oob).0 == (col as libc::ssize_t) - 1
+        if (*oob).0 < (col as libc::ssize_t) - 1
+        { (*oob).0 += 1; }
+        else
         { (*oob).0 = 0;
           (*oob).1 += 1; }}
       else
@@ -216,13 +218,23 @@ impl Display {
       if !self.is_oob().is_some() && pos > 0 && (pos % col as libc::size_t != 0 || wrap)
       { { self.goto((pos - 1) as libc::size_t); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
-        if (*oob).0 == 0
+        if (*oob).0 > 0
+        { (*oob).0 -= 1; }
+        else
         { (*oob).0 = (col as libc::ssize_t) - 1;
           (*oob).1 -= 1; }}
       else
       { { let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
           (*oob).0 -= 1; }
         self.bell_or_goto(); }}
+
+    /// The method `goto_begin_line` moves the cursor to the beginning of the line
+    pub fn goto_begin_line(&mut self)
+    { if !self.is_oob().is_some() || self.is_border()
+      { let x = { (*self.out_of_bounds()).0 };
+        {0..x}.all(|_|
+        { self.goto_left();
+          true }); }}
 
     /// The method `goto_coord` moves the cursor to the given coordinates
     pub fn goto_coord(&mut self, x: libc::size_t, y: libc::size_t)
@@ -250,7 +262,7 @@ impl Display {
     /// The method `scroll_down` append an empty line on bottom of the screen
     /// (the cursor doesn't move)
     pub fn scroll_down(&mut self)
-    { println!("Cursor::ScrollDown");
+    { //println!("Cursor::ScrollDown");
       let col = self.size.get_col();
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
@@ -349,8 +361,9 @@ impl Display {
         { (*coucou)[i] = Control::new(&[b' '][..]);
           true }); }}
 
-    /// The method `erase_down` erase all lines from the current line up to the top of the
-    /// screen, and erase the current line from the left border column to the cursor.
+    /// The method `erase_up` erase all lines from the current line up to
+    /// the top of the screen, and erase the current line from the left border
+    /// column to the cursor.
     /// (char under the cursor included)
     pub fn erase_up(&mut self)
     { //println!("Cursor::EraseUp");
@@ -361,8 +374,9 @@ impl Display {
         { (*coucou)[i] = Control::new(&[b' '][..]);
           true }); }}
 
-    /// The method `erase_down` erase all lines from the current line down to the bottom
-    /// of the screen and erase the current line from the cursor to the right border column
+    /// The method `erase_down` erase all lines from the current line down to
+    /// the bottom of the screen and erase the current line from the cursor to
+    /// the right border column
     /// (char under the cursor included)
     pub fn erase_down(&mut self)
     { //println!("Cursor::EraseDown");
@@ -374,7 +388,21 @@ impl Display {
         { (*coucou)[i] = Control::new(&[b' '][..]);
           true }); }}
 
-    pub fn print_char(&mut self, first: u8, next: &[u8]) -> io::Result<usize>
+    /// The method `print_enter` reproduce the behavior of a '\n'
+    pub fn print_enter(&mut self)
+    { if !self.is_oob().is_some()
+      { let check = { (*(self.out_of_bounds())).1 };
+        let row = self.size.get_row();
+        if check < row as libc::ssize_t - 1
+        { self.goto_down(); }
+        else
+        { self.scroll_down(); }}
+      // !! A VERIFIER !! (Je suppose qu'un \n sur la dernière ligne scroll l'écran)
+      else if self.is_border()
+      { self.scroll_down(); }}
+
+    /// The method `print_char` print an unicode character (1 to 4 chars range)
+    pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
     { //println!("FIRST::{}", first);
       if !self.is_oob().is_some() || self.is_border()
       { { let wrap = { *(self.get_wrap()) };
@@ -386,7 +414,7 @@ impl Display {
         else if wrap && (*oob).1 < row as libc::ssize_t - 1
         { (*oob).0 = 0;
           (*oob).1 += 1; }}
-        self.screen.write(&[first]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
+        self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
       else
       { self.write(next) }}
 }
@@ -580,38 +608,20 @@ impl io::Write for Display {
               { println!("BELL!");
                 self.write(next) },
             &[b'\x0D', ref next..] =>
-              { if !self.is_oob().is_some() || self.is_border()
-                { let x = { (*self.out_of_bounds()).0 };
-                println!("X::{}", x);
-                  {0..x}.all(|_|
-                  { self.goto_left();
-                    true }); }
-                                  let check = { *(self.out_of_bounds()) };
-                                  println!("CHECK({}, {})", check.0, check.1);
+              { self.goto_begin_line();
                 self.write(next) },
             &[b'\x0A', ref next..] =>
-              { if !self.is_oob().is_some()
-                { let check = { (*(self.out_of_bounds())).1 };
-                  let row = self.size.get_row();
-                  if check < row as libc::ssize_t - 1
-                  { self.goto_down(); }
-                  else
-                  { self.scroll_down(); }}
-                else if self.is_border()
-                { self.scroll_down(); }
+              { self.print_enter();
                 self.write(next) },
-            &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] => {
-                self.screen.write(&[u1, u2, u3, u4]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) ))
-            },
-            &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0', u3 @ b'\x80' ... b'\xBF', ref next..] => {
-                 self.screen.write(&[u1, u2, u3]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) ))
-            },
-            &[u1 @ b'\xC2' ... b'\xDF', u2 @ b'\x80' ... b'\xBF', ref next..] => {
-                 self.screen.write(&[u1, u2]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) ))
-            },
-            &[u1, ref next..] => {
-                 self.screen.write(&[u1]).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) ))
-            },
+            &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] =>
+            { self.print_char(&[u1, u2, u3, u4], next) },
+            &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0', u3 @ b'\x80' ... b'\xBF', ref next..] =>
+            { self.print_char(&[u1, u2, u3], next) },
+            &[u1 @ b'\xC2' ... b'\xDF', u2 @ b'\x80' ... b'\xBF', ref next..] =>
+            { self.print_char(&[u1, u2], next) },
+            &[u1, ref next..] =>
+            { self.print_char(&[u1], next) },
+
         }
     }
 

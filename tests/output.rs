@@ -61,10 +61,10 @@ fn test_enter()
   assert_eq!(display.get_ref(), vec![b'h', b'i', b' ', b'Q', b'J', b'a']);
   assert_eq!(display.write(b"\x1B[;HK\n\rH").ok(), Some(2usize));
   assert_eq!(display.get_ref(), vec![b'K', b'i', b' ', b'H', b'J', b'a']);
-  assert_eq!(display.write(b"\n").ok(), Some(0usize));
-  assert_eq!(display.get_ref(), vec![b'H', b'J', b'a', b' ', b' ', b' ']);
-//  assert_eq!(display.write(b"\rCLG").ok(), Some(3usize));
-//  assert_eq!(display.get_ref(), vec![b'H', b'J', b'a', b'C', b'L', b'G']);
+  assert_eq!(display.write(b"\nb").ok(), Some(1usize));
+  assert_eq!(display.get_ref(), vec![b'H', b'J', b'a', b' ', b'b', b' ']);
+  assert_eq!(display.write(b"\rCLG").ok(), Some(3usize));
+  assert_eq!(display.get_ref(), vec![b'H', b'J', b'a', b'C', b'L', b'G']);
   }
 
 #[test]
