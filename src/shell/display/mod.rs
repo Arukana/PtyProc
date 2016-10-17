@@ -26,6 +26,7 @@ pub struct Display {
     line_wrap: bool,
     size: Winszed,
     screen: Cursor<Vec<Control>>,
+    bell: libc::size_t,
 }
 
 impl Display {
@@ -47,6 +48,7 @@ impl Display {
             save_position: 0,
             line_wrap: true,
             size: size,
+            bell: 0,
             screen: Cursor::new(
               (0..size.row_by_col()).map(|_: usize|
                                             Control::new(&[b' '][..])
@@ -129,9 +131,10 @@ impl Display {
     /// The method `tricky_resize` updates the size of the output screen.
     pub fn tricky_resize(&mut self, begin: libc::size_t, end: libc::size_t)
     { //println!("Resize::({}, {})", x, y);
-      let region: &mut (libc::size_t, libc::size_t) = self.get_region();
-      region.0 = begin - 1;
-      region.1 = end; }
+      if begin <= end
+      { let region: &mut (libc::size_t, libc::size_t) = self.get_region();
+        region.0 = begin - 1;
+        region.1 = end; }}
 
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
@@ -612,7 +615,7 @@ impl io::Write for Display {
               }
             },
             &[b'\x07', ref next..] => //BELL \b
-              { println!("BELL!");
+              { self.bell += 1;
                 self.write(next) },
             &[b'\x0D', ref next..] =>
               { self.goto_begin_line();
