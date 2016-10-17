@@ -58,7 +58,8 @@ impl Display {
         }
     }
 
-    pub fn get_ref(&self) -> Vec<libc::c_uchar> {
+    /// Converts a Vector of Control into a byte vector.
+    pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
         let mut screen: Vec<libc::c_uchar> = Vec::with_capacity(self.len());
 
         self.screen.get_ref().iter().all(|control: &Control| {
@@ -173,7 +174,7 @@ impl Display {
       let col = self.size.get_col();
       let pos = self.get_position();
       let wrap = { *(self.get_wrap()) };
-      let len = { (*self.get_ref()).len() };
+      let len = { (*self.into_bytes()).len() };
       if !self.is_oob().is_some() && pos - col as libc::size_t >= 0 && wrap
       { { self.goto((pos - col as libc::size_t) as libc::size_t); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
@@ -189,7 +190,7 @@ impl Display {
       let col = self.size.get_col();
       let pos = self.get_position();
       let wrap = { *(self.get_wrap()) };
-      let len = { (*self.get_ref()).len() };
+      let len = { (*self.into_bytes()).len() };
       if !self.is_oob().is_some() && (pos + col as libc::size_t) < len as libc::size_t && wrap
       { { self.goto((pos + col as libc::size_t) as libc::size_t); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
@@ -304,7 +305,7 @@ impl Display {
       { let restore = self.get_save();
         *restore };
       { self.goto(pos); }
-      let len = { (*self.get_ref()).len() };
+      let len = { (*self.into_bytes()).len() };
       let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
       (*oob).0 = (pos % len as libc::size_t) as libc::ssize_t - 1;
       (*oob).1 = (pos / len as libc::size_t) as libc::ssize_t; }
@@ -398,7 +399,7 @@ impl Display {
     { //println!("Cursor::EraseDown");
       if !self.is_oob().is_some()
       { let pos = self.get_position();
-        let len = { (*self.get_ref()).len() };
+        let len = { (*self.into_bytes()).len() };
         let coucou = self.screen.get_mut();
         {pos as usize..len}.all(|i|
         { (*coucou)[i] = Control::new(&[b' '][..]);
@@ -437,15 +438,9 @@ impl Display {
 
 impl fmt::Display for Display {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut screen: String = String::with_capacity(self.len());
-
-        screen.extend(
-            self.screen.get_ref().into_iter().map(|control| unsafe {
-               let ref character: &[u8] = control.get_ref();
-               str::from_utf8_unchecked(character)
-            }).collect::<Vec<&str>>()
-        );
-        write!(f, "{}", screen)
+        unsafe {
+            write!(f, "{}", String::from_utf8_unchecked(self.into_bytes()))
+        }
     }
 }
 
