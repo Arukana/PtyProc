@@ -420,12 +420,13 @@ impl Display {
 
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
-    { //println!("FIRST::{}", first);
+    { println!("FIRST::{:?}", first);
       if !self.is_oob().is_some() || self.is_border()
       { { let wrap = { *(self.get_wrap()) };
         let row = self.size.get_row();
         let col = self.size.get_col();
-        let oob: &mut (libc::ssize_t, libc::ssize_t) = { self.out_of_bounds() };
+          let oob: &mut (libc::ssize_t, libc::ssize_t) = { self.out_of_bounds() };
+          println!("print_char {}", first.len() );
         if (*oob).0 < col as libc::ssize_t - 1 || ((*oob).0 == col as libc::ssize_t - 1 && (*oob).1 == row as libc::ssize_t - 1)
         { (*oob).0 += 1; }
         else if wrap && (*oob).1 < row as libc::ssize_t - 1

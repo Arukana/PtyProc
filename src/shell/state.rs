@@ -7,7 +7,6 @@ use super::Display;
 use super::device::DeviceState;
 use super::device::control::Control;
 
-#[derive(Clone)]
 pub struct ShellState {
   /// Update.
   idle: Option<()>,
@@ -39,6 +38,15 @@ impl ShellState {
           out_screen: Display::new(fd).unwrap(),
           in_line: Vec::new(),
           in_line_ready: false,
+      }
+  }
+
+  /// The method `is_screen` returns a screen interface.
+  pub fn is_screen(&self) -> Option<&Display> {
+      if self.out_text.is_some() {
+          Some(&self.out_screen)
+      } else {
+          None
       }
   }
 
@@ -131,12 +139,31 @@ impl ShellState {
         }
       }
     }
-    if let Some(ref text) = self.out_text {
-      try!(self.out_screen.write(text.as_slice()));
+      if let Some(ref text) = self.out_text {
+      println!("{:?}", self.out_screen.write(text.as_slice()));
     }
     if let Some(()) = self.is_resized() {
       self.out_screen.resize().unwrap();
     }
     Ok(self.to_owned())
   }
+}
+
+impl Clone for ShellState {
+    fn clone(&self) -> Self {
+        ShellState {
+            idle: self.idle,
+            sig: self.sig,
+            in_text: self.in_text.clone(),
+            in_text_past: self.in_text_past,
+            out_text: self.out_text.clone(),
+            out_screen: self.out_screen.clone(),
+            in_line: self.in_line.clone(),
+            in_line_ready: self.in_line_ready,
+        }
+    }
+
+    fn clone_from(&mut self, source: &Self) {
+        
+    }
 }
