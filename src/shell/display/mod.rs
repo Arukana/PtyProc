@@ -3,10 +3,11 @@ mod winsz;
 pub mod cursor;
 pub mod control;
 
-use std::ops::{BitAnd, Add};
+use std::ops::{BitAnd, Add, Mul};
 use std::io::{self, Write};
 use std::fmt;
 use std::str;
+use std::mem;
 
 use ::libc;
 
@@ -66,6 +67,11 @@ impl Display {
             true
         });
         screen
+    }
+
+    /// The method `len` returns number of characters.
+    pub fn len(&self) -> libc::size_t {
+        mem::size_of::<In>().mul(&self.size.row_by_col())
     }
 
     /// The accessor method `get_wrap` returns a mutable reference on
@@ -429,20 +435,6 @@ impl Display {
       { self.write(next) }}
 }
 
-impl ExactSizeIterator for Display {
-    fn len(&self) -> usize {
-        self.size.row_by_col()
-    }
-}
-
-impl Iterator for Display {
-    type Item = u8;
-
-    fn next(&mut self) -> Option<u8> {
-        None
-    }
-}
-
 impl fmt::Display for Display {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut screen: String = String::with_capacity(self.len());
@@ -637,13 +629,5 @@ impl io::Write for Display {
 
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
-    }
-}
-
-impl io::Read for Display {
-    /// The method `read` from trait `io::Read` sets the screen to
-    /// the argument buffer.
-    fn read(&mut self, _: &mut [u8]) -> io::Result<usize> {
-        Ok(0)
     }
 }
