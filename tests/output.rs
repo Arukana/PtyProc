@@ -158,7 +158,7 @@ fn test_position_save()
 fn test_scroll()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.get_ref(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
-  assert_eq!(display.write(b"h\x1B[sello").ok(), Some(5usize));
+  assert_eq!(display.write(b"hello").ok(), Some(5usize));
   assert_eq!(display.get_ref(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
   assert_eq!(display.write(b"\x1BD").ok(), Some(0usize));
   assert_eq!(display.get_ref(), vec![b' ', b' ', b' ', b'h', b'e', b'l']);
@@ -166,4 +166,3 @@ fn test_scroll()
   assert_eq!(display.get_ref(), vec![b'h', b'i', b' ', b'h', b'e', b'l']);
   assert_eq!(display.write(b"\x1BM").ok(), Some(0usize));
   assert_eq!(display.get_ref(), vec![b'h', b'e', b'l', b' ', b' ', b' ']); }
-

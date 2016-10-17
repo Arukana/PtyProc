@@ -42,7 +42,7 @@ impl Display {
     /// from shell.
     pub fn from_winszed(size: Winszed) -> Display {
         Display {
-            region: (0, 0),
+            region: (0, size.get_row()),
             oob: (0, 0),
             save_position: 0,
             line_wrap: true,
@@ -70,6 +70,11 @@ impl Display {
     /// the variable 'line_wrap'
     pub fn get_wrap(&mut self) -> &mut bool
     { &mut self.line_wrap }
+
+    /// The accessor method `out_of_bounds` returns a mutable reference on
+    /// the tuple 'oob' and should be called every times the cursor moves
+    pub fn get_region(&mut self) -> &mut (libc::size_t, libc::size_t)
+    { &mut self.region }
 
     /// The accessor method `out_of_bounds` returns a mutable reference on
     /// the tuple 'oob' and should be called every times the cursor moves
@@ -122,12 +127,11 @@ impl Display {
     }
 
     /// The method `tricky_resize` updates the size of the output screen.
-    pub fn tricky_resize(&mut self) -> Result<()> {
-      match Winszed::new(0) {
-        Err(why) => Err(DisplayError::WinszedFail(why)),
-        Ok(size) => Ok(self.size = size),
-      }
-    }
+    pub fn tricky_resize(&mut self, begin: libc::size_t, end: libc::size_t)
+    { //println!("Resize::({}, {})", x, y);
+      let region: &mut (libc::size_t, libc::size_t) = self.get_region();
+      region.0 = begin - 1;
+      region.1 = end; }
 
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
@@ -253,10 +257,11 @@ impl Display {
     pub fn scroll_up(&mut self)
     { //println!("Cursor::ScrollUp");
       let col = self.size.get_col();
+      let resize = { *(self.get_region()) };
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      { (*coucou).pop();
-        (*coucou).insert(0, Control::new(&[b' '][..]));
+      { (*coucou).insert(resize.0 * col, Control::new(&[b' '][..]));
+        (*coucou).remove(resize.1 * col);
         true }); }
 
     /// The method `scroll_down` append an empty line on bottom of the screen
@@ -264,10 +269,11 @@ impl Display {
     pub fn scroll_down(&mut self)
     { //println!("Cursor::ScrollDown");
       let col = self.size.get_col();
+      let resize = { *(self.get_region()) };
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      { (*coucou).remove(0);
-        (*coucou).push(Control::new(&[b' '][..]));
+      { (*coucou).insert(resize.1 * col, Control::new(&[b' '][..]));
+        (*coucou).remove(resize.0 * col);
         true }); }
 
     /// The method `save_position` save a position in the variable 'save_position' to get
@@ -300,11 +306,12 @@ impl Display {
     { //println!("InsertEmptyLine");
       if !self.is_oob().is_some()
       { let col = self.size.get_col();
+        let resize = { *(self.get_region()) };
         let pos = self.get_position();
         let coucou = self.screen.get_mut();
         {0..col}.all(|_|
-        { (*coucou).pop();
-          (*coucou).insert(pos as usize, Control::new(&[b' '][..]));
+        { (*coucou).insert(pos as usize, Control::new(&[b' '][..]));
+          (*coucou).remove(resize.1 * col);
           true }); }}
 
     /// The method `erase_right_line` erase the current line from the cursor
@@ -584,14 +591,14 @@ impl io::Write for Display {
                     Some((c, &[b'f', ref next..])) =>
                       { self.goto_coord(c, x);
                         self.write(next) },
-                    Some((y, &[b';', b'0', b'c', ref next..])) |
-                    Some((y, &[b';', b'c', ref next..])) =>
+                    Some((_, &[b';', b'0', b'c', ref next..])) |
+                    Some((_, &[b';', b'c', ref next..])) =>
                       { //println!("Cursor::TermVersionOut({}, {})", x, y);
                         self.write(next) },
 
                     Some((y, &[b'r', ref next..])) =>
-                    { //println!("Resize::({}, {})", x, y);
-                      self.write(next) },
+                      { self.tricky_resize(x, y);
+                        self.write(next) },
 
                     _ => { println!("HHHHHH  {:?}  HHHHHH", buf);
                       self.screen.write(&[b'\x1B', b'[', b';']).and_then(|f|
