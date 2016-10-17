@@ -23,6 +23,7 @@ pub struct Display {
     save_position: libc::size_t,
     ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
     region: (libc::size_t, libc::size_t),
+    collection: Vec<libc::size_t>,
     oob: (libc::ssize_t, libc::ssize_t),
     line_wrap: bool,
     size: Winszed,
@@ -44,9 +45,10 @@ impl Display {
     /// from shell.
     pub fn from_winszed(size: Winszed) -> Display {
         Display {
-            region: (0, size.get_row()),
-            oob: (0, 0),
             save_position: 0,
+            region: (0, size.get_row()),
+            collection: Vec::new(),
+            oob: (0, 0),
             line_wrap: true,
             size: size,
             bell: 0,
@@ -435,6 +437,17 @@ impl Display {
         self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
       else
       { self.write(next) }}
+
+    pub fn catch_numbers<'a>(&self, mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
+    { match parse_number!(buf)
+      { Some((number, &[b';', ref next..])) =>
+          { acc.push(number);
+            self.catch_numbers(acc, next) },
+        Some((number, &[ref next..])) =>
+          { acc.push(number);
+            (acc, next) },
+        _ =>
+          { (acc, buf) }, }}
 }
 
 impl fmt::Display for Display {
@@ -546,62 +559,70 @@ impl io::Write for Display {
             &[b'\x1B', b'[', b'0', b'm', ref next..] |
             &[b'\x1B', b'[', b'm', ref next..] =>
               { //println!("Cursor::ClearAttribute");
+                self.collection.clear();
                 self.write(next) },
 
             &[b'\x1B', b'[', ref next..] =>
-            { match parse_number!(next)
+            { let (mut bonjour, coucou) =
+              { self.catch_numbers(Vec::new(), next) };
+              match coucou
               { //------------- n GOTO ------------------
-                Some((number, &[b'A', ref next..])) =>
-                  { {0..number}.all(|_|
-                    { self.goto_up();
-                      true });
+                &[b'A', ref next..] =>
+                  { if bonjour.len() == 1
+                    { {0..bonjour[0]}.all(|_|
+                      { self.goto_up();
+                        true }); }
                     self.write(next) },
-                Some((number, &[b'B', ref next..])) =>
-                  { {0..number}.all(|_|
-                    { self.goto_down();
-                      true });
+                &[b'B', ref next..] =>
+                  { if bonjour.len() == 1
+                    { {0..bonjour[0]}.all(|_|
+                      { self.goto_down();
+                        true }); }
                     self.write(next) },
-                Some((number, &[b'C', ref next..])) =>
-                  { {0..number}.all(|_|
-                    { self.goto_right();
-                      true });
+                &[b'C', ref next..] =>
+                  { if bonjour.len() == 1
+                    { {0..bonjour[0]}.all(|_|
+                      { self.goto_right();
+                        true }); }
                     self.write(next) },
-                Some((number, &[b'D', ref next..])) =>
-                  { {0..number}.all(|_|
-                    { self.goto_left();
-                      true });
+                &[b'D', ref next..] =>
+                  { if bonjour.len() == 1
+                    { {0..bonjour[0]}.all(|_|
+                      { self.goto_left();
+                        true }); }
                     self.write(next) },
 
-                Some((number, &[b'm', ref next..])) =>
-                  { //println!("Cursor::Attribute({});", number);
+                //------------- ATTRIBUTS ---------------
+                &[b'm', ref next..] =>
+                  { self.collection.append(&mut bonjour);
                     self.write(next) },
 
-                Some((x, &[b';', ref next..])) =>
-                { match parse_number!(next)
-                  { Some((c, &[b'H', ref next..])) |
-                    Some((c, &[b'f', ref next..])) =>
-                      { self.goto_coord(c, x);
-                        self.write(next) },
-                    Some((_, &[b';', b'0', b'c', ref next..])) |
-                    Some((_, &[b';', b'c', ref next..])) =>
-                      { //println!("Cursor::TermVersionOut({}, {})", x, y);
-                        self.write(next) },
+                //--------------- GOTO ------------------
+                &[b'H', ref next..] |
+                &[b'f', ref next..] =>
+                  { if bonjour.len() == 2
+                    { self.goto_coord(bonjour[1], bonjour[0]); }
+                    self.write(next) },
 
-                    Some((y, &[b'r', ref next..])) =>
-                      { self.tricky_resize(x, y);
-                        self.write(next) },
+                //----------- TRICKY RESIZE -------------
+                &[b'r', ref next..] =>
+                  { if bonjour.len() == 2
+                    { self.tricky_resize(bonjour[0], bonjour[1]); }
+                    self.write(next) },
 
-                    _ => { println!("HHHHHH  {:?}  HHHHHH", buf);
-                      self.screen.write(&[b'\x1B', b'[', b';']).and_then(|f|
-                      self.write(next).and_then(|n| Ok(f.add(&n)))
-                    )},
-                  }
-                },
-                _ => self.screen.write(&[b'\x1B', b'[']).and_then(|f|
-                  self.write(next).and_then(|n| Ok(f.add(&n)))
-                ),
-              }
-            },
+                //----------- TERM VERSION --------------
+                &[b'c', ref next..] =>
+                  { if bonjour.len() == 2
+                    { /*println!("Cursor::TermVersionOut({}, {})", x, y);*/ }
+                    self.write(next) },
+                &[b';', b'c', ref next..] =>
+                  { if bonjour.len() == 3 && bonjour[2] == 0
+                    { /*println!("Cursor::TermVersionOut({}, {})", x, y);*/ }
+                    self.write(next) },
+
+                &[ref next..] =>
+                  { self.write(next) }, }},
+
             &[b'\x07', ref next..] => //BELL \b
               { self.bell += 1;
                 self.write(next) },
