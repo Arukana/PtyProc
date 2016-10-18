@@ -3,7 +3,7 @@ mod winsz;
 pub mod cursor;
 pub mod control;
 
-use std::ops::{BitAnd, Add, Mul};
+use std::ops::{BitAnd, Add, Mul, DerefMut};
 use std::io::{self, Write};
 use std::fmt;
 use std::str;
@@ -21,7 +21,7 @@ pub type In = [libc::c_uchar; 16];
 #[derive(Debug, Clone)]
 pub struct Display {
     save_position: libc::size_t,
-    save_terminal: Display,
+    save_terminal: Option<Box<Display>>,
     ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
     region: (libc::size_t, libc::size_t),
     collection: Vec<libc::size_t>,
@@ -47,7 +47,7 @@ impl Display {
     pub fn from_winszed(size: Winszed) -> Display {
         Display {
             save_position: 0,
-            save_terminal: Display::default(),
+            save_terminal: None,
             region: (0, size.get_row()),
             collection: Vec::new(),
             oob: (0, 0),
@@ -94,8 +94,13 @@ impl Display {
     pub fn out_of_bounds(&mut self) -> &mut (libc::ssize_t, libc::ssize_t)
     { &mut self.oob }
 
-    pub fn get_terminal(&mut self) -> &mut Display
-    { &mut self.save_terminal }
+    pub fn get_terminal(&mut self) -> &mut Display {
+        if let Some(ref mut save) = self.save_terminal {
+            save.deref_mut()
+        } else {
+            self
+        }
+    }
 
     pub fn get_screen(&mut self) -> &mut Cursor<Vec<Control>>
     { &mut self.screen }
@@ -472,21 +477,9 @@ impl Display {
       { get += 1; };
       get }
 
-    pub fn save_terminal(&mut self)
-    { { let screen = { *(self.get_screen()) };
-        let term: &mut Display = { self.get_terminal() };
-        (*term).save_position = self.save_position;
-        (*term).save_terminal = self.save_terminal;
-        (*term).region = self.region
-        (*term).collection = self.collection;
-        (*term).oob = self.oob;
-        (*term).line_wrap = self.line_wrap;
-        (*term).size = self.size;
-        (*term).screen = screen;
-        (*term).bell = self.bell; }
-      { let size = self.size;
-        let screen: &mut Cursor<Vec<Control>> = { self.get_screen() }; 
-        *screen = Cursor::new((0..size.row_by_col()).map(|_: usize| Control::new(&[b' '][..])).collect::<Vec<Control>>()); }}
+    pub fn save_terminal(&mut self) {
+        self.save_terminal = Some(Box::new(self.clone()));
+    }
 }
 
 impl fmt::Display for Display {
