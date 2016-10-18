@@ -4,7 +4,7 @@ macro_rules! parse_number {
         use std::str;
         use std::ops::Not;
         let index: usize = $coordinate.iter().position(|&c|
-            (b'0'..b'9').contains(c).not()
+            (b'0'..b':').contains(c).not()
         ).unwrap_or(
             $coordinate.len()
         );

@@ -140,6 +140,9 @@ impl ShellState {
       }
     }
       if let Some(ref text) = self.out_text {
+      println!("SCREEN::{:?}", text);
+      for i in text.clone()
+      { print!(" {} |", i as char); }
       println!("{:?}", self.out_screen.write(text.as_slice()));
     }
     if let Some(()) = self.is_resized() {

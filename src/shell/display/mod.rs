@@ -21,6 +21,7 @@ pub type In = [libc::c_uchar; 16];
 #[derive(Debug, Clone)]
 pub struct Display {
     save_position: libc::size_t,
+    save_terminal: Display,
     ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
     region: (libc::size_t, libc::size_t),
     collection: Vec<libc::size_t>,
@@ -46,6 +47,7 @@ impl Display {
     pub fn from_winszed(size: Winszed) -> Display {
         Display {
             save_position: 0,
+            save_terminal: Display::default(),
             region: (0, size.get_row()),
             collection: Vec::new(),
             oob: (0, 0),
@@ -91,6 +93,12 @@ impl Display {
     /// the tuple 'oob' and should be called every times the cursor moves
     pub fn out_of_bounds(&mut self) -> &mut (libc::ssize_t, libc::ssize_t)
     { &mut self.oob }
+
+    pub fn get_terminal(&mut self) -> &mut Display
+    { &mut self.save_terminal }
+
+    pub fn get_screen(&mut self) -> &mut Cursor<Vec<Control>>
+    { &mut self.screen }
 
     /// The accessor method `is_oob` returns an option if
     /// the tuple 'oob' points out of the output screen
@@ -188,7 +196,7 @@ impl Display {
 
     /// The method `goto_down` moves the cursor down.
     pub fn goto_down(&mut self)
-    { //println!("Goto::Down(1)");
+    { println!("Goto::Down(1)");
       let col = self.size.get_col();
       let pos = self.get_position();
       let wrap = { *(self.get_wrap()) };
@@ -196,6 +204,7 @@ impl Display {
       if !self.is_oob().is_some() && (pos + col as libc::size_t) < len as libc::size_t && wrap
       { { self.goto((pos + col as libc::size_t) as libc::size_t); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
+        println!("POS::{}, COL::{}", pos, col);
         (*oob).1 += 1; }
       else
       { { let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
@@ -339,7 +348,7 @@ impl Display {
         { get = pos as usize;
           while (get + 1) % col != 0
           { get += 1; }; }
-        self.goto((get - 1) as libc::size_t);
+        //self.goto((get - 1) as libc::size_t);
         let coucou = self.screen.get_mut();
         {pos as usize..get}.all(|i|
         { (*coucou)[i] = Control::new(&[b' '][..]);
@@ -374,7 +383,7 @@ impl Display {
         { pos -= 1; };
         while (get + pos + 1) % col as libc::size_t != 0
         { get += 1; };
-        self.goto(get + pos);
+        self.goto(pos);
         let coucou = self.screen.get_mut();
         {pos as usize..(get + pos + 1) as usize}.all(|i|
         { (*coucou)[i] = Control::new(&[b' '][..]);
@@ -422,13 +431,19 @@ impl Display {
 
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
-    { println!("FIRST::{:?}", first);
+    {
+      print!("FIRST::{:?} | ", first);
+      for i in first
+      {print!("{} ", *i as char); }
+      println!("");
+      { println!("OOB::({}, {})", self.oob.0, self.oob.1); }
+
       if !self.is_oob().is_some() || self.is_border()
       { { let wrap = { *(self.get_wrap()) };
         let row = self.size.get_row();
         let col = self.size.get_col();
-          let oob: &mut (libc::ssize_t, libc::ssize_t) = { self.out_of_bounds() };
-          println!("print_char {}", first.len() );
+        let oob: &mut (libc::ssize_t, libc::ssize_t) = { self.out_of_bounds() };
+        //println!("print_char {}", first.len() );
         if (*oob).0 < col as libc::ssize_t - 1 || ((*oob).0 == col as libc::ssize_t - 1 && (*oob).1 == row as libc::ssize_t - 1)
         { (*oob).0 += 1; }
         else if wrap && (*oob).1 < row as libc::ssize_t - 1
@@ -448,6 +463,30 @@ impl Display {
             (acc, next) },
         _ =>
           { (acc, buf) }, }}
+
+    /// The method `next_tab` return the size of the current printed tabulation
+    pub fn next_tab(&self) -> u8
+    { let pos = self.get_position();
+      let mut get = 1;
+      while (pos as u8 + get) % 8 != 0
+      { get += 1; };
+      get }
+
+    pub fn save_terminal(&mut self)
+    { { let screen = { *(self.get_screen()) };
+        let term: &mut Display = { self.get_terminal() };
+        (*term).save_position = self.save_position;
+        (*term).save_terminal = self.save_terminal;
+        (*term).region = self.region
+        (*term).collection = self.collection;
+        (*term).oob = self.oob;
+        (*term).line_wrap = self.line_wrap;
+        (*term).size = self.size;
+        (*term).screen = screen;
+        (*term).bell = self.bell; }
+      { let size = self.size;
+        let screen: &mut Cursor<Vec<Control>> = { self.get_screen() }; 
+        *screen = Cursor::new((0..size.row_by_col()).map(|_: usize| Control::new(&[b' '][..])).collect::<Vec<Control>>()); }}
 }
 
 impl fmt::Display for Display {
@@ -465,19 +504,30 @@ impl io::Write for Display {
         match buf {
             &[] => Ok(0),
 
+            //---------- TERMINAL SAVE -----------
+            &[b'\x1B', b'[', b'1', b'0', b'4', b'9', b'h', ref next..] =>
+              { //println!("Save Terminal State");
+                self.write(next) },
+            &[b'\x1B', b'[', b'1', b'0', b'4', b'9', b'l', ref next..] =>
+              { //println!("Restore Terminal State");
+                self.write(next) },
+
             //------------ SETTINGS -------------
             &[b'\x1B', b'c', ref next..] =>
               { //println!("Cursor::TermReset");
                 self.write(next) },
-            &[b'\x1B', b'[', b'>', b'0', b'c', ref next..] =>
+            &[b'\x1B', b'[', b'>', b'0', b'c', ref next..] |
+            &[b'\x1B', b'[', b'>', b'c', ref next..] =>
               { //println!("Cursor::TermVersionIn");
                 self.write(next) },
-            &[b'\x1B', b'[', b'7', b'h', ref next..] =>
+            &[b'\x1B', b'[', b'7', b'h', ref next..] |
+            &[b'\x1B', b'[', b'2', b'0', b'h', ref next..] =>
               { //println!("Cursor::LineWrap(true)");
                 { let wrap: &mut bool = self.get_wrap();
                   *wrap = true; }
                 self.write(next) },
-            &[b'\x1B', b'[', b'7', b'l', ref next..] =>
+            &[b'\x1B', b'[', b'7', b'l', ref next..] |
+            &[b'\x1B', b'[', b'2', b'0', b'l', ref next..] =>
               { //println!("Cursor::LineWrap(false)");
                 { let wrap: &mut bool = self.get_wrap();
                   *wrap = false; }
@@ -488,7 +538,8 @@ impl io::Write for Display {
 
 
             //------------ ERASE -----------------
-            &[b'\x1B', b'[', b'K', ref next..] =>
+            &[b'\x1B', b'[', b'K', ref next..] |
+            &[b'\x1B', b'[', b'0', b'K', ref next..] =>
             { self.erase_right_line();
             self.write(next) },
             &[b'\x1B', b'[', b'1', b'K', ref next..] =>
@@ -497,7 +548,8 @@ impl io::Write for Display {
             &[b'\x1B', b'[', b'2', b'K', ref next..] =>
             { self.erase_line();
             self.write(next) },
-            &[b'\x1B', b'[', b'J', ref next..] =>
+            &[b'\x1B', b'[', b'J', ref next..] |
+            &[b'\x1B', b'[', b'0', b'J', ref next..] =>
             { self.erase_down();
             self.write(next) },
             &[b'\x1B', b'[', b'1', b'J', ref next..] =>
@@ -520,18 +572,26 @@ impl io::Write for Display {
             { self.goto_home();
             self.write(next) },
             &[b'\x1B', b'[', b'A', ref next..] |
+            &[b'A', b'\x08', ref next..] |
+            &[b'\x1B', b'[', b'm', b'A', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'A', ref next..] =>
             { self.goto_up();
             self.write(next) },
             &[b'\x1B', b'[', b'B', ref next..] |
+            &[b'B', b'\x08', ref next..] |
+            &[b'\x1B', b'[', b'm', b'B', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'B', ref next..] =>
             { self.goto_down();
             self.write(next) },
             &[b'\x1B', b'[', b'C', ref next..] |
+            &[b'C', b'\x08', ref next..] |
+            &[b'\x1B', b'[', b'm', b'C', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'C', ref next..] =>
             { self.goto_right();
             self.write(next) },
             &[b'\x1B', b'[', b'D', ref next..] |
+            &[b'D', b'\x08', ref next..] |
+            &[b'\x1B', b'[', b'm', b'D', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'D', ref next..] |
             &[b'\x08', ref next..] =>
             { self.goto_left();
@@ -562,7 +622,11 @@ impl io::Write for Display {
                 self.collection.clear();
                 self.write(next) },
 
-            &[b'\x1B', b'[', ref next..] =>
+            &[b'\x1B', b'[', b'?', ref next..] |
+            &[b'\x1B', b'[', b'>', ref next..] |
+            &[b'\x1B', b'[', ref next..] |
+            &[b'\x1B', b'?', ref next..] |
+            &[b'\x1B', ref next..] =>
             { let (mut bonjour, coucou) =
               { self.catch_numbers(Vec::new(), next) };
               match coucou
@@ -620,6 +684,7 @@ impl io::Write for Display {
                     { /*println!("Cursor::TermVersionOut({}, {})", x, y);*/ }
                     self.write(next) },
 
+                &[_, ref next..] |
                 &[ref next..] =>
                   { self.write(next) }, }},
 
@@ -632,6 +697,22 @@ impl io::Write for Display {
             &[b'\x0A', ref next..] =>
               { self.print_enter();
                 self.write(next) },
+            &[b'\x09', ref next..] =>
+            { if !self.is_oob().is_some()
+              { let resize = { *(self.get_region()) };
+                let col = self.size.get_col();
+                let tab_width = self.next_tab();
+                let pos = self.get_position();
+                { let coucou = self.screen.get_mut();
+                  {0..tab_width}.all(|_|
+                  { (*coucou).insert(pos as usize, Control::new(&[b' '][..]));
+                    (*coucou).remove(resize.1 * col);
+                    true }); }
+                {0..tab_width}.all(|_|
+                { self.goto_right();
+                  true }); }
+              self.write(next) },
+
             &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] =>
             { self.print_char(&[u1, u2, u3, u4], next) },
             &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0', u3 @ b'\x80' ... b'\xBF', ref next..] =>

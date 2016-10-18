@@ -24,8 +24,10 @@ fn test_new()
 fn test_hello()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(&[b'a']).ok(), Some(1usize));
+  assert_eq!(display.into_bytes(), vec![b'a', b' ', b' ', b' ', b' ', b' ']);
   assert_eq!(display.write(b"hello").ok(), Some(5usize));
-  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']); }
+  assert_eq!(display.into_bytes(), vec![b'a', b'h', b'e', b'l', b'l', b'o']); }
 
 #[test]
 fn test_home()

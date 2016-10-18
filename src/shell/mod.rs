@@ -60,7 +60,7 @@ impl Shell {
             mode: mode,
             speudo: master,
             device: Device::from_speudo(master),
-            state: ShellState::new(master.as_raw_fd()),
+            state: ShellState::new(libc::STDIN_FILENO),
           })
         },
       },
