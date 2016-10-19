@@ -101,7 +101,7 @@ impl Shell {
   }
 }
 
-impl io::Write for Shell {
+impl Write for Shell {
   fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
     self.speudo.write(buf)
   }

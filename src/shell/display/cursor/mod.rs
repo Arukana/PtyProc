@@ -48,7 +48,7 @@ impl <T> Cursor <T> {
     }
 }
 
-impl io::Write for Cursor<Vec<Control>> {
+impl Write for Cursor<Vec<Control>> {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {

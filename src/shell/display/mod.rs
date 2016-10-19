@@ -3,7 +3,7 @@ mod winsz;
 pub mod cursor;
 pub mod control;
 
-use std::ops::{BitAnd, Add, Mul, DerefMut};
+use std::ops::{BitAnd, Add, Mul, DerefMut, Not};
 use std::io::{self, Write};
 use std::fmt;
 use std::str;
@@ -107,17 +107,23 @@ impl Display {
 
     /// The accessor method `is_oob` returns an option if
     /// the tuple 'oob' points out of the output screen
-    pub fn is_oob(&self) -> Option<()>
-    { if self.oob.0 >= 0 && self.oob.0 < self.size.get_col() as libc::ssize_t &&
-         self.oob.1 >= 0 && self.oob.1 < self.size.get_row() as libc::ssize_t
-      { None }
-      else
-      { Some(()) }}
+    pub fn is_oob(&self) -> Option<(libc::ssize_t, libc::ssize_t)> {
+        let (x, y): (libc::ssize_t, libc::ssize_t) = self.oob;
+
+        if x.is_negative().not().bitand(&x.gt(&self.size.get_icol()))
+                                .bitand(
+                y.is_negative().not().bitand(&y.gt(&self.size.get_irow()))
+       ) {
+            Some((x, y))
+        } else {
+            None
+        }
+    }
 
     /// The accessor method `is_border` returns a boolean if
     /// the tuple 'oob' points to the last left bottom character
     pub fn is_border(&self) -> bool
-    { if self.oob.0 == self.size.get_col() as libc::ssize_t && self.oob.1 == self.size.get_row() as libc::ssize_t - 1
+    { if self.oob.0 == self.size.get_icol() && self.oob.1 == self.size.get_irow() - 1
       { true }
       else
       { false }}
@@ -128,8 +134,8 @@ impl Display {
       { self.write(&[b'\x07']); }
       else
       { let check = { *(self.out_of_bounds()) };
-        let col = self.size.get_col();
-        self.goto((check.0 + (check.1 * (col as libc::ssize_t))) as libc::size_t); }}
+        let col = self.size.get_icol();
+        self.goto((check.0 + (check.1 * col)) as libc::size_t); }}
 
     /// The accessor method `get_save` returns a mutable reference on
     /// the variable 'save_position'
@@ -190,8 +196,8 @@ impl Display {
       let pos = self.get_position();
       let wrap = { *(self.get_wrap()) };
       let len = { (*self.into_bytes()).len() };
-      if !self.is_oob().is_some() && pos - col as libc::size_t >= 0 && wrap
-      { { self.goto((pos - col as libc::size_t) as libc::size_t); }
+      if !self.is_oob().is_some() && pos - col >= 0 && wrap
+      { { self.goto(pos - col); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
         (*oob).1 -= 1; }
       else
@@ -206,8 +212,8 @@ impl Display {
       let pos = self.get_position();
       let wrap = { *(self.get_wrap()) };
       let len = { (*self.into_bytes()).len() };
-      if !self.is_oob().is_some() && (pos + col as libc::size_t) < len as libc::size_t && wrap
-      { { self.goto((pos + col as libc::size_t) as libc::size_t); }
+      if !self.is_oob().is_some() && (pos + col ) < len && wrap
+      { { self.goto(pos + col); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
         println!("POS::{}, COL::{}", pos, col);
         (*oob).1 += 1; }
@@ -224,8 +230,8 @@ impl Display {
       let col = self.size.get_col();
       let pos = self.get_position();
       let wrap = { *(self.get_wrap()) };
-      if !self.is_oob().is_some() && (pos + 1 % col as libc::size_t != 0 || pos < col as libc::size_t - 1 || wrap)
-      { { self.goto((pos + 1) as libc::size_t); }
+      if !self.is_oob().is_some() && (pos + 1 % col != 0 || pos < col - 1 || wrap)
+      { { self.goto(pos + 1); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
         if (*oob).0 < (col as libc::ssize_t) - 1
         { (*oob).0 += 1; }
@@ -245,8 +251,8 @@ impl Display {
       let col = self.size.get_col();
       let pos = self.get_position();
       let wrap = { *(self.get_wrap()) };
-      if !self.is_oob().is_some() && pos > 0 && (pos % col as libc::size_t != 0 || wrap)
-      { { self.goto((pos - 1) as libc::size_t); }
+      if !self.is_oob().is_some() && pos > 0 && (pos % col != 0 || wrap)
+      { { self.goto(pos - 1); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
         if (*oob).0 > 0
         { (*oob).0 -= 1; }
@@ -274,7 +280,7 @@ impl Display {
         (*oob).0 = x as libc::ssize_t - 1;
         (*oob).1 = y as libc::ssize_t - 1; }
       if !self.is_oob().is_some()
-      { self.goto(((x - 1) + ((y - 1) * col as libc::size_t)) as libc::size_t); }
+      { self.goto((x - 1) + ((y - 1) * col)); }
       else
       { self.bell_or_goto(); }}
 
@@ -323,8 +329,8 @@ impl Display {
       { self.goto(pos); }
       let len = { (*self.into_bytes()).len() };
       let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
-      (*oob).0 = (pos % len as libc::size_t) as libc::ssize_t - 1;
-      (*oob).1 = (pos / len as libc::size_t) as libc::ssize_t; }
+      (*oob).0 = (pos % len ) as libc::ssize_t - 1;
+      (*oob).1 = (pos / len ) as libc::ssize_t; }
 
     /// The method `insert_empty_line` insert an empty line on the right of the cursor
     /// (the cursor doesn't move)
@@ -336,7 +342,7 @@ impl Display {
         let pos = self.get_position();
         let coucou = self.screen.get_mut();
         {0..col}.all(|_|
-        { (*coucou).insert(pos as usize, Control::new(&[b' '][..]));
+        { (*coucou).insert(pos, Control::new(&[b' '][..]));
           (*coucou).remove(resize.1 * col);
           true }); }}
 
@@ -349,13 +355,13 @@ impl Display {
       { let col = self.size.get_col();
         let pos = self.get_position();
         let mut get = col;
-        if pos >= col as libc::size_t
-        { get = pos as usize;
+        if pos >= col
+        { get = pos;
           while (get + 1) % col != 0
           { get += 1; }; }
         //self.goto((get - 1) as libc::size_t);
         let coucou = self.screen.get_mut();
-        {pos as usize..get}.all(|i|
+        {pos..get}.all(|i|
         { (*coucou)[i] = Control::new(&[b' '][..]);
           true }); }}
 
@@ -368,12 +374,12 @@ impl Display {
       { let col = self.size.get_col();
         let pos = self.get_position();
         let mut get = 0;
-        if pos >= col as libc::size_t
-        { get = pos as usize;
+        if pos >= col
+        { get = pos;
           while get % col != 0
           { get -= 1; }; }
         let coucou = self.screen.get_mut();
-        {get..(pos + 1) as usize}.all(|i|
+        {get..(pos + 1)}.all(|i|
         { (*coucou)[i] = Control::new(&[b' '][..]);
           true }); }}
 
@@ -384,13 +390,13 @@ impl Display {
       { let col = self.size.get_col();
         let mut pos = self.get_position();
         let mut get = 0;
-        while pos as usize % col != 0
+        while pos % col != 0
         { pos -= 1; };
-        while (get + pos + 1) % col as libc::size_t != 0
+        while (get + pos + 1) % col != 0
         { get += 1; };
         self.goto(pos);
         let coucou = self.screen.get_mut();
-        {pos as usize..(get + pos + 1) as usize}.all(|i|
+        {pos..(get + pos + 1)}.all(|i|
         { (*coucou)[i] = Control::new(&[b' '][..]);
           true }); }}
 
@@ -403,7 +409,7 @@ impl Display {
       if !self.is_oob().is_some()
       { let pos = self.get_position();
         let coucou = self.screen.get_mut();
-        {0..(pos + 1) as usize}.all(|i|
+        {0..(pos + 1) }.all(|i|
         { (*coucou)[i] = Control::new(&[b' '][..]);
           true }); }}
 
@@ -417,7 +423,7 @@ impl Display {
       { let pos = self.get_position();
         let len = { (*self.into_bytes()).len() };
         let coucou = self.screen.get_mut();
-        {pos as usize..len}.all(|i|
+        {pos ..len}.all(|i|
         { (*coucou)[i] = Control::new(&[b' '][..]);
           true }); }}
 
@@ -425,8 +431,8 @@ impl Display {
     pub fn print_enter(&mut self)
     { if !self.is_oob().is_some()
       { let check = { (*(self.out_of_bounds())).1 };
-        let row = self.size.get_row();
-        if check < row as libc::ssize_t - 1
+        let row = self.size.get_irow();
+        if check < row - 1
         { self.goto_down(); }
         else
         { self.scroll_down(); }}
@@ -445,13 +451,13 @@ impl Display {
 
       if !self.is_oob().is_some() || self.is_border()
       { { let wrap = { *(self.get_wrap()) };
-        let row = self.size.get_row();
-        let col = self.size.get_col();
+        let row = self.size.get_irow();
+        let col = self.size.get_icol();
         let oob: &mut (libc::ssize_t, libc::ssize_t) = { self.out_of_bounds() };
         //println!("print_char {}", first.len() );
-        if (*oob).0 < col as libc::ssize_t - 1 || ((*oob).0 == col as libc::ssize_t - 1 && (*oob).1 == row as libc::ssize_t - 1)
+        if (*oob).0 < col - 1 || ((*oob).0 == col - 1 && (*oob).1 == row - 1)
         { (*oob).0 += 1; }
-        else if wrap && (*oob).1 < row as libc::ssize_t - 1
+        else if wrap && (*oob).1 < row - 1
         { (*oob).0 = 0;
           (*oob).1 += 1; }}
         self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
@@ -490,7 +496,7 @@ impl fmt::Display for Display {
     }
 }
 
-impl io::Write for Display {
+impl Write for Display {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
@@ -698,7 +704,7 @@ impl io::Write for Display {
                 let pos = self.get_position();
                 { let coucou = self.screen.get_mut();
                   {0..tab_width}.all(|_|
-                  { (*coucou).insert(pos as usize, Control::new(&[b' '][..]));
+                  { (*coucou).insert(pos, Control::new(&[b' '][..]));
                     (*coucou).remove(resize.1 * col);
                     true }); }
                 {0..tab_width}.all(|_|
@@ -714,7 +720,6 @@ impl io::Write for Display {
             { self.print_char(&[u1, u2], next) },
             &[u1, ref next..] =>
             { self.print_char(&[u1], next) },
-
         }
     }
 

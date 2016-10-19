@@ -38,7 +38,7 @@ impl Control {
     }
 }
 
-impl io::Write for Control {
+impl Write for Control {
 
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
