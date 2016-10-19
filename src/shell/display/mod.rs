@@ -3,7 +3,7 @@ mod winsz;
 pub mod cursor;
 pub mod control;
 
-use std::ops::{BitAnd, Add, Mul, DerefMut, Not};
+use std::ops::{BitAnd, Add, Sub, Mul, DerefMut, Not};
 use std::io::{self, Write};
 use std::fmt;
 use std::str;
@@ -163,10 +163,9 @@ impl Display {
     /// The method `clear` puges the screen vector.
     pub fn clear(&mut self) -> io::Result<libc::size_t> {
         self.goto(0).is_ok().bitand(
-          self.screen.get_mut().iter_mut().all(|mut term: &mut Control| {
-            term.clear();
-            true
-          })
+          self.screen.get_mut().iter_mut().all(|mut term: &mut Control|
+            term.clear().is_ok()
+          )
         );
         Ok(0)
     }
@@ -183,11 +182,11 @@ impl Display {
     /// The method `goto_up` moves the cursor up.
     pub fn goto_up(&mut self) -> io::Result<libc::size_t>
     { //println!("Goto::Up(1)");
-      let col = self.size.get_col();
-      let pos = self.get_position();
-      let len = { (*self.into_bytes()).len() };
+      let col = self.size.get_icol();
+      let pos = self.get_position() as libc::ssize_t;
+      let len = self.len();
       if !self.is_oob().is_some() && pos - col >= 0 && self.line_wrap
-      { self.goto(pos - col);
+      { self.goto(pos.sub(&col) as libc::size_t);
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
           (*oob).1 -= 1;
           Ok(0)}
@@ -351,8 +350,8 @@ impl Display {
           while (get + 1) % col != 0
           { get += 1; }; }
         //self.goto((get - 1) as libc::size_t);
-        self.screen.get_mut().into_iter().skip(pos).take(get - pos).all(|mut control|
-            control.clear().is_ok()
+        self.screen.get_mut().into_iter().skip(pos).take(get - pos).all(|mut term: &mut Control|
+            term.clear().is_ok()
         );
       }}
 
@@ -369,8 +368,8 @@ impl Display {
         { get = pos;
           while get % col != 0
           { get -= 1; }; }
-        self.screen.get_mut().into_iter().skip(get).take(get - pos+1).all(|mut control|
-            control.clear().is_ok()
+        self.screen.get_mut().into_iter().skip(get).take(get - pos+1).all(|mut term: &mut Control|
+            term.clear().is_ok()
         );
     }}
 
@@ -386,8 +385,8 @@ impl Display {
         while (get + pos + 1) % col != 0
         { get += 1; };
         self.goto(pos);
-        self.screen.get_mut().into_iter().skip(pos).take(get + pos+1).all(|mut control|
-            control.clear().is_ok()
+        self.screen.get_mut().into_iter().skip(pos).take(get + pos+1).all(|mut term: &mut Control|
+            term.clear().is_ok()
         );
     }}
 
@@ -399,8 +398,8 @@ impl Display {
     { //println!("Cursor::EraseUp");
       if !self.is_oob().is_some()
         { let pos = self.get_position();
-          self.screen.get_mut().into_iter().take(pos+1).all(|mut control|
-                control.clear().is_ok()
+          self.screen.get_mut().into_iter().take(pos+1).all(|mut term: &mut Control|
+                term.clear().is_ok()
           );
         }}
 
@@ -413,8 +412,8 @@ impl Display {
       if !self.is_oob().is_some()
       { let pos = self.get_position();
         let len = self.len();
-        self.screen.get_mut().into_iter().skip(pos).take(len + pos).all(|mut control|
-            control.clear().is_ok()
+        self.screen.get_mut().into_iter().skip(pos).take(len + pos).all(|mut term: &mut Control|
+            term.clear().is_ok()
         );
       }}
 
