@@ -1,6 +1,4 @@
-use std::io::{self, Read, Write, Error, ErrorKind};
-use std::iter::repeat;
-use std::slice;
+use std::io::{self, Write};
 
 use super::control::Control;
 
@@ -45,6 +43,15 @@ impl <T> Cursor <T> {
     /// Sets the value of this cursor
     pub fn set_position(&mut self, pos: usize) {
         self.pos = pos;
+    }
+}
+
+impl <T> IntoIterator for Cursor<Vec<T>> {
+    type Item = T;
+    type IntoIter = ::std::vec::IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.into_iter()
     }
 }
 

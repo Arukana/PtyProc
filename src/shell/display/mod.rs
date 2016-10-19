@@ -79,16 +79,6 @@ impl Display {
         mem::size_of::<In>().mul(&self.size.row_by_col())
     }
 
-    /// The accessor method `get_wrap` returns a mutable reference on
-    /// the variable 'line_wrap'
-    pub fn get_wrap(&mut self) -> &mut bool
-    { &mut self.line_wrap }
-
-    /// The accessor method `out_of_bounds` returns a mutable reference on
-    /// the tuple 'oob' and should be called every times the cursor moves
-    pub fn get_region(&mut self) -> &mut (libc::size_t, libc::size_t)
-    { &mut self.region }
-
     /// The accessor method `out_of_bounds` returns a mutable reference on
     /// the tuple 'oob' and should be called every times the cursor moves
     pub fn out_of_bounds(&mut self) -> &mut (libc::ssize_t, libc::ssize_t)
@@ -129,13 +119,13 @@ impl Display {
       { false }}
 
     /// The method `bell_or_goto` displays a bell or go to new coordinates
-    pub fn bell_or_goto(&mut self)
+    pub fn bell_or_goto(&mut self) -> io::Result<libc::size_t>
     { if self.is_oob().is_some()
-      { self.write(&[b'\x07']); }
+      { self.write(&[b'\x07']) }
       else
-      { let check = { *(self.out_of_bounds()) };
+      { let check = *self.out_of_bounds();
         let col = self.size.get_icol();
-        self.goto((check.0 + (check.1 * col)) as libc::size_t); }}
+        self.goto((check.0 + (check.1 * col)) as libc::size_t) }}
 
     /// The accessor method `get_save` returns a mutable reference on
     /// the variable 'save_position'
@@ -160,9 +150,9 @@ impl Display {
     pub fn tricky_resize(&mut self, begin: libc::size_t, end: libc::size_t)
     { //println!("Resize::({}, {})", x, y);
       if begin <= end
-      { let region: &mut (libc::size_t, libc::size_t) = self.get_region();
-        region.0 = begin - 1;
-        region.1 = end; }}
+        {
+            self.region = (begin - 1, end);
+        }}
 
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
@@ -182,87 +172,86 @@ impl Display {
     }
 
     /// The method `goto_home` moves the cursor to the top left of the output screen.
-    pub fn goto_home(&mut self)
+    pub fn goto_home(&mut self) -> io::Result<libc::size_t>
     { //println!("Goto::Home");
       { self.goto(0); }
       let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
       (*oob).0 = 0;
-      (*oob).1 = 0; }
+        (*oob).1 = 0;
+    Ok(0)}
 
     /// The method `goto_up` moves the cursor up.
-    pub fn goto_up(&mut self)
+    pub fn goto_up(&mut self) -> io::Result<libc::size_t>
     { //println!("Goto::Up(1)");
       let col = self.size.get_col();
       let pos = self.get_position();
-      let wrap = { *(self.get_wrap()) };
       let len = { (*self.into_bytes()).len() };
-      if !self.is_oob().is_some() && pos - col >= 0 && wrap
-      { { self.goto(pos - col); }
+      if !self.is_oob().is_some() && pos - col >= 0 && self.line_wrap
+      { self.goto(pos - col);
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
-        (*oob).1 -= 1; }
+          (*oob).1 -= 1;
+          Ok(0)}
       else
-      { { let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
-          (*oob).1 -= 1; }
-        self.bell_or_goto(); }}
+      { {let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
+         (*oob).1 -= 1;}
+        self.bell_or_goto() }}
 
     /// The method `goto_down` moves the cursor down.
-    pub fn goto_down(&mut self)
+    pub fn goto_down(&mut self) -> io::Result<libc::size_t>
     { println!("Goto::Down(1)");
       let col = self.size.get_col();
       let pos = self.get_position();
-      let wrap = { *(self.get_wrap()) };
       let len = { (*self.into_bytes()).len() };
-      if !self.is_oob().is_some() && (pos + col ) < len && wrap
-      { { self.goto(pos + col); }
+      if !self.is_oob().is_some() && (pos + col ) < len && self.line_wrap
+      { self.goto(pos + col);
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
         println!("POS::{}, COL::{}", pos, col);
-        (*oob).1 += 1; }
+        (*oob).1 += 1;
+        Ok(0)}
       else
       { { let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
           (*oob).1 += 1; }
-        self.bell_or_goto(); }}
+        self.bell_or_goto() }}
 
     /// The method `goto_right` moves the cursor to its right.
     /// If 'line_wrap' is true and the cursor is on the right border,
     /// it moves the cursor to the next line's left border
-    pub fn goto_right(&mut self)
+    pub fn goto_right(&mut self) -> io::Result<libc::size_t>
     { //println!("Goto::Right(1)");
       let col = self.size.get_col();
       let pos = self.get_position();
-      let wrap = { *(self.get_wrap()) };
-      if !self.is_oob().is_some() && (pos + 1 % col != 0 || pos < col - 1 || wrap)
+      if !self.is_oob().is_some() && (pos + 1 % col != 0 || pos < col - 1 || self.line_wrap)
       { { self.goto(pos + 1); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
         if (*oob).0 < (col as libc::ssize_t) - 1
         { (*oob).0 += 1; }
         else
         { (*oob).0 = 0;
-          (*oob).1 += 1; }}
+          (*oob).1 += 1; } Ok(0)}
       else
       { { let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
           (*oob).0 += 1; }
-        self.bell_or_goto(); }}
+        self.bell_or_goto() }}
 
     /// The method `goto_left` moves the cursor to its left.
     /// If 'line_wrap' is true and the cursor is on the left border,
     /// it moves the cursor to the previous line's right border
-    pub fn goto_left(&mut self)
+    pub fn goto_left(&mut self) -> io::Result<libc::size_t>
     { //println!("Goto::Left(1)");
       let col = self.size.get_col();
       let pos = self.get_position();
-      let wrap = { *(self.get_wrap()) };
-      if !self.is_oob().is_some() && pos > 0 && (pos % col != 0 || wrap)
+      if !self.is_oob().is_some() && pos > 0 && (pos % col != 0 || self.line_wrap)
       { { self.goto(pos - 1); }
         let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
         if (*oob).0 > 0
         { (*oob).0 -= 1; }
         else
         { (*oob).0 = (col as libc::ssize_t) - 1;
-          (*oob).1 -= 1; }}
+          (*oob).1 -= 1; } Ok(0)}
       else
       { { let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
           (*oob).0 -= 1; }
-        self.bell_or_goto(); }}
+        self.bell_or_goto() }}
 
     /// The method `goto_begin_line` moves the cursor to the beginning of the line
     pub fn goto_begin_line(&mut self)
@@ -289,7 +278,7 @@ impl Display {
     pub fn scroll_up(&mut self)
     { //println!("Cursor::ScrollUp");
       let col = self.size.get_col();
-      let resize = { *(self.get_region()) };
+      let resize = self.region;
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
       { (*coucou).insert(resize.0 * col, Control::new(&[b' '][..]));
@@ -301,10 +290,11 @@ impl Display {
     pub fn scroll_down(&mut self)
     { //println!("Cursor::ScrollDown");
       let col = self.size.get_col();
-      let resize = { *(self.get_region()) };
+      let resize = self.region;
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      { (*coucou).insert(resize.1 * col, Control::new(&[b' '][..]));
+      {
+        (*coucou).insert(resize.1 * col, Control::new(&[b' '][..]));
         (*coucou).remove(resize.0 * col);
         true }); }
 
@@ -327,7 +317,7 @@ impl Display {
       { let restore = self.get_save();
         *restore };
       { self.goto(pos); }
-      let len = { (*self.into_bytes()).len() };
+      let len = (*self.into_bytes()).len();
       let oob: &mut (libc::ssize_t, libc::ssize_t) = self.out_of_bounds();
       (*oob).0 = (pos % len ) as libc::ssize_t - 1;
       (*oob).1 = (pos / len ) as libc::ssize_t; }
@@ -338,13 +328,14 @@ impl Display {
     { //println!("InsertEmptyLine");
       if !self.is_oob().is_some()
       { let col = self.size.get_col();
-        let resize = { *(self.get_region()) };
+        let resize = self.region;
         let pos = self.get_position();
         let coucou = self.screen.get_mut();
         {0..col}.all(|_|
         { (*coucou).insert(pos, Control::new(&[b' '][..]));
           (*coucou).remove(resize.1 * col);
-          true }); }}
+            true });
+    }}
 
     /// The method `erase_right_line` erase the current line from the cursor
     /// to the right border column
@@ -360,10 +351,10 @@ impl Display {
           while (get + 1) % col != 0
           { get += 1; }; }
         //self.goto((get - 1) as libc::size_t);
-        let coucou = self.screen.get_mut();
-        {pos..get}.all(|i|
-        { (*coucou)[i] = Control::new(&[b' '][..]);
-          true }); }}
+        self.screen.get_mut().into_iter().skip(pos).take(get - pos).all(|mut control|
+            control.clear().is_ok()
+        );
+      }}
 
     /// The method `erase_left_line` erase the current line from the left border column
     /// to the cursor
@@ -378,10 +369,10 @@ impl Display {
         { get = pos;
           while get % col != 0
           { get -= 1; }; }
-        let coucou = self.screen.get_mut();
-        {get..(pos + 1)}.all(|i|
-        { (*coucou)[i] = Control::new(&[b' '][..]);
-          true }); }}
+        self.screen.get_mut().into_iter().skip(get).take(get - pos+1).all(|mut control|
+            control.clear().is_ok()
+        );
+    }}
 
     /// The method `erase_line` erase the entire current line
     pub fn erase_line(&mut self)
@@ -395,10 +386,10 @@ impl Display {
         while (get + pos + 1) % col != 0
         { get += 1; };
         self.goto(pos);
-        let coucou = self.screen.get_mut();
-        {pos..(get + pos + 1)}.all(|i|
-        { (*coucou)[i] = Control::new(&[b' '][..]);
-          true }); }}
+        self.screen.get_mut().into_iter().skip(pos).take(get + pos+1).all(|mut control|
+            control.clear().is_ok()
+        );
+    }}
 
     /// The method `erase_up` erase all lines from the current line up to
     /// the top of the screen, and erase the current line from the left border
@@ -407,11 +398,11 @@ impl Display {
     pub fn erase_up(&mut self)
     { //println!("Cursor::EraseUp");
       if !self.is_oob().is_some()
-      { let pos = self.get_position();
-        let coucou = self.screen.get_mut();
-        {0..(pos + 1) }.all(|i|
-        { (*coucou)[i] = Control::new(&[b' '][..]);
-          true }); }}
+        { let pos = self.get_position();
+          self.screen.get_mut().into_iter().take(pos+1).all(|mut control|
+                control.clear().is_ok()
+          );
+        }}
 
     /// The method `erase_down` erase all lines from the current line down to
     /// the bottom of the screen and erase the current line from the cursor to
@@ -421,11 +412,11 @@ impl Display {
     { //println!("Cursor::EraseDown");
       if !self.is_oob().is_some()
       { let pos = self.get_position();
-        let len = { (*self.into_bytes()).len() };
-        let coucou = self.screen.get_mut();
-        {pos ..len}.all(|i|
-        { (*coucou)[i] = Control::new(&[b' '][..]);
-          true }); }}
+        let len = self.len();
+        self.screen.get_mut().into_iter().skip(pos).take(len + pos).all(|mut control|
+            control.clear().is_ok()
+        );
+      }}
 
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
@@ -443,6 +434,7 @@ impl Display {
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
     {
+        let wrap = self.line_wrap;
       print!("FIRST::{:?} | ", first);
       for i in first
       {print!("{} ", *i as char); }
@@ -450,7 +442,8 @@ impl Display {
       { println!("OOB::({}, {})", self.oob.0, self.oob.1); }
 
       if !self.is_oob().is_some() || self.is_border()
-      { { let wrap = { *(self.get_wrap()) };
+        {
+            {
         let row = self.size.get_irow();
         let col = self.size.get_icol();
         let oob: &mut (libc::ssize_t, libc::ssize_t) = { self.out_of_bounds() };
@@ -483,8 +476,18 @@ impl Display {
       { get += 1; };
       get }
 
+    /// The method `save_terminal` saves the terminal Display configuration.
     pub fn save_terminal(&mut self) {
         self.save_terminal = Some(Box::new(self.clone()));
+    }
+}
+
+impl IntoIterator for Display {
+    type Item = Control;
+    type IntoIter = ::std::vec::IntoIter<Control>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.screen.into_iter()
     }
 }
 
@@ -521,15 +524,13 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'7', b'h', ref next..] |
             &[b'\x1B', b'[', b'2', b'0', b'h', ref next..] =>
-              { //println!("Cursor::LineWrap(true)");
-                { let wrap: &mut bool = self.get_wrap();
-                  *wrap = true; }
+            { //println!("Cursor::LineWrap(true)");
+                self.line_wrap = true;
                 self.write(next) },
             &[b'\x1B', b'[', b'7', b'l', ref next..] |
             &[b'\x1B', b'[', b'2', b'0', b'l', ref next..] =>
               { //println!("Cursor::LineWrap(false)");
-                { let wrap: &mut bool = self.get_wrap();
-                  *wrap = false; }
+                self.line_wrap = false;
                 self.write(next) },
             &[b'\x1B', b'[', b'r', ref next..] =>
               { //println!("Cursor::ScrollEnable");
@@ -554,9 +555,7 @@ impl Write for Display {
             &[b'\x1B', b'[', b'1', b'J', ref next..] =>
             { self.erase_up();
             self.write(next) },
-            &[b'\x1B', b'[', b'2', b'J', ref next..] =>
-            { self.clear();
-            self.write(next) },
+            &[b'\x1B', b'[', b'2', b'J', ref next..] => self.clear().and(self.write(next)),
 
             //------------ INSERT -----------------
             &[b'\x1B', b'[', b'L', ref next..] =>
@@ -698,7 +697,7 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x09', ref next..] =>
             { if !self.is_oob().is_some()
-              { let resize = { *(self.get_region()) };
+              { let resize = self.region;
                 let col = self.size.get_col();
                 let tab_width = self.next_tab();
                 let pos = self.get_position();

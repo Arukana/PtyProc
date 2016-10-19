@@ -27,9 +27,9 @@ impl Control {
     }
 
     /// The method `clear` resets the term character.
-    pub fn clear(&mut self) {
+    pub fn clear(&mut self) -> io::Result<usize> {
       *self = Default::default();
-      self.write(&[b' '][..]);
+      self.write(&[b' '][..])
     }
 
     /// The accessor method `get_ref` returns a reference on term character buffer.

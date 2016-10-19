@@ -168,3 +168,19 @@ fn test_scroll()
   assert_eq!(display.into_bytes(), vec![b'h', b'i', b' ', b'h', b'e', b'l']);
   assert_eq!(display.write(b"\x1BM").ok(), Some(0usize));
   assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b' ', b' ', b' ']); }
+
+#[test]
+fn test_iter()
+{ let mut display: Display = Display::from_winszed(SIZE);
+  assert_eq!(display.write(b"L\xE9opar").ok(), Some(6usize));
+
+  let mut iterator = display.into_iter();
+
+  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'L'][..]);
+  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'\xE9'][..]);
+  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'o'][..]);
+  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'p'][..]);
+  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'a'][..]);
+  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'r'][..]);
+  assert!(iterator.next().is_none());
+}
