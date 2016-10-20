@@ -38,17 +38,19 @@ impl Shell {
   /// The constructor method `new` returns a shell interface according to
   /// the command's option and a configured mode Line by Line.
   pub fn new (
-    command: Option<&'static str>,
+      repeat: Option<i64>,
+      command: Option<&'static str>,
   ) -> Result<Self> {
-    Shell::from_mode(command, Mode::None)
+    Shell::from_mode(repeat, command, Mode::None)
   }
 
   /// The constructor method `from_mode` returns a shell interface according to
   /// the command's option and the mode.
-  pub fn from_mode (
-    command: Option<&'static str>,
-    mode: Mode,
-  ) -> Result<Self> {
+    pub fn from_mode (
+      repeat: Option<i64>,
+      command: Option<&'static str>,
+      mode: Mode,
+    ) -> Result<Self> {
     match pty::Fork::from_ptmx() {
       Err(cause) => Err(ShellError::BadFork(cause)),
       Ok(fork) => match fork {
@@ -61,7 +63,7 @@ impl Shell {
             mode: mode,
             speudo: master,
             device: Device::from_speudo(master),
-            state: ShellState::new(libc::STDIN_FILENO),
+            state: ShellState::new(repeat, libc::STDIN_FILENO),
           })
         },
       },
@@ -85,7 +87,7 @@ impl Shell {
         state: &ShellState,
     ) {
         if self.mode == Mode::Character {
-          if let Some(ref text) = state.is_in_text() {
+          if let Some(ref text) = state.is_input_slice() {
              self.write(text).unwrap();
              self.flush().unwrap();
           }

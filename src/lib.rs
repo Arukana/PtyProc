@@ -27,3 +27,5 @@ mod macros;
 mod fork;
 pub mod shell;
 pub mod prelude;
+
+pub const DEFAULT_KEY_REPEAT: libc::c_long = 1_000_000_000i64;
