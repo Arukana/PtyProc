@@ -1,5 +1,5 @@
 /// The enum `Mode` describes how to write the user input.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Mode {
   /// Character-at-a-time.
   Character,

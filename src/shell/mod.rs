@@ -84,21 +84,12 @@ impl Shell {
         &mut self,
         state: &ShellState,
     ) {
-        match self.mode {
-            Mode::Character => {
-                if let Some(ref text) = state.is_in_text() {
-                    self.write(text).unwrap();
-                    self.flush().unwrap();
-                }
-            },
-            Mode::Line => {
-                if let Some(ref line) = state.is_line() {
-                    self.write(&line[..]).unwrap();
-                    self.flush().unwrap();
-                }
-            },
-            _ => {},
-        }
+        if self.mode == Mode::Character {
+          if let Some(ref text) = state.is_in_text() {
+             self.write(text).unwrap();
+             self.flush().unwrap();
+          }
+       }
     }
 }
 

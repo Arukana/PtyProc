@@ -46,6 +46,7 @@ pty-proc : crate
      ├── err : private
      ├── mode : public
      ├── state : private
+     │   └── clone : public
      └── termios : private
          ├── linux : private @ #[cfg(any(target_os = "linux", target_os = "android"))]
          └── macos : private @ #[cfg(target_os = "macos")]

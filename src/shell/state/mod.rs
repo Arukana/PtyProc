@@ -10,6 +10,7 @@ use super::device::control::Control;
 
 use self::clone::Clone;
 pub use super::device::{Out, DeviceState};
+pub use super::device::control::operate::key::Key;
 
 pub struct ShellState {
   /// Update.
@@ -24,28 +25,29 @@ pub struct ShellState {
   out_text: Option<(Out, libc::size_t)>,
   /// The output of screen.
   out_screen: Display,
-  /// The last line.
-  in_line: Vec<libc::c_uchar>,
-  in_line_ready: bool,
 }
 
 impl ShellState {
 
-  /// The constructor method `new` returns a empty ShellState.
-  pub fn new(fd: libc::c_int) -> Self {
-      ShellState {
-          idle: None,
-          sig: None,
-          in_text: None,
-          in_text_past: None,
-          out_text: None,
-          out_screen: Display::new(fd).unwrap(),
-          in_line: Vec::new(),
-          in_line_ready: false,
-      }
-  }
+    /// The constructor method `new` returns a empty ShellState.
+    pub fn new(fd: libc::c_int) -> Self {
+        ShellState {
+            idle: None,
+            sig: None,
+            in_text: None,
+            in_text_past: None,
+            out_text: None,
+            out_screen: Display::new(fd).unwrap(),
+        }
+    }
 
-    /// The murator method `set_signal` update the signal and can resize the Display interface.
+    /// The mutator method `set_idle` update the idle event status.
+    pub fn set_idle(&mut self, entry: Option<()>) {
+        self.idle = entry;
+    }
+
+    /// The mutator method `set_signal` update the signal
+    /// and can resize the Display interface.
     pub fn set_signal(&mut self, entry: Option<libc::c_int>) {
         self.sig = entry;
         if let Some(()) = self.is_resized() {
@@ -53,13 +55,19 @@ impl ShellState {
         }
     }
 
-    /// The mutator method `set_output` update the both `out_text` and `out_screen` variable.
+    /// The mutator method `set_input` update the `in_text`
+    /// and save the old `in_text` to `in_text_past`.
+    pub fn set_input(&mut self, entry: Option<Control>) {
+        self.in_text_past = self.in_text;
+        self.in_text = entry;
+    }
+
+    /// The mutator method `set_output` update the both `out_text`
+    /// and `out_screen` variable.
     pub fn set_output(&mut self, entry: Option<(Out, libc::size_t)>) {
         if let Some((buf, len)) = entry {
             self.out_text = Some((buf, len));
-            let buf: &[libc::c_uchar] = &buf[..len];
-
-            self.out_screen.write(buf);
+            self.out_screen.write(&buf[..len]);
         } else {
             self.out_text = None;
         }
@@ -94,9 +102,9 @@ impl ShellState {
   }
 
   /// The accessor method `is_unicode` returns the KeyDown event.
-  pub fn is_unicode(&self) -> Option<&[libc::c_uchar]> {
+  pub fn is_keydown(&self) -> Option<Key> {
     if let Some(ref event) = self.in_text {
-      event.is_unicode()
+      event.is_key()
     } else {
       None
     }
@@ -113,8 +121,8 @@ impl ShellState {
 
   /// The accessor method `is_in_text` returns the Input text event.
   pub fn is_in_text(&self) -> Option<&[libc::c_uchar]> {
-    if let Some(ref int) = self.in_text {
-      Some(int.as_slice())
+    if let Some(ref control) = self.in_text {
+      Some(control.as_slice())
     } else {
       None
     }
@@ -130,50 +138,27 @@ impl ShellState {
       None
     }
   }
-
-  /// The accessor method `is_line` returns the Output line event.
-  pub fn is_line(&self) -> Option<&Vec<libc::c_uchar>> {
-    if self.in_line_ready {
-      Some(&self.in_line)
-    } else {
-      None
-    }
-  }
 }
 
 impl Clone for ShellState {
+    /// The method `clone` return a copy of the ShellState.
     fn clone(&self) -> Self {
         ShellState {
             idle: self.idle,
             sig: self.sig,
-            in_text: self.in_text.clone(),
+            in_text: self.in_text,
             in_text_past: self.in_text_past,
             out_text: self.out_text,
             out_screen: self.out_screen.clone(),
-            in_line: self.in_line.clone(),
-            in_line_ready: self.in_line_ready,
         }
     }
 
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
     fn clone_from(&mut self, event: DeviceState) {
-        self.idle = event.is_idle();
-        self.in_text_past = self.in_text;
-        self.in_text = event.is_input();
+        self.set_idle(event.is_idle());
         self.set_signal(event.is_signal());
+        self.set_input(event.is_input());
         self.set_output(event.is_out_text());
-        if self.in_line_ready {
-            self.in_line.clear();
-            self.in_line_ready = false;
-        }
-        if let Some(ref event) = self.in_text {
-            self.in_line.extend_from_slice(event.as_slice());
-            if let Some(last) = self.in_line.last() {
-                if last.eq(&10).bitor(last.eq(&13)) {
-                    self.in_line_ready = true;
-                }
-            }
-        }
     }
 }
