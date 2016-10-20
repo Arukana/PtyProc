@@ -1,11 +1,15 @@
-use std::io::{self, Write};
+pub mod clone;
+
+use std::io::Write;
 use std::ops::BitOr;
 
 use ::libc;
 
 use super::Display;
-use super::device::DeviceState;
 use super::device::control::Control;
+
+use self::clone::Clone;
+pub use super::device::{Out, DeviceState};
 
 pub struct ShellState {
   /// Update.
@@ -17,7 +21,7 @@ pub struct ShellState {
   /// The past character.
   in_text_past: Option<Control>,
   /// The output of new lines.
-  out_text: Option<Vec<libc::c_uchar>>,
+  out_text: Option<(Out, libc::size_t)>,
   /// The output of screen.
   out_screen: Display,
   /// The last line.
@@ -40,6 +44,26 @@ impl ShellState {
           in_line_ready: false,
       }
   }
+
+    /// The murator method `set_signal` update the signal and can resize the Display interface.
+    pub fn set_signal(&mut self, entry: Option<libc::c_int>) {
+        self.sig = entry;
+        if let Some(()) = self.is_resized() {
+            self.out_screen.resize().unwrap();
+        }
+    }
+
+    /// The mutator method `set_output` update the both `out_text` and `out_screen` variable.
+    pub fn set_output(&mut self, entry: Option<(Out, libc::size_t)>) {
+        if let Some((buf, len)) = entry {
+            self.out_text = Some((buf, len));
+            let buf: &[libc::c_uchar] = &buf[..len];
+
+            self.out_screen.write(buf);
+        } else {
+            self.out_text = None;
+        }
+    }
 
   /// The method `is_screen` returns a screen interface.
   pub fn is_screen(&self) -> Option<&Display> {
@@ -79,9 +103,9 @@ impl ShellState {
   }
 
   /// The accessor method `is_out_text` returns the Output text event.
-  pub fn is_out_text(&self) -> Option<&Vec<libc::c_uchar>> {
-    if let Some(ref out) = self.out_text {
-      Some(out)
+  pub fn is_out_text(&self) -> Option<&[libc::c_uchar]> {
+    if let Some((ref out, len)) = self.out_text {
+      Some(&out[..len])
     } else {
       None
     }
@@ -115,41 +139,6 @@ impl ShellState {
       None
     }
   }
-
-  /// The modifier method `with_device` updates the state according to
-  /// the event's option.
-  pub fn with_device (
-    &mut self,
-    event: DeviceState,
-  ) -> io::Result<Self> {
-    self.idle = event.is_idle();
-    self.sig = event.is_signal();
-    self.in_text_past = self.in_text;
-    self.in_text = event.is_input();
-    self.out_text = event.is_out_text();
-    if self.in_line_ready {
-      self.in_line.clear();
-      self.in_line_ready = false;
-    }
-    if let Some(ref event) = self.in_text {
-      self.in_line.extend_from_slice(event.as_slice());
-      if let Some(last) = self.in_line.last() {
-        if last.eq(&10).bitor(last.eq(&13)) {
-          self.in_line_ready = true;
-        }
-      }
-    }
-      if let Some(ref text) = self.out_text {
-      println!("SCREEN::{:?}", text);
-      for i in text.clone()
-      { print!(" {} |", i as char); }
-      println!("{:?}", self.out_screen.write(text.as_slice()));
-    }
-    if let Some(()) = self.is_resized() {
-      self.out_screen.resize().unwrap();
-    }
-    Ok(self.to_owned())
-  }
 }
 
 impl Clone for ShellState {
@@ -159,14 +148,32 @@ impl Clone for ShellState {
             sig: self.sig,
             in_text: self.in_text.clone(),
             in_text_past: self.in_text_past,
-            out_text: self.out_text.clone(),
+            out_text: self.out_text,
             out_screen: self.out_screen.clone(),
             in_line: self.in_line.clone(),
             in_line_ready: self.in_line_ready,
         }
     }
 
-    fn clone_from(&mut self, source: &Self) {
-        
+    /// The method `with_device` updates the state from
+    /// the event DeviceState interface.
+    fn clone_from(&mut self, event: DeviceState) {
+        self.idle = event.is_idle();
+        self.in_text_past = self.in_text;
+        self.in_text = event.is_input();
+        self.set_signal(event.is_signal());
+        self.set_output(event.is_out_text());
+        if self.in_line_ready {
+            self.in_line.clear();
+            self.in_line_ready = false;
+        }
+        if let Some(ref event) = self.in_text {
+            self.in_line.extend_from_slice(event.as_slice());
+            if let Some(last) = self.in_line.last() {
+                if last.eq(&10).bitor(last.eq(&13)) {
+                    self.in_line_ready = true;
+                }
+            }
+        }
     }
 }

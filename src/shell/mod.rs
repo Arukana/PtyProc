@@ -16,6 +16,7 @@ use ::pty::prelude as pty;
 use self::mode::Mode;
 use self::device::Device;
 use self::termios::Termios;
+use self::state::clone::Clone;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 pub use self::display::Display;
@@ -77,28 +78,28 @@ impl Shell {
     self.mode = mode;
   }
 
-  /// The method `mode_pass` sends the input to the speudo terminal
-  /// if the mode was defined with a procedure.
-  fn mode_pass (
-    &mut self,
-    state: &ShellState
-  ) {
-    match self.mode {
-      Mode::Character => {
-        if let Some(text) = state.is_in_text() {
-          self.write(text).unwrap();
-          self.flush().unwrap();
+    /// The method `mode_pass` sends the input to the speudo terminal
+    /// if the mode was defined with a procedure.
+    fn mode_pass (
+        &mut self,
+        state: &ShellState,
+    ) {
+        match self.mode {
+            Mode::Character => {
+                if let Some(ref text) = state.is_in_text() {
+                    self.write(text).unwrap();
+                    self.flush().unwrap();
+                }
+            },
+            Mode::Line => {
+                if let Some(ref line) = state.is_line() {
+                    self.write(&line[..]).unwrap();
+                    self.flush().unwrap();
+                }
+            },
+            _ => {},
         }
-      },
-      Mode::Line => {
-        if let Some(line) = state.is_line() {
-          self.write(&line[..]).unwrap();
-          self.flush().unwrap();
-        }
-      },
-      _ => {},
     }
-  }
 }
 
 impl Write for Shell {
@@ -128,13 +129,10 @@ impl Iterator for Shell {
     match self.device.next() {
       None => None,
       Some(event) => {
-        if let Some(state) = self.state.with_device(event).ok() {
+          self.state.clone_from(event);
+          let state: ShellState = self.state.clone();
           self.mode_pass(&state);
           Some(state)
-        }
-        else {
-          None
-        }
       },
     }
   }
