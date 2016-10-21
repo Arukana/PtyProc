@@ -1,9 +1,9 @@
 pub mod display;
-pub mod mode;
 pub mod device;
+pub mod state;
+pub mod mode;
 mod termios;
 mod err;
-mod state;
 
 use std::os::unix::io::AsRawFd;
 use std::io::{self, Write};
@@ -39,15 +39,17 @@ impl Shell {
   /// the command's option and a configured mode Line by Line.
   pub fn new (
       repeat: Option<i64>,
+      interval: Option<i64>,
       command: Option<&'static str>,
   ) -> Result<Self> {
-    Shell::from_mode(repeat, command, Mode::None)
+    Shell::from_mode(repeat, interval, command, Mode::None)
   }
 
   /// The constructor method `from_mode` returns a shell interface according to
   /// the command's option and the mode.
     pub fn from_mode (
       repeat: Option<i64>,
+      interval: Option<i64>,
       command: Option<&'static str>,
       mode: Mode,
     ) -> Result<Self> {
@@ -63,7 +65,7 @@ impl Shell {
             mode: mode,
             speudo: master,
             device: Device::from_speudo(master),
-            state: ShellState::new(repeat, libc::STDIN_FILENO),
+            state: ShellState::new(repeat, interval, libc::STDIN_FILENO),
           })
         },
       },

@@ -39,8 +39,8 @@ impl Control {
   }
 
   /// The accessor method `as_timer` returns the Time.
-  pub fn as_time(&self) -> &time::Tm {
-    &self.time
+  pub fn as_time(&self) -> time::Tm {
+    self.time
   }
 
   pub fn is_unicode(&self) -> Option<&[libc::c_uchar]> {
@@ -59,16 +59,15 @@ impl Control {
     }
   }
 
-
-  /// The accessor method `is_key` returns an Option for 
+  /// The accessor method `is_key` returns an Option for
   /// the Key interface.
   pub fn is_key(&self) -> Option<Key> {
     self.operate.is_key()
   }
 
-  /// The accessor method `is_mouse` returns an Option for 
+  /// The accessor method `is_mouse` returns an Option for
   /// the Mouse interface.
-  pub fn is_mouse(&self) -> Option<Mouse> {
+  pub fn is_mouse(&self) -> Option<(Mouse, libc::c_ushort, libc::c_ushort)> {
     self.operate.is_mouse()
   }
 }
@@ -81,4 +80,10 @@ impl fmt::Display for Control {
       }
     )
   }
+}
+
+impl PartialEq for Control {
+    fn eq(&self, rhs: &Control) -> bool {
+        self.buf.eq(&rhs.buf)
+    }
 }

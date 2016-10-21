@@ -9,6 +9,7 @@ fn main() {
     let mut shell: shell::Shell = shell::Shell::from_mode(
         None,
         None,
+        None,
         shell::Mode::Character
     ).unwrap();
     while let Some(event) = shell.next() {

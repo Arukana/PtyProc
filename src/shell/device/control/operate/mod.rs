@@ -57,9 +57,9 @@ impl Operate {
   }
 
   /// The accessor method `is_mouse` returns a Option for the Mouse Operate.
-  pub fn is_mouse(&self) -> Option<Mouse> {
+  pub fn is_mouse(&self) -> Option<(Mouse, libc::c_ushort, libc::c_ushort)> {
     match *self {
-      Operate::Mouse(mouse, _, _) => Some(mouse),
+      Operate::Mouse(mouse, x, y) => Some((mouse, x, y)),
       Operate::Key(_) => None,
     }
   }
