@@ -15,6 +15,7 @@ const B: In = [b'b',
 ];
 
 #[test]
+#[cfg(target_os = "linux")]
 fn test_key_down() {
     let mut state: ShellState = ShellState::new(None, None, libc::STDIN_FILENO);
 
@@ -29,6 +30,7 @@ fn test_key_down() {
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn test_key_repeat() {
     let mut state: ShellState = ShellState::new(Some(REPEAT), None, libc::STDIN_FILENO);
 
@@ -52,6 +54,7 @@ fn test_key_repeat() {
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn test_key_interval() {
     let mut state: ShellState = ShellState::new(None, Some(INTERVAL), libc::STDIN_FILENO);
     state.set_input(Some(Control::new(A, 1)));
