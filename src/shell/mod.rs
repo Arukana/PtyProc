@@ -2,7 +2,7 @@ pub mod display;
 pub mod device;
 pub mod state;
 pub mod mode;
-mod termios;
+pub mod termios;
 mod err;
 
 use std::os::unix::io::AsRawFd;
@@ -54,19 +54,22 @@ impl Shell {
       mode: Mode,
     ) -> Result<Self> {
     match pty::Fork::from_ptmx() {
-      Err(cause) => Err(ShellError::BadFork(cause)),
+      Err(cause) => Err(ShellError::ForkFail(cause)),
       Ok(fork) => match fork {
         pty::Fork::Child(ref slave) => slave.exec(command.unwrap_or("bash")),
         pty::Fork::Parent(pid, master) => {
-        mem::forget(fork);
-          Ok(Shell {
-            pid: pid,
-            config: Termios::default(),
-            mode: mode,
-            speudo: master,
-            device: Device::from_speudo(master),
-            state: ShellState::new(repeat, interval, libc::STDIN_FILENO),
-          })
+          mem::forget(fork);
+            match Termios::new(libc::STDIN_FILENO) {
+                Err(cause) => Err(ShellError::TermiosFail(cause)),
+                Ok(termios) => Ok(Shell {
+                    pid: pid,
+                    config: termios,
+                    mode: mode,
+                    speudo: master,
+                    device: Device::from_speudo(master),
+                    state: ShellState::new(repeat, interval, libc::STDIN_FILENO),
+                }),
+            }
         },
       },
     }
