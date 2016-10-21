@@ -66,8 +66,7 @@ fn test_enter()
   assert_eq!(display.write(b"\nb").ok(), Some(1usize));
   assert_eq!(display.into_bytes(), vec![b'H', b'J', b'a', b' ', b'b', b' ']);
   assert_eq!(display.write(b"\rCLG").ok(), Some(3usize));
-  assert_eq!(display.into_bytes(), vec![b'H', b'J', b'a', b'C', b'L', b'G']);
-  }
+  assert_eq!(display.into_bytes(), vec![b'H', b'J', b'a', b'C', b'L', b'G']); }
 
 #[test]
 fn test_clear()
@@ -173,14 +172,22 @@ fn test_scroll()
 fn test_iter()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.write(b"L\xE9opar").ok(), Some(6usize));
-
   let mut iterator = display.into_iter();
-
   assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'L'][..]);
   assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'\xE9'][..]);
   assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'o'][..]);
   assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'p'][..]);
   assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'a'][..]);
   assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'r'][..]);
-  assert!(iterator.next().is_none());
-}
+  assert!(iterator.next().is_none()); }
+
+#[test]
+fn test_save_terminal()
+{ let mut display: Display = Display::from_winszed(SIZE);
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"hello").ok(), Some(5usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[1049h").ok(), Some(5usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"hello").ok(), Some(5usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']); }

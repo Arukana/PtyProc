@@ -26,7 +26,7 @@ impl Termios {
         fd: fd,
         config: config,
       };
-      try!(setup.enter_raw_mode());
+      setup.enter_raw_mode().unwrap();
       Ok(setup)
     }
   }

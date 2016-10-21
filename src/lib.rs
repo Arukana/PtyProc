@@ -2,6 +2,7 @@
 #![feature(advanced_slice_patterns)]
 #![feature(integer_atomics)]
 #![feature(range_contains)]
+#![feature(box_patterns)]
 
 
 #![crate_type= "lib"]

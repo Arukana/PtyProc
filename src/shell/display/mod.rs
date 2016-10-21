@@ -97,10 +97,10 @@ impl Display {
     /// The accessor method `is_border` returns a boolean if
     /// the tuple 'oob' points to the last left bottom character
     pub fn is_border(&self) -> bool
-    { if self.oob.0 == self.size.get_icol() && self.oob.1 == self.size.get_irow() - 1
-      { true }
+    { if self.oob.0 != self.size.get_icol() || self.oob.1 != self.size.get_irow() - 1
+      { false }
       else
-      { false }}
+      { true }}
 
 
     /// The method `clear` puges the screen vector.
@@ -123,11 +123,9 @@ impl Display {
 
     /// The method `tricky_resize` updates the size of the output screen.
     pub fn tricky_resize(&mut self, begin: libc::size_t, end: libc::size_t)
-    { //println!("Resize::({}, {})", x, y);
+    { //println!("Resize::({}, {})", begin, end);
       if begin <= end
-        {
-            self.region = (begin - 1, end);
-        }}
+      { self.region = (begin - 1, end); }}
 
     /// The method `bell_or_goto` displays a bell or go to new coordinates
     pub fn bell_or_goto(&mut self) -> io::Result<libc::size_t>
@@ -147,22 +145,21 @@ impl Display {
     /// The method `goto_home` moves the cursor to the top left of the output screen.
     pub fn goto_home(&mut self) -> io::Result<libc::size_t>
     { //println!("Goto::Home");
-        { self.goto(0); }
-        self.oob = (0, 0);
-    Ok(0)}
+      { self.goto(0); }
+      self.oob = (0, 0);
+      Ok(0) }
 
     /// The method `goto_up` moves the cursor up.
     pub fn goto_up(&mut self) -> io::Result<libc::size_t>
-    { //println!("Goto::Up(1)");
+    { println!("Goto::Up(1)");
       let col = self.size.get_icol();
       let pos = self.screen.position() as libc::ssize_t;
       if !self.is_oob().is_some() && pos - col >= 0 && self.line_wrap
       { self.goto(pos.sub(&col) as libc::size_t);
-          self.oob.1 -= 1;
-          Ok(0)}
+        self.oob.1 -= 1;
+        Ok(0) }
       else
-        {
-         self.oob.1 -= 1;
+      { self.oob.1 -= 1;
         self.bell_or_goto() }}
 
     /// The method `goto_down` moves the cursor down.
@@ -171,21 +168,20 @@ impl Display {
       let col = self.size.get_col();
       let pos = self.screen.position();
       let len = { (*self.into_bytes()).len() };
-      if !self.is_oob().is_some() && (pos + col ) < len && self.line_wrap
+      if !self.is_oob().is_some() && (pos + col) < len && self.line_wrap
       { self.goto(pos + col);
         println!("POS::{}, COL::{}", pos, col);
         self.oob.1 += 1;
-        Ok(0)}
+        Ok(0) }
       else
-      {
-          self.oob.1 += 1;
+      { self.oob.1 += 1;
         self.bell_or_goto() }}
 
     /// The method `goto_right` moves the cursor to its right.
     /// If 'line_wrap' is true and the cursor is on the right border,
     /// it moves the cursor to the next line's left border
     pub fn goto_right(&mut self) -> io::Result<libc::size_t>
-    { //println!("Goto::Right(1)");
+    { println!("Goto::Right(1)");
       let col = self.size.get_col();
       let pos = self.screen.position();
       if !self.is_oob().is_some() && (pos + 1 % col != 0 || pos < col - 1 || self.line_wrap)
@@ -204,7 +200,7 @@ impl Display {
     /// If 'line_wrap' is true and the cursor is on the left border,
     /// it moves the cursor to the previous line's right border
     pub fn goto_left(&mut self) -> io::Result<libc::size_t>
-    { //println!("Goto::Left(1)");
+    { println!("Goto::Left(1)");
       let col = self.size.get_col();
       let pos = self.screen.position();
       if !self.is_oob().is_some() && pos > 0 && (pos % col != 0 || self.line_wrap)
@@ -215,9 +211,8 @@ impl Display {
         { self.oob.0 = (col as libc::ssize_t) - 1;
           self.oob.1 -= 1; } Ok(0)}
       else
-        {
-          self.oob.0 -= 1;
-        self.bell_or_goto() }}
+        { self.oob.0 -= 1;
+      		self.bell_or_goto() }}
 
     /// The method `goto_begin_line` moves the cursor to the beginning of the line
     pub fn goto_begin_line(&mut self)
@@ -396,7 +391,7 @@ impl Display {
         let wrap = self.line_wrap;
       print!("FIRST::{:?} | ", first);
       for i in first
-      {print!("{} ", *i as char); }
+      { print!("{} ", *i as char); }
       println!("");
       { println!("OOB::({}, {})", self.oob.0, self.oob.1); }
 
@@ -429,8 +424,9 @@ impl Display {
     /// The method `next_tab` return the size of the current printed tabulation
     pub fn next_tab(&self) -> u8
     { let pos = self.screen.position();
-      let mut get = 1;
-      while (pos as u8 + get) % 8 != 0
+      let mut get: u8 = 1;
+      println!("TAB::{}", pos);
+      while (pos + get as usize) % 8 != 0
       { get += 1; };
       get }
 
@@ -438,6 +434,14 @@ impl Display {
     pub fn save_terminal(&mut self) {
         self.save_terminal = Some(Box::new(self.clone()));
     }
+
+    /// The method `restore_terminal` restore the terminal Display configuration
+    /// kept in the 'save_terminal' variable.
+    pub fn restore_terminal(&mut self)
+    {
+      if let Some(save) = self.save_terminal.take() {
+        *self = *save;
+      }} 
 }
 
 impl IntoIterator for Display {
@@ -465,11 +469,13 @@ impl Write for Display {
             &[] => Ok(0),
 
             //---------- TERMINAL SAVE -----------
-            &[b'\x1B', b'[', b'1', b'0', b'4', b'9', b'h', ref next..] =>
+            &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'h', ref next..] =>
               { //println!("Save Terminal State");
+                self.save_terminal();
                 self.write(next) },
-            &[b'\x1B', b'[', b'1', b'0', b'4', b'9', b'l', ref next..] =>
+            &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'l', ref next..] =>
               { //println!("Restore Terminal State");
+                self.restore_terminal();
                 self.write(next) },
 
             //------------ SETTINGS -------------
@@ -493,7 +499,6 @@ impl Write for Display {
             &[b'\x1B', b'[', b'r', ref next..] =>
               { //println!("Cursor::ScrollEnable");
                 self.write(next) },
-
 
             //------------ ERASE -----------------
             &[b'\x1B', b'[', b'K', ref next..] |
@@ -609,6 +614,25 @@ impl Write for Display {
                   { if bonjour.len() == 1
                     { {0..bonjour[0]}.all(|_|
                       { self.goto_left();
+                        true }); }
+                    self.write(next) },
+
+                //------------- INSERT ---------------
+                &[b'L', ref next..] =>
+                  { if bonjour.len() == 1
+                    { {0..bonjour[0]}.all(|_|
+                      { self.insert_empty_line();
+                        true }); }
+                    self.write(next) },
+                &[b'P', ref next..] =>
+                  { if bonjour.len() == 1
+                    { let pos = self.screen.position();
+                      let border = pos % self.size.get_col();
+                      let coucou = self.screen.get_mut();
+                      println!("ERASE::{}, {}, {}", pos, border, bonjour[0]);
+                      {0..bonjour[0]}.all(|i|
+                      { (*coucou).insert(pos + border, Control::new(&[b' '][..]));
+                        (*coucou).remove(pos);
                         true }); }
                     self.write(next) },
 
