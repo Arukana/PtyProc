@@ -5,7 +5,7 @@ pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 
 use std::io::Write;
 use std::ops::BitOr;
-use std::ops::{Add, BitAnd};
+use std::ops::{Add, Sub, BitAnd};
 
 use ::libc;
 use ::time;
@@ -32,7 +32,9 @@ pub struct ShellState {
   /// The released character.
   in_up: Option<Control>,
   /// The number of the repetition.
-  in_repeat: libc::size_t,
+  in_repeat: Option<libc::size_t>,
+  /// The segment intervals.
+  in_interval: Option<time::Tm>,
   /// The output of last text printed.
   out_last: Option<(Out, libc::size_t)>,
   /// The output of matrix Screen interface.
@@ -54,7 +56,8 @@ impl ShellState {
             sig: None,
             in_down: None,
             in_up: None,
-            in_repeat: 0,
+            in_repeat: None,
+            in_interval: None,
             out_last: None,
             out_screen: Display::new(fd).unwrap(),
         }
@@ -95,17 +98,20 @@ impl ShellState {
                         time::Duration::milliseconds(self.repeat)
                     ) >= after.as_time()
                 ) {
-                    self.in_repeat += 1;
+                    self.in_repeat = Some(self.in_repeat.unwrap_or_default().add(&1));
                 } else {
-                    self.in_repeat = 0;
+                    self.in_repeat = Some(0);
                 }
+            } else {
+                self.in_interval = Some(after.as_time());
             }
             self.in_up = Some(after);
         } else if let Some(before) = self.in_up {
             if before.as_time().add(
                time::Duration::milliseconds(self.repeat)
             ) <= time::now() {
-                self.in_repeat = 0;
+                self.in_repeat = None;
+                self.in_interval = None;
             }
         }
     }
@@ -135,7 +141,8 @@ impl ShellState {
         self.sig
     }
 
-    /// The method `is_signal_resized` returns the Option for the WINCH Signal event.
+    /// The accessor method `is_signal_resized` returns the Option for
+    /// the WINCH Signal event.
     pub fn is_signal_resized(&self) -> Option<()> {
         if let Some(libc::SIGWINCH) = self.sig {
             Some(())
@@ -153,10 +160,23 @@ impl ShellState {
         }
     }
 
-    /// The accessir method `is_input_keyrepeat`
+    /// The accessor method `is_input_keyrepeat` returns the number's repetition
+    /// of the Key.
     pub fn is_input_keyrepeat(&self) -> Option<libc::size_t> {
         if let Some(_) = self.in_up {
-            Some(self.in_repeat)
+            self.in_repeat
+        } else {
+            None
+        }
+    }
+
+    /// The accessor method `is_input_keyinterval` returns the number's of repetition
+    /// between a range of the interval.
+    pub fn is_input_keyinterval(&self) -> Option<i64> {
+        if let (Some(first), Some(last)) = (self.in_interval, self.in_down) {
+            Some(
+                first.sub(last.as_time()).num_milliseconds().abs()/self.interval
+            )
         } else {
             None
         }
@@ -212,6 +232,7 @@ impl Clone for ShellState {
             in_down: self.in_down,
             in_up: self.in_up,
             in_repeat: self.in_repeat,
+            in_interval: self.in_interval,
             out_last: self.out_last,
             out_screen: self.out_screen.clone(),
         }
