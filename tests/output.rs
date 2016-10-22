@@ -86,7 +86,12 @@ fn test_erase_left_right()
   assert_eq!(display.write(b"\x1B[A\x1B[K").ok(), Some(0usize));
   assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b'l', b'o', b' ']);
   assert_eq!(display.write(b"\x1B[C\x1B[1K").ok(), Some(0usize));
-  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b' ', b'o', b' ']); }
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b' ', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[;Hhello").ok(), Some(5usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[;H\x1B[K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b'l', b'o', b' ']);
+  }
 
 #[test]
 fn test_erase_line()
@@ -187,7 +192,9 @@ fn test_save_terminal()
   assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
   assert_eq!(display.write(b"hello").ok(), Some(5usize));
   assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
-  assert_eq!(display.write(b"\x1B[1049h").ok(), Some(5usize));
+  assert_eq!(display.write(b"\x1B[?1049h").ok(), Some(0usize));
   assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
-  assert_eq!(display.write(b"hello").ok(), Some(5usize));
+  assert_eq!(display.write(b"\x1B[2J").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"\x1B[?1049l").ok(), Some(0usize));
   assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']); }

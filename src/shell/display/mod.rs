@@ -299,16 +299,11 @@ impl Display {
       if !self.is_oob().is_some()
       { let col = self.size.get_col();
         let pos = self.screen.position();
-        let mut get = col;
-        if pos >= col
-        { get = pos;
-          while (get + 1) % col != 0
-          { get += 1; }; }
-        //self.goto((get - 1) as libc::size_t);
-        self.screen.get_mut().into_iter().skip(pos).take(get - pos).all(|mut term: &mut Control|
-            term.clear().is_ok()
-        );
-      }}
+        let mut get = pos;
+        if let Some(index) = self.screen.get_ref().iter().position(|&x| x.is_enter().is_some())
+        { let (ref mut x, _) = self.screen.get_mut().split_at_mut(index);
+          x.iter_mut().all(|mut term: &mut Control|
+          { term.clear().is_ok() }); }}}
 
     /// The method `erase_left_line` erase the current line from the left border column
     /// to the cursor
@@ -627,9 +622,9 @@ impl Write for Display {
                 &[b'P', ref next..] =>
                   { if bonjour.len() == 1
                     { let pos = self.screen.position();
-                      let border = pos % self.size.get_col();
+                      let border = self.size.get_col() - (pos % self.size.get_col()) - 1;
                       let coucou = self.screen.get_mut();
-                      println!("ERASE::{}, {}, {}", pos, border, bonjour[0]);
+                      println!("HEY::{} | {}", pos, border);
                       {0..bonjour[0]}.all(|i|
                       { (*coucou).insert(pos + border, Control::new(&[b' '][..]));
                         (*coucou).remove(pos);
