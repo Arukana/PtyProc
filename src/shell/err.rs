@@ -12,6 +12,7 @@ pub type Result<T> = ::std::result::Result<T, ShellError>;
 pub enum ShellError {
     ForkFail(ForkError),
     TermiosFail(TermiosError),
+    NotFound,
 }
 
 
@@ -30,6 +31,8 @@ impl Error for ShellError {
         match *self {
             ShellError::ForkFail(_) => "The pseudo tty has occured an error.",
             ShellError::TermiosFail(_) => "The termios has occured an error.",
+            ShellError::NotFound => "The $SHELL variable of environement \
+                                     was empty during the compile time",
         }
     }
 
@@ -38,6 +41,7 @@ impl Error for ShellError {
         match *self {
             ShellError::ForkFail(ref err) => Some(err),
             ShellError::TermiosFail(ref err) => Some(err),
+            _ => None,
         }
     }
 }

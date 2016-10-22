@@ -53,27 +53,35 @@ impl Shell {
       command: Option<&'static str>,
       mode: Mode,
     ) -> Result<Self> {
-    match pty::Fork::from_ptmx() {
-      Err(cause) => Err(ShellError::ForkFail(cause)),
-      Ok(fork) => match fork {
-        pty::Fork::Child(ref slave) => slave.exec(command.unwrap_or("bash")),
-        pty::Fork::Parent(pid, master) => {
-          mem::forget(fork);
-            match Termios::new(libc::STDIN_FILENO) {
-                Err(cause) => Err(ShellError::TermiosFail(cause)),
-                Ok(termios) => Ok(Shell {
-                    pid: pid,
-                    config: termios,
-                    mode: mode,
-                    speudo: master,
-                    device: Device::from_speudo(master),
-                    state: ShellState::new(repeat, interval, libc::STDIN_FILENO),
-                }),
+      if let Some(shell) = command.or(option_env!("SHELL")) {
+            match pty::Fork::from_ptmx() {
+                Err(cause) => Err(ShellError::ForkFail(cause)),
+                Ok(fork) => match fork {
+                    pty::Fork::Child(ref slave) => slave.exec(shell),
+                    pty::Fork::Parent(pid, master) => {
+                        mem::forget(fork);
+                        match Termios::new(libc::STDIN_FILENO) {
+                            Err(cause) => Err(ShellError::TermiosFail(cause)),
+                            Ok(termios) => Ok(Shell {
+                                pid: pid,
+                                config: termios,
+                                mode: mode,
+                                speudo: master,
+                                device: Device::from_speudo(master),
+                                state: ShellState::new(
+                                    repeat,
+                                    interval,
+                                    libc::STDIN_FILENO
+                                ),
+                            }),
+                        }
+                    },
+                },
             }
-        },
-      },
+      } else {
+            Err(ShellError::NotFound)
+      }
     }
-  }
 
   /// The accessor method `get_pid` returns the pid from the master.
   pub fn get_pid(&self) -> &libc::pid_t {
