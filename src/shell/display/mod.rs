@@ -203,6 +203,7 @@ impl Display {
     { println!("Goto::Left(1)");
       let col = self.size.get_col();
       let pos = self.screen.position();
+//      println!("LEFT::{}, OOB::({}, {})", pos, self.oob.0, self.oob.1);
       if !self.is_oob().is_some() && pos > 0 && (pos % col != 0 || self.line_wrap)
       { { self.goto(pos - 1); }
         if self.oob.0 > 0
@@ -299,9 +300,8 @@ impl Display {
       if !self.is_oob().is_some()
       { let col = self.size.get_col();
         let pos = self.screen.position();
-        let mut get = pos;
-        if let Some(index) = self.screen.get_ref().iter().position(|&x| x.is_enter().is_some())
-        { let (ref mut x, _) = self.screen.get_mut().split_at_mut(index);
+        if let Some(index) = self.screen.get_ref().iter().skip(pos).position(|&x| x.is_enter().is_some())
+        { let (ref mut x, _) = self.screen.get_mut().split_at_mut(index + 1);
           x.iter_mut().all(|mut term: &mut Control|
           { term.clear().is_ok() }); }}}
 
@@ -372,11 +372,24 @@ impl Display {
     { if !self.is_oob().is_some()
       { let check = self.oob.1;
         let row = self.size.get_irow();
+        let col = self.size.get_col();
+        let pos = self.screen.position();
+        let border = pos % col;
+        let check = self.oob.1;
+        let row = self.size.get_irow();
+        let resize = self.region;
+        println!("resize::{:?}, border::{}, pos::{}, OOB::({}, {}), term::({}, {})", resize, border, pos, self.oob.0, check, col, row);
+       /* { let coucou = self.screen.get_mut();
+          {0..border}.all(|_|
+          { (*coucou).insert(pos, Control::new(&[b' '][..]));
+            (*coucou).remove(resize.1 * col);
+            true }); }*/
         if check < row - 1
-        { self.goto_down(); }
+        { self.goto_down();
+          if self.oob.0 < (col as libc::ssize_t) - 1
+          { self.oob.0 += 1; }}
         else
         { self.scroll_down(); }}
-      // !! A VERIFIER !! (Je suppose qu'un \n sur la dernière ligne scroll l'écran)
       else if self.is_border()
       { self.scroll_down(); }}
 
@@ -670,8 +683,7 @@ impl Write for Display {
               { self.goto_begin_line();
                 self.write(next) },
             &[b'\x0A', ref next..] =>
-              { self.print_enter();
-                self.write(next) },
+              { self.screen.write(&[b'\n']).and_then(|f| { self.print_enter(); self.write(next).and_then(|n| Ok(f.add(&n)) )}) },
             &[b'\x09', ref next..] =>
             { if !self.is_oob().is_some()
               { let resize = self.region;
