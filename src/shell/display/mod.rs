@@ -121,8 +121,9 @@ impl Display {
     { println!("Goto::Up({})", mv);
       let col = self.size.get_col();
       let pos = self.screen.position();
-      if self.oob.1 - mv > 0
-      { self.goto(pos.sub(&(col.mul(&mv))));
+      println!("   POS::{}, OOB::{:?}", pos, self.oob);
+      if self.oob.1 >= mv
+      { self.goto(pos.sub(&((col.mul(&mv)))));
         self.oob.1 = self.oob.1.sub(&mv); }
       else
       { self.oob.1 = 0;
@@ -158,16 +159,18 @@ impl Display {
       Ok(0) }
 
     /// The method `goto_left` moves the cursor to its left.
-    pub fn goto_left(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
-    { println!("Goto::Left({})", mv);
+    pub fn goto_left(&mut self, mv: libc::size_t) //-> io::Result<libc::size_t>
+    { print!("Goto::Left({})", mv);
       let col = self.size.get_col();
       let pos = self.screen.position();
+      println!("   POS::{}, OOB::{:?}, COL::{}", pos, self.oob, col);
       if self.oob.0 >= mv
       { self.goto(pos.sub(&mv));
+      println!("LEFT POS::{} or {}", pos.sub(&mv), self.screen.position());
         self.oob.0 = self.oob.0.sub(&mv); }
       else
-      { self.goto_begin_line(); }
-      Ok(0) }
+      { self.goto_begin_line(); }}
+ //     Ok(0) }
 
     /// The method `goto_begin_line` moves the cursor to the beginning of the line
     pub fn goto_begin_line(&mut self)
@@ -218,12 +221,17 @@ impl Display {
     { //println!("Cursor::ScrollDown");
       let col = self.size.get_col();
       let resize = self.region;
-      println!("INSERT::{} at {}", col, resize.1 * col);
-      let coucou = self.screen.get_mut();
+      println!("INSERT::{}, POS::{}, OOB::{:?}", col, self.screen.position(), self.oob);
+     { let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      { (*coucou).insert((resize.1 * col), Control::new(&[b' '][..]));
+      { 
+      println!("INSERT::{}, REMOVE::{}", resize.1 * col, resize.0 * col);
+
+        (*coucou).insert(resize.1 * col, Control::new(&[b' '][..]));
         (*coucou).remove(resize.0 * col);
         true }); }
+      println!("POS::{}, OOB::{:?}", self.screen.position(), self.oob);
+      }
 
     /// The method `save_position` save a position in the variable 'save_position' to get
     /// restored with self.restore_position() described right after.
@@ -329,28 +337,29 @@ impl Display {
       if self.oob.1 < self.size.get_row() - 1
       { self.goto_down(1); }
       else
-      { self.scroll_down();
-        self.goto_begin_line(); }}
+      { self.scroll_down(); }}
 
-    /* ************************ FLAG *************************** */
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
     { let wrap = self.line_wrap;
+      let row = self.size.get_row();
+      let col = self.size.get_col();
         print!("FIRST::{:?} | ", first);
         for i in first
         { print!("{} ", *i as char); }
         println!("\nOOB::({}, {})", self.oob.0, self.oob.1);
-      let row = self.size.get_row();
-      let col = self.size.get_col();
-      //println!("print_char {}", first.len() );
       if self.oob.0 < col - 1
       { self.oob.0 += 1; }
-      else if wrap && self.oob.1 < row - 1
+      else if self.oob.1 < row - 1
       { self.oob.1 += 1;
+        println!("SELF OOB::({}, {})", self.oob.0, self.oob.1);
         self.oob.0 = 0; }
-      else if wrap
+      else
       { self.scroll_down();
-        self.goto_up(1); }
+        println!("SELF OOB::({}, {})", self.oob.0, self.oob.1);
+        self.goto_begin_line();
+        { let pos = self.screen.position();
+          self.goto(pos - 1); }}
       //else self.oob.0 == col - 1 && self.oob.1 == row - 1
       self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
 
@@ -384,7 +393,19 @@ impl Display {
     pub fn restore_terminal(&mut self)
     { if let Some(save) = self.save_terminal.take()
       { *self = *save; }}
-}
+
+
+    /// The method `erase_chars` erases couple of chars on the right of the cursor.
+    pub fn erase_chars(&mut self, mv: libc::size_t)
+    { let pos = self.screen.position();
+      let border = self.size.get_col() - (pos % self.size.get_col());
+      let coucou = self.screen.get_mut();
+      println!("HEY::{} | {}", pos, border);
+      {0..mv}.all(|i|
+      { (*coucou).insert(pos + border, Control::new(&[b' '][..]));
+        (*coucou).remove(pos);
+        true }); }
+  }
 
 impl IntoIterator for Display {
     type Item = Control;
@@ -461,6 +482,9 @@ impl Write for Display {
             { self.erase_up();
             self.write(next) },
             &[b'\x1B', b'[', b'2', b'J', ref next..] => self.clear().and(self.write(next)),
+            &[b'\x1B', b'[', b'P', ref next..] =>
+            { self.erase_chars(1);
+              self.write(next) },
 
             //------------ INSERT -----------------
             &[b'\x1B', b'[', b'L', ref next..] =>
@@ -558,16 +582,11 @@ impl Write for Display {
                       { self.insert_empty_line();
                         true }); }
                     self.write(next) },
+
+                //-------------- ERASE ----------------
                 &[b'P', ref next..] =>
                   { if bonjour.len() == 1
-                    { let pos = self.screen.position();
-                      let border = self.size.get_col() - (pos % self.size.get_col()) - 1;
-                      let coucou = self.screen.get_mut();
-                      println!("HEY::{} | {}", pos, border);
-                      {0..bonjour[0]}.all(|i|
-                      { (*coucou).insert(pos + border, Control::new(&[b' '][..]));
-                        (*coucou).remove(pos);
-                        true }); }
+                    { self.erase_chars(bonjour[0]); }
                     self.write(next) },
 
                 //------------- ATTRIBUTS ---------------
@@ -605,6 +624,15 @@ impl Write for Display {
             &[b'\x07', ref next..] => //BELL \b
               { self.bell += 1;
                 self.write(next) },
+            &[b'\x0A', b'\x0D', ref next..] |
+            &[b'\x0D', b'\x0A', ref next..] =>
+              { self.goto_begin_line();
+                self.print_enter();
+                self.write(next) },
+            &[b'\x0D'] =>
+              { self.goto_begin_line();
+                self.print_enter();
+                Ok(0) },
             &[b'\x0D', ref next..] =>
               { self.goto_begin_line();
                 self.write(next) },
