@@ -20,12 +20,12 @@ pub type In = [libc::c_uchar; 16];
 
 #[derive(Debug, Clone)]
 pub struct Display {
-    save_position: libc::size_t,
+    save_position: (libc::size_t, libc::size_t),
     save_terminal: Option<Box<Display>>,
     ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
     region: (libc::size_t, libc::size_t),
     collection: Vec<libc::size_t>,
-    oob: (libc::ssize_t, libc::ssize_t),
+    oob: (libc::size_t, libc::size_t),
     line_wrap: bool,
     size: Winszed,
     screen: Cursor<Vec<Control>>,
@@ -46,7 +46,7 @@ impl Display {
     /// from shell.
     pub fn from_winszed(size: Winszed) -> Display {
         Display {
-            save_position: 0,
+            save_position: (0, 0),
             save_terminal: None,
             region: (0, size.get_row()),
             collection: Vec::new(),
@@ -79,30 +79,6 @@ impl Display {
         mem::size_of::<In>().mul(&self.size.row_by_col())
     }
 
-    /// The accessor method `is_oob` returns an option if
-    /// the tuple 'oob' points out of the output screen
-    pub fn is_oob(&self) -> Option<(libc::ssize_t, libc::ssize_t)> {
-        let (x, y): (libc::ssize_t, libc::ssize_t) = self.oob;
-
-        if x.is_negative().not().bitand(&x.gt(&self.size.get_icol()))
-                                .bitand(
-                y.is_negative().not().bitand(&y.gt(&self.size.get_irow()))
-       ) {
-            Some((x, y))
-        } else {
-            None
-        }
-    }
-
-    /// The accessor method `is_border` returns a boolean if
-    /// the tuple 'oob' points to the last left bottom character
-    pub fn is_border(&self) -> bool
-    { if self.oob.0 != self.size.get_icol() || self.oob.1 != self.size.get_irow() - 1
-      { false }
-      else
-      { true }}
-
-
     /// The method `clear` puges the screen vector.
     pub fn clear(&mut self) -> io::Result<libc::size_t> {
         self.goto(0).is_ok().bitand(
@@ -127,15 +103,6 @@ impl Display {
       if begin <= end
       { self.region = (begin - 1, end); }}
 
-    /// The method `bell_or_goto` displays a bell or go to new coordinates
-    pub fn bell_or_goto(&mut self) -> io::Result<libc::size_t>
-    { if self.is_oob().is_some()
-      { self.write(&[b'\x07']) }
-      else
-      { let check = self.oob;
-        let col = self.size.get_icol();
-        self.goto((check.0 + (check.1 * col)) as libc::size_t) }}
-
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
         self.screen.set_position(index);
@@ -144,94 +111,94 @@ impl Display {
 
     /// The method `goto_home` moves the cursor to the top left of the output screen.
     pub fn goto_home(&mut self) -> io::Result<libc::size_t>
-    { //println!("Goto::Home");
-      { self.goto(0); }
+    { println!("Goto::Home");
+      self.goto(0);
       self.oob = (0, 0);
       Ok(0) }
 
     /// The method `goto_up` moves the cursor up.
-    pub fn goto_up(&mut self) -> io::Result<libc::size_t>
-    { println!("Goto::Up(1)");
-      let col = self.size.get_icol();
-      let pos = self.screen.position() as libc::ssize_t;
-      if !self.is_oob().is_some() && pos - col >= 0 && self.line_wrap
-      { self.goto(pos.sub(&col) as libc::size_t);
-        self.oob.1 -= 1;
-        Ok(0) }
+    pub fn goto_up(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
+    { println!("Goto::Up({})", mv);
+      let col = self.size.get_col();
+      let pos = self.screen.position();
+      if self.oob.1 - mv > 0
+      { self.goto(pos.sub(&(col.mul(&mv))));
+        self.oob.1 = self.oob.1.sub(&mv); }
       else
-      { self.oob.1 -= 1;
-        self.bell_or_goto() }}
+      { self.oob.1 = 0;
+        let x = self.oob.0;
+        self.goto_coord(x, 0); }
+      Ok(0) }
 
     /// The method `goto_down` moves the cursor down.
-    pub fn goto_down(&mut self) -> io::Result<libc::size_t>
-    { println!("Goto::Down(1)");
+    pub fn goto_down(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
+    { println!("Goto::Down({})", mv);
+      let row = self.size.get_row();
       let col = self.size.get_col();
       let pos = self.screen.position();
-      let len = { (*self.into_bytes()).len() };
-      if !self.is_oob().is_some() && (pos + col) < len && self.line_wrap
-      { self.goto(pos + col);
-        println!("POS::{}, COL::{}", pos, col);
-        self.oob.1 += 1;
-        Ok(0) }
+      if self.oob.1 + mv <= row - 1
+      { self.goto(pos.add(&(col.mul(&mv))));
+        self.oob.1 = self.oob.1.add(&mv); }
       else
-      { self.oob.1 += 1;
-        self.bell_or_goto() }}
+      { self.oob.1 = row - 1;
+        let x = self.oob.0;
+        self.goto_coord(x, row - 1); }
+      Ok(0) }
 
     /// The method `goto_right` moves the cursor to its right.
-    /// If 'line_wrap' is true and the cursor is on the right border,
-    /// it moves the cursor to the next line's left border
-    pub fn goto_right(&mut self) -> io::Result<libc::size_t>
-    { println!("Goto::Right(1)");
+    pub fn goto_right(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
+    { println!("Goto::Right({})", mv);
       let col = self.size.get_col();
       let pos = self.screen.position();
-      if !self.is_oob().is_some() && (pos + 1 % col != 0 || pos < col - 1 || self.line_wrap)
-      { { self.goto(pos + 1); }
-        if self.oob.0 < (col as libc::ssize_t) - 1
-        { self.oob.0 += 1; }
-        else
-        { self.oob.0 = 0;
-          self.oob.1 += 1; } Ok(0)}
+      if self.oob.0 + mv <= col - 1
+      { self.goto(pos.add(&mv));
+        self.oob.0 = self.oob.0.add(&mv); }
       else
-        { {
-          self.oob.0 += 1; }
-        self.bell_or_goto() }}
+      { self.goto_end_line(); }
+      Ok(0) }
 
     /// The method `goto_left` moves the cursor to its left.
-    /// If 'line_wrap' is true and the cursor is on the left border,
-    /// it moves the cursor to the previous line's right border
-    pub fn goto_left(&mut self) -> io::Result<libc::size_t>
-    { println!("Goto::Left(1)");
+    pub fn goto_left(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
+    { println!("Goto::Left({})", mv);
       let col = self.size.get_col();
       let pos = self.screen.position();
-//      println!("LEFT::{}, OOB::({}, {})", pos, self.oob.0, self.oob.1);
-      if !self.is_oob().is_some() && pos > 0 && (pos % col != 0 || self.line_wrap)
-      { { self.goto(pos - 1); }
-        if self.oob.0 > 0
-        { self.oob.0 -= 1; }
-        else
-        { self.oob.0 = (col as libc::ssize_t) - 1;
-          self.oob.1 -= 1; } Ok(0)}
+      if self.oob.0 >= mv
+      { self.goto(pos.sub(&mv));
+        self.oob.0 = self.oob.0.sub(&mv); }
       else
-        { self.oob.0 -= 1;
-      		self.bell_or_goto() }}
+      { self.goto_begin_line(); }
+      Ok(0) }
 
     /// The method `goto_begin_line` moves the cursor to the beginning of the line
     pub fn goto_begin_line(&mut self)
-    { if !self.is_oob().is_some() || self.is_border()
-      { let x = self.oob.0;
-        {0..x}.all(|_|
-        { self.goto_left();
-          true }); }}
+    { let x = self.oob.0;
+      self.goto_left(x); }
+
+    /// The method `goto_end_line` moves the cursor to the end of the line
+    pub fn goto_end_line(&mut self)
+    { let x = self.size.get_col() - self.oob.0 - 1;
+      self.goto_right(x); }
 
     /// The method `goto_coord` moves the cursor to the given coordinates
     pub fn goto_coord(&mut self, x: libc::size_t, y: libc::size_t)
     { //println!("Cursor::CursorGoto({}, {})", x, y);
       let col = self.size.get_col();
-        self.oob = (x as libc::ssize_t - 1, y as libc::ssize_t - 1);
-      if !self.is_oob().is_some()
-      { self.goto((x - 1) + ((y - 1) * col)); }
+      let row = self.size.get_row();
+      let c;
+      let r;
+      if x < col
+      { self.oob.0 = x;
+        c = x; }
       else
-      { self.bell_or_goto(); }}
+      { self.oob.0 = col - 1;
+        c = col - 1; }
+      if y < row
+      { self.oob.1 = y;
+        r = y; }
+      else
+      { self.oob.1 = row - 1;
+        r = row - 1; }
+      self.goto(c + (r * col)); }
 
     /// The method `scroll_up` insert an empty line on top of the screen
     /// (the cursor doesn't move)
@@ -251,94 +218,89 @@ impl Display {
     { //println!("Cursor::ScrollDown");
       let col = self.size.get_col();
       let resize = self.region;
+      println!("INSERT::{} at {}", col, resize.1 * col);
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      {
-        (*coucou).insert(resize.1 * col, Control::new(&[b' '][..]));
+      { (*coucou).insert((resize.1 * col), Control::new(&[b' '][..]));
         (*coucou).remove(resize.0 * col);
         true }); }
 
     /// The method `save_position` save a position in the variable 'save_position' to get
-    /// restored with self.restore_position() described right after
+    /// restored with self.restore_position() described right after.
     /// If save_position() is called many times, only the newest safe will be kept.
     pub fn save_position(&mut self)
     { //println!("Cursor::SaveCursor");
-      if !self.is_oob().is_some()
-      { let pos = self.screen.position();
-        self.save_position = pos; }}
+      self.save_position = (self.oob.0, self.oob.1); }
 
     /// The method `restore_position` move the cursor to coordinates safe
     /// with self.save_position() described right before.
     /// If no coordinates were safe, cursor moves to the top left of the output screen
     pub fn restore_position(&mut self)
     { //println!("Cursor::RestoreCursor");
-      let pos = self.save_position;
-      self.goto(pos);
-      let len = (*self.into_bytes()).len();
-      self.oob = ((pos % len ) as libc::ssize_t - 1, (pos / len ) as libc::ssize_t); }
+      let (x, y) = self.save_position;
+      self.goto_coord(x, y); }
 
     /// The method `insert_empty_line` insert an empty line on the right of the cursor
     /// (the cursor doesn't move)
     pub fn insert_empty_line(&mut self)
     { //println!("InsertEmptyLine");
-      if !self.is_oob().is_some()
-      { let col = self.size.get_col();
-        let resize = self.region;
-        let pos = self.screen.position();
-        let coucou = self.screen.get_mut();
-        {0..col}.all(|_|
-        { (*coucou).insert(pos, Control::new(&[b' '][..]));
-          (*coucou).remove(resize.1 * col);
-            true });
-    }}
+      let mut col = self.size.get_col();
+      let resize = self.region;
+      let pos = self.screen.position();
+      if pos + col > self.len()
+      { col = self.len() - pos; }
+      let coucou = self.screen.get_mut();
+      {0..col}.all(|_|
+      { (*coucou).insert(pos, Control::new(&[b' '][..]));
+        (*coucou).remove(resize.1 * col);
+        true }); }
 
     /// The method `erase_right_line` erase the current line from the cursor
     /// to the right border column
     /// (char under the cursor included)
     pub fn erase_right_line(&mut self)
     { //println!("Cursor::EraseRightLine");
-      if !self.is_oob().is_some()
-      { let col = self.size.get_col();
-        let pos = self.screen.position();
-        if let Some(index) = self.screen.get_ref().iter().skip(pos).position(|&x| x.is_enter().is_some())
-        { let (ref mut x, _) = self.screen.get_mut().split_at_mut(index + 1);
-          x.iter_mut().all(|mut term: &mut Control|
-          { term.clear().is_ok() }); }}}
+      let col = self.size.get_col();
+      let pos = self.screen.position();
+      if !self.screen.get_ref()[pos+(col-(pos%col))].is_space().is_some()
+      { ; }
+//      self.screen.get_mut().into_iter().skip(get).take(get - pos+1).all(|mut term: &mut Control|
+//      { term.clear().is_ok() });
+      if let Some(index) = self.screen.get_ref().iter().skip(pos).position(|&x| x.is_enter().is_some())
+      { let (ref mut x, _) = self.screen.get_mut().split_at_mut(index + 1);
+        x.iter_mut().all(|mut term: &mut Control|
+        { term.clear().is_ok() }); }}
 
+    /* ************************ FLAG *************************** */
     /// The method `erase_left_line` erase the current line from the left border column
     /// to the cursor
     /// (char under the cursor included)
     pub fn erase_left_line(&mut self)
     { //println!("Cursor::EraseLeftLine");
-      if !self.is_oob().is_some()
-      { let col = self.size.get_col();
-        let pos = self.screen.position();
-        let mut get = 0;
-        if pos >= col
-        { get = pos;
-          while get % col != 0
-          { get -= 1; }; }
-        self.screen.get_mut().into_iter().skip(get).take(get - pos+1).all(|mut term: &mut Control|
-            term.clear().is_ok()
-        );
-    }}
+      let col = self.size.get_col();
+      let pos = self.screen.position();
+      let mut get = 0;
+      if pos >= col
+      { get = pos;
+        while get % col != 0
+        { get -= 1; }; }
+      self.screen.get_mut().into_iter().skip(get).take(get - pos+1).all(|mut term: &mut Control|
+      { term.clear().is_ok() }); }
 
+    /* ************************ FLAG *************************** */
     /// The method `erase_line` erase the entire current line
     pub fn erase_line(&mut self)
     { //println!("Cursor::EraseLine");
-      if !self.is_oob().is_some()
-      { let col = self.size.get_col();
-        let mut pos = self.screen.position();
-        let mut get = 0;
-        while pos % col != 0
-        { pos -= 1; };
-        while (get + pos + 1) % col != 0
-        { get += 1; };
-        self.goto(pos);
-        self.screen.get_mut().into_iter().skip(pos).take(get + pos+1).all(|mut term: &mut Control|
-            term.clear().is_ok()
-        );
-    }}
+      let col = self.size.get_col();
+      let mut pos = self.screen.position();
+      let mut get = 0;
+      while pos % col != 0
+      { pos -= 1; };
+      while (get + pos + 1) % col != 0
+      { get += 1; };
+      self.goto(pos);
+      self.screen.get_mut().into_iter().skip(pos).take(get + pos+1).all(|mut term: &mut Control|
+      { term.clear().is_ok() }); }
 
     /// The method `erase_up` erase all lines from the current line up to
     /// the top of the screen, and erase the current line from the left border
@@ -346,12 +308,9 @@ impl Display {
     /// (char under the cursor included)
     pub fn erase_up(&mut self)
     { //println!("Cursor::EraseUp");
-      if !self.is_oob().is_some()
-        { let pos = self.screen.position();
-          self.screen.get_mut().into_iter().take(pos+1).all(|mut term: &mut Control|
-                term.clear().is_ok()
-          );
-        }}
+      let pos = self.screen.position();
+      self.screen.get_mut().into_iter().take(pos + 1).all(|mut term: &mut Control|
+      { term.clear().is_ok() }); }
 
     /// The method `erase_down` erase all lines from the current line down to
     /// the bottom of the screen and erase the current line from the cursor to
@@ -359,64 +318,41 @@ impl Display {
     /// (char under the cursor included)
     pub fn erase_down(&mut self)
     { //println!("Cursor::EraseDown");
-      if !self.is_oob().is_some()
-      { let pos = self.screen.position();
-        let len = self.len();
-        self.screen.get_mut().into_iter().skip(pos).take(len + pos).all(|mut term: &mut Control|
-            term.clear().is_ok()
-        );
-      }}
+      let pos = self.screen.position();
+      let len = self.len();
+      self.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Control|
+      { term.clear().is_ok() }); }
 
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
-    { if !self.is_oob().is_some()
-      { let check = self.oob.1;
-        let row = self.size.get_irow();
-        let col = self.size.get_col();
-        let pos = self.screen.position();
-        let border = pos % col;
-        let check = self.oob.1;
-        let row = self.size.get_irow();
-        let resize = self.region;
-        println!("resize::{:?}, border::{}, pos::{}, OOB::({}, {}), term::({}, {})", resize, border, pos, self.oob.0, check, col, row);
-       /* { let coucou = self.screen.get_mut();
-          {0..border}.all(|_|
-          { (*coucou).insert(pos, Control::new(&[b' '][..]));
-            (*coucou).remove(resize.1 * col);
-            true }); }*/
-        if check < row - 1
-        { self.goto_down();
-          if self.oob.0 < (col as libc::ssize_t) - 1
-          { self.oob.0 += 1; }}
-        else
-        { self.scroll_down(); }}
-      else if self.is_border()
-      { self.scroll_down(); }}
+    { println!("PRINT_ENTER");
+      if self.oob.1 < self.size.get_row() - 1
+      { self.goto_down(1); }
+      else
+      { self.scroll_down();
+        self.goto_begin_line(); }}
 
+    /* ************************ FLAG *************************** */
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
-    {
-        let wrap = self.line_wrap;
-      print!("FIRST::{:?} | ", first);
-      for i in first
-      { print!("{} ", *i as char); }
-      println!("");
-      { println!("OOB::({}, {})", self.oob.0, self.oob.1); }
-
-      if !self.is_oob().is_some() || self.is_border()
-        {
-            {
-        let row = self.size.get_irow();
-        let col = self.size.get_icol();
-        //println!("print_char {}", first.len() );
-        if self.oob.0 < col - 1 || (self.oob.0 == col - 1 && self.oob.1 == row - 1)
-        { self.oob.0 += 1; }
-        else if wrap && self.oob.1 < row - 1
-        { self.oob.0 = 0;
-          self.oob.1 += 1; }}
-        self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
-      else
-      { self.write(next) }}
+    { let wrap = self.line_wrap;
+        print!("FIRST::{:?} | ", first);
+        for i in first
+        { print!("{} ", *i as char); }
+        println!("\nOOB::({}, {})", self.oob.0, self.oob.1);
+      let row = self.size.get_row();
+      let col = self.size.get_col();
+      //println!("print_char {}", first.len() );
+      if self.oob.0 < col - 1
+      { self.oob.0 += 1; }
+      else if wrap && self.oob.1 < row - 1
+      { self.oob.1 += 1;
+        self.oob.0 = 0; }
+      else if wrap
+      { self.scroll_down();
+        self.goto_up(1); }
+      //else self.oob.0 == col - 1 && self.oob.1 == row - 1
+      self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
 
     pub fn catch_numbers<'a>(&self, mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
     { match parse_number!(buf)
@@ -429,27 +365,25 @@ impl Display {
         _ =>
           { (acc, buf) }, }}
 
+    /* ************************ FLAG *************************** */
     /// The method `next_tab` return the size of the current printed tabulation
-    pub fn next_tab(&self) -> u8
+    pub fn next_tab(&self) -> libc::size_t
     { let pos = self.screen.position();
-      let mut get: u8 = 1;
+      let mut get: libc::size_t = 1;
       println!("TAB::{}", pos);
-      while (pos + get as usize) % 8 != 0
+      while (pos + get) % 8 != 0
       { get += 1; };
       get }
 
     /// The method `save_terminal` saves the terminal Display configuration.
-    pub fn save_terminal(&mut self) {
-        self.save_terminal = Some(Box::new(self.clone()));
-    }
+    pub fn save_terminal(&mut self)
+    { self.save_terminal = Some(Box::new(self.clone())); }
 
     /// The method `restore_terminal` restore the terminal Display configuration
     /// kept in the 'save_terminal' variable.
     pub fn restore_terminal(&mut self)
-    {
-      if let Some(save) = self.save_terminal.take() {
-        *self = *save;
-      }} 
+    { if let Some(save) = self.save_terminal.take()
+      { *self = *save; }}
 }
 
 impl IntoIterator for Display {
@@ -544,26 +478,26 @@ impl Write for Display {
             &[b'A', b'\x08', ref next..] |
             &[b'\x1B', b'[', b'm', b'A', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'A', ref next..] =>
-            { self.goto_up();
+            { self.goto_up(1);
             self.write(next) },
             &[b'\x1B', b'[', b'B', ref next..] |
             &[b'B', b'\x08', ref next..] |
             &[b'\x1B', b'[', b'm', b'B', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'B', ref next..] =>
-            { self.goto_down();
+            { self.goto_down(1);
             self.write(next) },
             &[b'\x1B', b'[', b'C', ref next..] |
             &[b'C', b'\x08', ref next..] |
             &[b'\x1B', b'[', b'm', b'C', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'C', ref next..] =>
-            { self.goto_right();
+            { self.goto_right(1);
             self.write(next) },
             &[b'\x1B', b'[', b'D', ref next..] |
             &[b'D', b'\x08', ref next..] |
             &[b'\x1B', b'[', b'm', b'D', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'D', ref next..] |
             &[b'\x08', ref next..] =>
-            { self.goto_left();
+            { self.goto_left(1);
             self.write(next) },
 
             //--------- POSITION SAVE ----------
@@ -602,27 +536,19 @@ impl Write for Display {
               { //------------- n GOTO ------------------
                 &[b'A', ref next..] =>
                   { if bonjour.len() == 1
-                    { {0..bonjour[0]}.all(|_|
-                      { self.goto_up();
-                        true }); }
+                    { self.goto_up(bonjour[0]); }
                     self.write(next) },
                 &[b'B', ref next..] =>
                   { if bonjour.len() == 1
-                    { {0..bonjour[0]}.all(|_|
-                      { self.goto_down();
-                        true }); }
+                    { self.goto_down(bonjour[0]); }
                     self.write(next) },
                 &[b'C', ref next..] =>
                   { if bonjour.len() == 1
-                    { {0..bonjour[0]}.all(|_|
-                      { self.goto_right();
-                        true }); }
+                    { self.goto_right(bonjour[0]); }
                     self.write(next) },
                 &[b'D', ref next..] =>
                   { if bonjour.len() == 1
-                    { {0..bonjour[0]}.all(|_|
-                      { self.goto_left();
-                        true }); }
+                    { self.goto_left(bonjour[0]); }
                     self.write(next) },
 
                 //------------- INSERT ---------------
@@ -652,8 +578,8 @@ impl Write for Display {
                 //--------------- GOTO ------------------
                 &[b'H', ref next..] |
                 &[b'f', ref next..] =>
-                  { if bonjour.len() == 2
-                    { self.goto_coord(bonjour[1], bonjour[0]); }
+                  { if bonjour.len() == 2 && bonjour[0] > 0 && bonjour[1] > 0
+                    { self.goto_coord(bonjour[1] - 1, bonjour[0] - 1); }
                     self.write(next) },
 
                 //----------- TRICKY RESIZE -------------
@@ -683,21 +609,19 @@ impl Write for Display {
               { self.goto_begin_line();
                 self.write(next) },
             &[b'\x0A', ref next..] =>
-              { self.screen.write(&[b'\n']).and_then(|f| { self.print_enter(); self.write(next).and_then(|n| Ok(f.add(&n)) )}) },
+              { self.print_enter();
+                self.write(next) },
             &[b'\x09', ref next..] =>
-            { if !self.is_oob().is_some()
-              { let resize = self.region;
-                let col = self.size.get_col();
-                let tab_width = self.next_tab();
-                let pos = self.screen.position();
-                { let coucou = self.screen.get_mut();
-                  {0..tab_width}.all(|_|
-                  { (*coucou).insert(pos, Control::new(&[b' '][..]));
-                    (*coucou).remove(resize.1 * col);
-                    true }); }
+            { let resize = self.region;
+              let col = self.size.get_col();
+              let tab_width = self.next_tab();
+              let pos = self.screen.position();
+              { let coucou = self.screen.get_mut();
                 {0..tab_width}.all(|_|
-                { self.goto_right();
+                { (*coucou).insert(pos, Control::new(&[b' '][..]));
+                  (*coucou).remove(resize.1 * col);
                   true }); }
+              self.goto_right(tab_width);
               self.write(next) },
 
             &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] =>
