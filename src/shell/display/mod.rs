@@ -22,6 +22,7 @@ pub type In = [libc::c_uchar; 16];
 pub struct Display {
     save_position: (libc::size_t, libc::size_t),
     save_terminal: Option<Box<Display>>,
+    right_border: libc::size_t,
     ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
     region: (libc::size_t, libc::size_t),
     collection: Vec<libc::size_t>,
@@ -48,6 +49,7 @@ impl Display {
         Display {
             save_position: (0, 0),
             save_terminal: None,
+            right_border: 80,
             region: (0, size.get_row()),
             collection: Vec::new(),
             oob: (0, 0),
@@ -279,14 +281,19 @@ impl Display {
     { //println!("Cursor::EraseRightLine");
       let col = self.size.get_col();
       let pos = self.screen.position();
+        println!("ERASE_RIGHT::{:?}", self.oob);
       if (pos + 1) % col != 0
       { let mut get = col - 1;
+        println!("1");
         while !self.screen.get_ref()[pos+(get-(pos%col))].is_space().is_some()
         { get += col; }
+        println!("2");
         self.screen.get_mut().into_iter().skip(pos).take(get + 1).all(|mut term: &mut Control|
         { term.clear().is_ok() }); }
       else
-      { self.screen.get_mut()[pos].clear(); }}
+      { 
+        println!("3");
+        self.screen.get_mut()[pos].clear(); }}
 
     /// The method `erase_left_line` erase the current line from the previous '\n'
     /// to the cursor
@@ -335,8 +342,8 @@ impl Display {
 
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
-    { println!("PRINT_ENTER");
-      if self.oob.1 < self.size.get_row() - 1
+    { println!("PRINT_ENTER::{:?}", self.region);
+      if self.oob.1 < self.region.1 - 1
       { self.goto_down(1); }
       else
       { self.scroll_down(); }}
@@ -354,15 +361,17 @@ impl Display {
       { self.oob.0 += 1; }
       else if self.oob.1 < row - 1
       { self.oob.1 += 1;
-        println!("SELF OOB::({}, {})", self.oob.0, self.oob.1);
-        self.oob.0 = 0; }
+        self.oob.0 = 0;
+        if !next.is_empty() && next[0] == b' '
+        { match next
+          { &[] => {},
+            &[_, ref tmp..] => return self.screen.write(first).and_then(|f| self.write(tmp).and_then(|n| Ok(f.add(&n)) )) }}}
       else
       { self.scroll_down();
-        println!("SELF OOB::({}, {})", self.oob.0, self.oob.1);
         self.goto_begin_line();
         { let pos = self.screen.position();
           self.goto(pos - 1); }}
-      //else self.oob.0 == col - 1 && self.oob.1 == row - 1
+        println!("SELF OOB::({}, {})", self.oob.0, self.oob.1);
       self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
 
     pub fn catch_numbers<'a>(&self, mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
@@ -636,7 +645,8 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x0D'] =>
               { self.goto_begin_line();
-                self.print_enter();
+              //  if self.oob.1 < self.region.1 - 1
+              //  { self.print_enter(); }
                 Ok(0) },
             &[b'\x0D', ref next..] =>
               { self.goto_begin_line();
