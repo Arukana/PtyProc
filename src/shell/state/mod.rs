@@ -123,7 +123,7 @@ impl ShellState {
             self.out_last = Some((buf, len));
             print!("SCREEN::");
             for i in {0..len}
-            { print!(" {} |", buf[i]); }
+            { print!(" {}, {} |", buf[i], if buf[i]>=32{buf[i] as char}else{'\0'}); }
             println!("");
             self.out_screen.write(&buf[..len]);
         } else {

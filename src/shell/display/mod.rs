@@ -159,7 +159,7 @@ impl Display {
       Ok(0) }
 
     /// The method `goto_left` moves the cursor to its left.
-    pub fn goto_left(&mut self, mv: libc::size_t) //-> io::Result<libc::size_t>
+    pub fn goto_left(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
     { print!("Goto::Left({})", mv);
       let col = self.size.get_col();
       let pos = self.screen.position();
@@ -169,8 +169,8 @@ impl Display {
       println!("LEFT POS::{} or {}", pos.sub(&mv), self.screen.position());
         self.oob.0 = self.oob.0.sub(&mv); }
       else
-      { self.goto_begin_line(); }}
- //     Ok(0) }
+      { self.goto_begin_line(); }
+      Ok(0) }
 
     /// The method `goto_begin_line` moves the cursor to the beginning of the line
     pub fn goto_begin_line(&mut self)

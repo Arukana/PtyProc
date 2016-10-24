@@ -1,7 +1,21 @@
-Trouver une solution au bug des flèches dans vim
++ Trouver une solution au bug des flèches dans vim
 '-> E388: Couldn't find definition
 ( A\x08 | B\x08 | C\x08 | D\x08 )
-(HAUT     BAS    DROITE   GAUCHE)
+(  HAUT    BAS   DROITE   GAUCHE)
+TEST:
+cargo run
+bash-3.2$ vim
+i  (mode insertion)
+bon
+Left
+Erreur: "E388: Couldn't find definition"
 
-Gérer le padding de bash en par défaut à 80 caractères
-'-> A Voir: ESC[?1034h
+Display : "bo" + Erreur
+
+ Output : "D\x08 \x08\x1B[24;1H\x1B[K\x1B[?25l\x1B[1;3H\x1B[?12l\x1B[?25h\x1B[?25l\x1B[24;1H\x1B[97m\x1B[41mE388: Couldn't find definition\x1B[1;3H\x1B[?12l\x1B[?25h"
+
+Equival : Left, ' ', Left, Goto::Last_Line, Clear Line, Hide Cursor, Goto::'n', Stop Cursor Blinking, Show Cursor, Hide Cursor, Goto::Last_Line, Foreground White, Background Red, Print::"E388: Couldn't find definition", Goto::'n', Stop Cursor Blinking, Show Cursor
+
+
+___________________________________________________________________________________________
++ Gérer le padding de bash en par défaut à 80 caractères

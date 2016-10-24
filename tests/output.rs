@@ -50,13 +50,8 @@ fn test_move()
   assert_eq!(display.into_bytes(), vec![b'k', b'j', b'Z', b'w', b'X', b' ']);
   assert_eq!(display.write(b"\x1B[A\x1B[Dhell").ok(), Some(4usize));
   assert_eq!(display.into_bytes(), vec![b'k', b'h', b'e', b'l', b'l', b' ']);
-  for i in display.into_bytes()
-  { println!("i::{}", i as char); }
   assert_eq!(display.write(b"oR").ok(), Some(2usize));
-  for i in display.into_bytes()
-  { println!("i::{}", i as char); }
-  assert_eq!(display.into_bytes(), vec![b'l', b'l', b'o', b'R', b' ', b' ']);
-  }
+  assert_eq!(display.into_bytes(), vec![b'l', b'l', b'o', b'R', b' ', b' ']); }
 
 #[test]
 fn test_enter()
@@ -205,6 +200,8 @@ fn test_n_move()
 fn test_position_save()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"a\x1B[u").ok(), Some(1usize));
+  assert_eq!(display.into_bytes(), vec![b'a', b' ', b' ', b' ', b' ', b' ']);
   assert_eq!(display.write(b"h\x1B[sello").ok(), Some(5usize));
   assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
   assert_eq!(display.write(b"\x1B[uQ").ok(), Some(1usize));
@@ -265,3 +262,9 @@ fn test_erase_chars()
   assert_eq!(display.into_bytes(), vec![b'l', b' ', b' ', b'l', b'o', b' ']);
   assert_eq!(display.write(b"\x1B[B\x1B[P").ok(), Some(0usize));
   assert_eq!(display.into_bytes(), vec![b'l', b' ', b' ', b'o', b' ', b' ']); }
+
+#[test]
+fn test_oob_move()
+{ let mut display: Display = Display::from_winszed(SIZE);
+  assert_eq!(display.write(b"hello").ok(), Some(5usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']); }
