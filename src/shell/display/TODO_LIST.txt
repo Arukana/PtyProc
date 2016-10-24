@@ -1,0 +1,7 @@
+Trouver une solution au bug des flèches dans vim
+'-> E388: Couldn't find definition
+( A\x08 | B\x08 | C\x08 | D\x08 )
+(HAUT     BAS    DROITE   GAUCHE)
+
+Gérer le padding de bash en par défaut à 80 caractères
+'-> A Voir: ESC[?1034h

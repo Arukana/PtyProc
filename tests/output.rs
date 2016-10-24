@@ -84,12 +84,62 @@ fn test_clear()
 
 #[test]
 fn test_erase_left_right()
-{ let mut display: Display = Display::from_winszed(SIZE);
+{ println!("________________ RIGHT __________________");
+  let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
-  assert_eq!(display.write(b"he\n\x1B[Dl").ok(), Some(3usize));
-  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b' ', b'l', b' ']);
+  assert_eq!(display.write(b"he\n\x1B[D\x1B[Dl").ok(), Some(3usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b'l', b' ', b' ']);
   assert_eq!(display.write(b"\x1B[;H\x1B[K").ok(), Some(0usize));
-  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b'l', b' ']); }
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b'l', b' ', b' ']);
+  assert_eq!(display.write(b"\x1B[;Hhello").ok(), Some(5usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[;H\x1B[K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"\x1B[;Hhello").ok(), Some(5usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[D\x1B[D\x1B[K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b' ', b' ', b' ']);
+
+  assert_eq!(display.write(b"\x1B[2J").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+
+  assert_eq!(display.write(b"\x1B[;Hhe\n\x1B[D\x1B[Dll").ok(), Some(4usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b'l', b'l', b' ']);
+  assert_eq!(display.write(b"\x1B[A\x1B[K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b'l', b'l', b' ']);
+
+  assert_eq!(display.write(b"\x1B[2J").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+
+  println!("_________________ LEFT __________________");
+  assert_eq!(display.write(b"\x1B[;Hhe\n\x1B[D\x1B[Dll").ok(), Some(4usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b'l', b'l', b' ']);
+  assert_eq!(display.write(b"\x1B[1K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"\x1B[A\x1B[1K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"\x1B[;Hhello").ok(), Some(5usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[1K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"\x1B[;Hhello").ok(), Some(5usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[A\x1B[1K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[;Hhello").ok(), Some(5usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
+  assert_eq!(display.write(b"\x1B[A\x1B[D\x1B[1K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b'l', b'l', b'o', b' ']);
+
+  assert_eq!(display.write(b"\x1B[2J").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+
+  assert_eq!(display.write(b"\x1B[;Hhe\n\x1B[Dl").ok(), Some(3usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b' ', b'l', b' ']);
+  assert_eq!(display.write(b"\x1B[D\x1B[D\x1B[1K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b' ', b'l', b' ']);
+  assert_eq!(display.write(b"\x1B[;H\x1B[1K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b'e', b' ', b' ', b'l', b' ']); }
 
 #[test]
 fn test_erase_line()
@@ -98,8 +148,14 @@ fn test_erase_line()
   assert_eq!(display.write(b"hello").ok(), Some(5usize));
   assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']);
   assert_eq!(display.write(b"\x1B[A\x1B[D\x1B[2K").ok(), Some(0usize));
-  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b'l', b'o', b' ']);
-  assert_eq!(display.write(b"\x1B[B\x1B[2K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);
+  assert_eq!(display.write(b"\x1B[;Hhe\n\x1B[D\x1B[Dll").ok(), Some(4usize));
+  assert_eq!(display.into_bytes(), vec![b'h', b'e', b' ', b'l', b'l', b' ']);
+  assert_eq!(display.write(b"\x1B[A\x1B[2K").ok(), Some(0usize));
+  assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b'l', b'l', b' ']);
+  assert_eq!(display.write(b"\x1B[;Hk\x1B[Ca\x1B[C\x1B[C").ok(), Some(2usize));
+  assert_eq!(display.into_bytes(), vec![b'k', b' ', b'a', b'l', b'l', b' ']);
+  assert_eq!(display.write(b"\x1B[2K").ok(), Some(0usize));
   assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']); }
 
 #[test]

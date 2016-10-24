@@ -263,52 +263,54 @@ impl Display {
         (*coucou).remove(resize.1 * col);
         true }); }
 
+/*
+      ************************* FLAG *************************** 
+                !!! OBTENIR 'get' AVEC UNE CLOSURE !!!
+      self.screen.get_mut().iter().skip(pos+(col-(pos%col)-1)).map(|&h| h.fold(col-1, |get, &x|
+      { if !x.is_space().is_some() // Il faut faire un x.skip(get)
+        { get + col }              // sinon on s'arrete au premier espace
+        else
+        { get }} ));
+*/
     /// The method `erase_right_line` erase the current line from the cursor
-    /// to the right border column
+    /// to the next '\n' encountered
     /// (char under the cursor included)
     pub fn erase_right_line(&mut self)
     { //println!("Cursor::EraseRightLine");
       let col = self.size.get_col();
       let pos = self.screen.position();
-      if !self.screen.get_ref()[pos+(col-(pos%col))].is_space().is_some()
-      { ; }
-//      self.screen.get_mut().into_iter().skip(get).take(get - pos+1).all(|mut term: &mut Control|
-//      { term.clear().is_ok() });
-      if let Some(index) = self.screen.get_ref().iter().skip(pos).position(|&x| x.is_enter().is_some())
-      { let (ref mut x, _) = self.screen.get_mut().split_at_mut(index + 1);
-        x.iter_mut().all(|mut term: &mut Control|
-        { term.clear().is_ok() }); }}
+      if (pos + 1) % col != 0
+      { let mut get = col - 1;
+        while !self.screen.get_ref()[pos+(get-(pos%col))].is_space().is_some()
+        { get += col; }
+        self.screen.get_mut().into_iter().skip(pos).take(get + 1).all(|mut term: &mut Control|
+        { term.clear().is_ok() }); }
+      else
+      { self.screen.get_mut()[pos].clear(); }}
 
-    /* ************************ FLAG *************************** */
-    /// The method `erase_left_line` erase the current line from the left border column
+    /// The method `erase_left_line` erase the current line from the previous '\n'
     /// to the cursor
     /// (char under the cursor included)
     pub fn erase_left_line(&mut self)
     { //println!("Cursor::EraseLeftLine");
       let col = self.size.get_col();
       let pos = self.screen.position();
-      let mut get = 0;
-      if pos >= col
-      { get = pos;
-        while get % col != 0
-        { get -= 1; }; }
-      self.screen.get_mut().into_iter().skip(get).take(get - pos+1).all(|mut term: &mut Control|
-      { term.clear().is_ok() }); }
+      if pos % col != 0
+      { let mut get = pos - (pos%col);
+        while get >= col && !self.screen.get_ref()[get-1].is_space().is_some()
+        { get -= col; }
+        if get == col - 1 && !self.screen.get_ref()[pos-((pos%col)+get)].is_space().is_some()
+        { get = 0; }
+        self.screen.get_mut().into_iter().skip(get).take(pos+1).all(|mut term: &mut Control|
+        { term.clear().is_ok() }); }
+      else
+      { self.screen.get_mut()[pos].clear(); }}
 
-    /* ************************ FLAG *************************** */
     /// The method `erase_line` erase the entire current line
     pub fn erase_line(&mut self)
     { //println!("Cursor::EraseLine");
-      let col = self.size.get_col();
-      let mut pos = self.screen.position();
-      let mut get = 0;
-      while pos % col != 0
-      { pos -= 1; };
-      while (get + pos + 1) % col != 0
-      { get += 1; };
-      self.goto(pos);
-      self.screen.get_mut().into_iter().skip(pos).take(get + pos+1).all(|mut term: &mut Control|
-      { term.clear().is_ok() }); }
+      self.erase_left_line();
+      self.erase_right_line(); }
 
     /// The method `erase_up` erase all lines from the current line up to
     /// the top of the screen, and erase the current line from the left border
@@ -374,7 +376,10 @@ impl Display {
         _ =>
           { (acc, buf) }, }}
 
-    /* ************************ FLAG *************************** */
+/*
+      ************************* FLAG *************************** 
+        !!! REMPLACER '8' PAR LA LONGUEUR D'UNE TABULATION !!!
+*/
     /// The method `next_tab` return the size of the current printed tabulation
     pub fn next_tab(&self) -> libc::size_t
     { let pos = self.screen.position();
