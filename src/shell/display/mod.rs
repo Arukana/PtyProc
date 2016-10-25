@@ -348,30 +348,39 @@ impl Display {
       else
       { self.scroll_down(); }}
 
+/*
+        print!("FIRST::{:?} | ", first);
+        for i in first
+        { print!("{} ", *i as char); }
+        println!("\nOOB::({}, {})", self.oob.0, self.oob.1);
+        println!("PARSE::({} % {} == {} && {} % {} == {})", self.oob.1 + 1, (self.right_border / col) + 1, (self.oob.1 + 1) % ((self.right_border / col) + 1), self.right_border, col + 1, self.right_border % (col + 1));
+
+
+*/
+
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
     { let wrap = self.line_wrap;
       let row = self.size.get_row();
       let col = self.size.get_col();
-        print!("FIRST::{:?} | ", first);
-        for i in first
-        { print!("{} ", *i as char); }
-        println!("\nOOB::({}, {})", self.oob.0, self.oob.1);
-      if self.oob.0 < col - 1
+      if self.oob.0 < col - 1 && !(((self.oob.1 + 1) % ((self.right_border / col) + 1) == 0) && (self.oob.0 + 1) == (self.right_border % col))
       { self.oob.0 += 1; }
       else if self.oob.1 < row - 1
-      { self.oob.1 += 1;
-        self.oob.0 = 0;
-        if !next.is_empty() && next[0] == b' '
-        { match next
-          { &[] => {},
-            &[_, ref tmp..] => return self.screen.write(first).and_then(|f| self.write(tmp).and_then(|n| Ok(f.add(&n)) )) }}}
+      { if ((self.oob.1 + 1) % ((self.right_border / col) + 1) == 0) && (self.oob.0 + 1) == (self.right_border % col)
+        { self.print_enter();
+          self.goto_begin_line(); }
+        else
+        { self.oob.1 += 1;
+          self.oob.0 = 0;
+          if !next.is_empty() && next[0] == b' '
+          { match next
+            { &[] => {},
+              &[_, ref tmp..] => return self.screen.write(first).and_then(|f| self.write(tmp).and_then(|n| Ok(f.add(&n)) )) }}}}
       else
       { self.scroll_down();
         self.goto_begin_line();
         { let pos = self.screen.position();
           self.goto(pos - 1); }}
-        println!("SELF OOB::({}, {})", self.oob.0, self.oob.1);
       self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
 
     pub fn catch_numbers<'a>(&self, mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
