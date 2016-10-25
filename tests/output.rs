@@ -1,3 +1,4 @@
+/*
 extern crate pty_proc;
 extern crate libc;
 
@@ -262,9 +263,4 @@ fn test_erase_chars()
   assert_eq!(display.into_bytes(), vec![b'l', b' ', b' ', b'l', b'o', b' ']);
   assert_eq!(display.write(b"\x1B[B\x1B[P").ok(), Some(0usize));
   assert_eq!(display.into_bytes(), vec![b'l', b' ', b' ', b'o', b' ', b' ']); }
-
-#[test]
-fn test_oob_move()
-{ let mut display: Display = Display::from_winszed(SIZE);
-  assert_eq!(display.write(b"hello").ok(), Some(5usize));
-  assert_eq!(display.into_bytes(), vec![b'h', b'e', b'l', b'l', b'o', b' ']); }
+*/
