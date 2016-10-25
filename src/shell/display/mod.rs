@@ -223,17 +223,11 @@ impl Display {
     { //println!("Cursor::ScrollDown");
       let col = self.size.get_col();
       let resize = self.region;
-      println!("INSERT::{}, POS::{}, OOB::{:?}", col, self.screen.position(), self.oob);
-     { let coucou = self.screen.get_mut();
+      let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      { 
-      println!("INSERT::{}, REMOVE::{}", resize.1 * col, resize.0 * col);
-
-        (*coucou).insert(resize.1 * col, Control::new(&[b' '][..]));
+      { (*coucou).insert(resize.1 * col, Control::new(&[b' '][..]));
         (*coucou).remove(resize.0 * col);
         true }); }
-      println!("POS::{}, OOB::{:?}", self.screen.position(), self.oob);
-      }
 
     /// The method `save_position` save a position in the variable 'save_position' to get
     /// restored with self.restore_position() described right after.
@@ -281,19 +275,14 @@ impl Display {
     { //println!("Cursor::EraseRightLine");
       let col = self.size.get_col();
       let pos = self.screen.position();
-        println!("ERASE_RIGHT::{:?}", self.oob);
       if (pos + 1) % col != 0
       { let mut get = col - 1;
-        println!("1");
         while !self.screen.get_ref()[pos+(get-(pos%col))].is_space().is_some()
         { get += col; }
-        println!("2");
         self.screen.get_mut().into_iter().skip(pos).take(get + 1).all(|mut term: &mut Control|
         { term.clear().is_ok() }); }
       else
-      { 
-        println!("3");
-        self.screen.get_mut()[pos].clear(); }}
+      { self.screen.get_mut()[pos].clear(); }}
 
     /// The method `erase_left_line` erase the current line from the previous '\n'
     /// to the cursor
@@ -402,7 +391,6 @@ impl Display {
     pub fn next_tab(&self) -> libc::size_t
     { let pos = self.screen.position();
       let mut get: libc::size_t = 1;
-      println!("TAB::{}", pos);
       while (pos + get) % 8 != 0
       { get += 1; };
       get }
@@ -423,12 +411,11 @@ impl Display {
     { let pos = self.screen.position();
       let border = self.size.get_col() - (pos % self.size.get_col());
       let coucou = self.screen.get_mut();
-      println!("HEY::{} | {}", pos, border);
       {0..mv}.all(|i|
       { (*coucou).insert(pos + border, Control::new(&[b' '][..]));
         (*coucou).remove(pos);
         true }); }
-  }
+}
 
 impl IntoIterator for Display {
     type Item = Control;
