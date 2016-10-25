@@ -48,9 +48,9 @@ impl DeviceState {
   }
 
   /// The accessor method `is_out_text` returns a Option for Ouput's event.
-  pub fn is_out_text(self) -> Option<Vec<libc::c_uchar>> {
-    match self {
-      DeviceState::OutText(buf, len) => Some(Vec::from(&buf[..len])),
+  pub fn is_out_text(&self) -> Option<(Out, libc::size_t)> {
+    match *self {
+      DeviceState::OutText(buf, len) => Some((buf, len)),
       _ => None,
     }
   }

@@ -1,8 +1,9 @@
 pub mod display;
-pub mod mode;
 pub mod device;
+pub mod state;
+pub mod mode;
+pub mod termios;
 mod err;
-mod state;
 
 use std::os::unix::io::AsRawFd;
 use std::io::{self, Write};
@@ -14,11 +15,11 @@ use ::pty::prelude as pty;
 
 use self::mode::Mode;
 use self::device::Device;
+use self::termios::Termios;
+use self::state::clone::Clone;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 pub use self::display::Display;
-
-use super::terminal::Termios;
 
 /// The struct `Shell` is the speudo terminal interface.
 
@@ -34,38 +35,53 @@ pub struct Shell {
 
 impl Shell {
 
-  /// The constructor method `new` returns a shell interface according to 
+  /// The constructor method `new` returns a shell interface according to
   /// the command's option and a configured mode Line by Line.
   pub fn new (
-    command: Option<&'static str>,
+      repeat: Option<i64>,
+      interval: Option<i64>,
+      command: Option<&'static str>,
   ) -> Result<Self> {
-    Shell::from_mode(command, Mode::None)
+    Shell::from_mode(repeat, interval, command, Mode::None)
   }
 
   /// The constructor method `from_mode` returns a shell interface according to
   /// the command's option and the mode.
-  pub fn from_mode (
-    command: Option<&'static str>,
-    mode: Mode,
-  ) -> Result<Self> {
-    match pty::Fork::from_ptmx() {
-      Err(cause) => Err(ShellError::BadFork(cause)),
-      Ok(fork) => match fork {
-        pty::Fork::Child(ref slave) => slave.exec(command.unwrap_or("bash")),
-        pty::Fork::Parent(pid, master) => {
-        mem::forget(fork);
-          Ok(Shell {
-            pid: pid,
-            config: Termios::default(),
-            mode: mode,
-            speudo: master,
-            device: Device::from_speudo(master),
-            state: ShellState::new(master.as_raw_fd()),
-          })
-        },
-      },
+    pub fn from_mode (
+      repeat: Option<i64>,
+      interval: Option<i64>,
+      command: Option<&'static str>,
+      mode: Mode,
+    ) -> Result<Self> {
+      if let Some(shell) = command.or(option_env!("SHELL")) {
+            match pty::Fork::from_ptmx() {
+                Err(cause) => Err(ShellError::ForkFail(cause)),
+                Ok(fork) => match fork {
+                    pty::Fork::Child(ref slave) => slave.exec(shell),
+                    pty::Fork::Parent(pid, master) => {
+                        mem::forget(fork);
+                        match Termios::new(libc::STDIN_FILENO) {
+                            Err(cause) => Err(ShellError::TermiosFail(cause)),
+                            Ok(termios) => Ok(Shell {
+                                pid: pid,
+                                config: termios,
+                                mode: mode,
+                                speudo: master,
+                                device: Device::from_speudo(master),
+                                state: ShellState::new(
+                                    repeat,
+                                    interval,
+                                    libc::STDIN_FILENO
+                                ),
+                            }),
+                        }
+                    },
+                },
+            }
+      } else {
+            Err(ShellError::NotFound)
+      }
     }
-  }
 
   /// The accessor method `get_pid` returns the pid from the master.
   pub fn get_pid(&self) -> &libc::pid_t {
@@ -77,31 +93,22 @@ impl Shell {
     self.mode = mode;
   }
 
-  /// The method `mode_pass` sends the input to the speudo terminal
-  /// if the mode was defined with a procedure.
-  fn mode_pass (
-    &mut self,
-    state: &ShellState
-  ) {
-    match self.mode {
-      Mode::Character => {
-        if let Some(text) = state.is_in_text() {
-          self.write(text).unwrap();
-          self.flush().unwrap();
-        }
-      },
-      Mode::Line => {
-        if let Some(line) = state.is_line() {
-          self.write(&line[..]).unwrap();
-          self.flush().unwrap();
-        }
-      },
-      _ => {},
+    /// The method `mode_pass` sends the input to the speudo terminal
+    /// if the mode was defined with a procedure.
+    fn mode_pass (
+        &mut self,
+        state: &ShellState,
+    ) {
+        if self.mode == Mode::Character {
+          if let Some(ref text) = state.is_input_slice() {
+             self.write(text).unwrap();
+             self.flush().unwrap();
+          }
+       }
     }
-  }
 }
 
-impl io::Write for Shell {
+impl Write for Shell {
   fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
     self.speudo.write(buf)
   }
@@ -128,13 +135,10 @@ impl Iterator for Shell {
     match self.device.next() {
       None => None,
       Some(event) => {
-        if let Some(state) = self.state.with_device(event).ok() {
+          self.state.clone_from(event);
+          let state: ShellState = self.state.clone();
           self.mode_pass(&state);
           Some(state)
-        }
-        else {
-          None
-        }
       },
     }
   }

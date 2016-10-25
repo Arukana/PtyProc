@@ -7,6 +7,7 @@ pub use self::err::{WinszedError, Result};
 
 /// The enum `Winszed` is the size of the tty window.
 
+#[repr(C)]
 #[derive(PartialEq, Clone, Copy, Debug, Default)]
 pub struct Winszed {
   /// Rows, in characters.
@@ -33,14 +34,28 @@ impl Winszed {
     }
   }
 
-  /// The accessor function `get_row` returns the row size.
+  /// The accessor function `get_row` returns the number of rows.
   pub fn get_row(&self) -> libc::size_t {
     self.ws_row as libc::size_t
   }
 
-  /// The accessor function `get_col` returns the colum size.
+  /// The accessor function `get_irow` returns the number of rows.
+  pub fn get_irow(&self) -> libc::ssize_t {
+    self.ws_row as libc::ssize_t
+  }
+
+  /// The accessor function `get_ref_row` returns a ref on the number of rows.
+  pub fn get_ref_row(&mut self) -> &mut libc::c_ushort
+  { &mut self.ws_row }
+
+  /// The accessor function `get_col` returns the number of columns.
   pub fn get_col(&self) -> libc::size_t {
     self.ws_col as libc::size_t
+  }
+
+  /// The accessor function `get_icol` returns the number of columns.
+  pub fn get_icol(&self) -> libc::ssize_t {
+    self.ws_col as libc::ssize_t
   }
 
   /// The accessor function `get_row` returns the multiplication

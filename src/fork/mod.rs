@@ -20,6 +20,6 @@ impl Child for pty::Slave {
         panic!("{}: {}", cmd.to_string_lossy(), ::errno::errno());
       }
     }
-    unimplemented!();
+    unreachable!();
   }
 }
