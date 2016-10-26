@@ -1,7 +1,7 @@
 extern crate pty_proc;
 extern crate libc;
 
-use std::io::Write self::pty_proc::prelude::*;
+use self::pty_proc::prelude::*;
 
 #[test]
 fn test_arrow_left()
