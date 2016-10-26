@@ -116,7 +116,7 @@ impl Drop for Shell {
     }
   }
 }
-
+// ./sig/target/debug/examples/winch
 impl Iterator for Shell {
   type Item = ShellState;
 
@@ -127,6 +127,11 @@ impl Iterator for Shell {
           self.state.clone_from(event);
           let state: ShellState = self.state.clone();
           self.mode_pass(&state);
+          if state.is_signal_resized().is_some() {
+              unsafe {
+                  libc::kill(self.pid, libc::SIGWINCH);
+              }
+          }
           Some(state)
       },
     }
