@@ -21,6 +21,19 @@ pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 pub use self::display::Display;
 
+#[repr(C)]
+#[derive(PartialEq, Clone, Copy, Debug, Default)]
+pub struct Winszed {
+  /// Rows, in characters.
+  pub ws_row: libc::c_ushort,
+  /// Columns, in characters.
+  pub ws_col: libc::c_ushort,
+  /// Horizontal size, pixels.
+  pub ws_xpixel: libc::c_ushort,
+  /// Vertical size, pixels.
+  pub ws_ypixel: libc::c_ushort,
+}
+
 /// The struct `Shell` is the speudo terminal interface.
 
 pub struct Shell {
@@ -57,7 +70,12 @@ impl Shell {
             match pty::Fork::from_ptmx() {
                 Err(cause) => Err(ShellError::ForkFail(cause)),
                 Ok(fork) => match fork {
-                    pty::Fork::Child(ref slave) => slave.exec(shell),
+                    pty::Fork::Child(ref slave) => 
+                    { unsafe
+                      { let winsz: Winszed = Winszed::default();
+                        libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
+                        println!("WINSIZE::{:?} | FD::{}", winsz, slave.as_raw_fd()); }
+                        slave.exec(shell) },
                     pty::Fork::Parent(pid, master) => {
                         mem::forget(fork);
                         match Termios::new(libc::STDIN_FILENO) {
