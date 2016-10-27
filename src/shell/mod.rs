@@ -17,22 +17,10 @@ use self::mode::Mode;
 use self::device::Device;
 use self::termios::Termios;
 use self::state::clone::Clone;
+use self::display::Winszed;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 pub use self::display::Display;
-
-#[repr(C)]
-#[derive(PartialEq, Clone, Copy, Debug, Default)]
-pub struct Winszed {
-  /// Rows, in characters.
-  pub ws_row: libc::c_ushort,
-  /// Columns, in characters.
-  pub ws_col: libc::c_ushort,
-  /// Horizontal size, pixels.
-  pub ws_xpixel: libc::c_ushort,
-  /// Vertical size, pixels.
-  pub ws_ypixel: libc::c_ushort,
-}
 
 /// The struct `Shell` is the speudo terminal interface.
 
