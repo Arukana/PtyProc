@@ -56,7 +56,7 @@ impl Shell {
     match pty::Fork::from_ptmx() {
       Err(cause) => Err(ShellError::BadFork(cause)),
       Ok(fork) => match fork {
-        pty::Fork::Child(ref slave) => slave.exec(command.unwrap_or("bash")),
+        pty::Fork::Child(ref slave) => slave.exec(command.unwrap_or("/Users/jpepin/work42/minishell/21sh")),
         pty::Fork::Parent(pid, master) => {
         mem::forget(fork);
           Ok(Shell {
