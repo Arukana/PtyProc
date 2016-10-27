@@ -56,7 +56,12 @@ impl Shell {
     match pty::Fork::from_ptmx() {
       Err(cause) => Err(ShellError::BadFork(cause)),
       Ok(fork) => match fork {
+
+        // CETTE LIGNE EST UN PROBLEME CAR ELLE RELANCE LE CHILD A CHAQUE
+        // ITERATION shell.next();
         pty::Fork::Child(ref slave) => slave.exec(command.unwrap_or("/Users/jpepin/work42/minishell/21sh")),
+        
+
         pty::Fork::Parent(pid, master) => {
         mem::forget(fork);
           Ok(Shell {
@@ -65,7 +70,7 @@ impl Shell {
             mode: mode,
             speudo: master,
             device: Device::from_speudo(master),
-            state: ShellState::new(repeat, interval, libc::STDIN_FILENO),
+            state: ShellState::new(repeat, interval, libc::STDOUT_FILENO),
           })
         },
       },

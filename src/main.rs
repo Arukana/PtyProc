@@ -17,7 +17,7 @@ fn main() {
     ).unwrap();
     while let Some(event) = shell.next() {
         if let Some(screen) = event.is_output_screen() {
-
+            
            // --- Envoie un signal à chaque input, ça fonctionne ---
            // unsafe
            // { let baum = Baum::new(libc::getpid());
@@ -26,11 +26,16 @@ fn main() {
            // { println!("PID::{}", x.pid);
            //   libc::kill(x.pid, libc::SIGWINCH); }}
 
+            println!("BAUM::{}", unsafe {libc::getpid()});
             print!("{}", screen);
         }
-        if let Some(ref s) = event.is_signal()
-        { unsafe
-          { let baum = Baum::new(libc::getpid());
-            baum.childs.iter().map(|x| libc::kill(x.pid, *s)); }}
+        if let Some(s) = event.is_signal()
+        { // Donc ça c'est censé envoyer le sig reçu à tous les childs directs
+          unsafe
+          { println!("SIG::{}", s);
+            let baum = Baum::new(libc::getpid());
+            for x in baum.childs
+            { println!("PID::{}", x.pid);
+              libc::kill(x.pid, libc::SIGWINCH); }}}
     }
 }
