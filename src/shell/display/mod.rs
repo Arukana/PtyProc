@@ -22,7 +22,6 @@ pub type In = [libc::c_uchar; 16];
 pub struct Display {
     save_position: (libc::size_t, libc::size_t),
     save_terminal: Option<Box<Display>>,
-    right_border: libc::size_t,
     ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
     region: (libc::size_t, libc::size_t),
     collection: Vec<libc::size_t>,
@@ -49,7 +48,6 @@ impl Display {
         Display {
             save_position: (0, 0),
             save_terminal: None,
-            right_border: 80,
             region: (0, size.get_row()),
             collection: Vec::new(),
             oob: (0, 0),
@@ -123,7 +121,6 @@ impl Display {
     { println!("Goto::Up({})", mv);
       let col = self.size.get_col();
       let pos = self.screen.position();
-      println!("   POS::{}, OOB::{:?}", pos, self.oob);
       if self.oob.1 >= mv
       { self.goto(pos.sub(&((col.mul(&mv)))));
         self.oob.1 = self.oob.1.sub(&mv); }
@@ -343,8 +340,6 @@ impl Display {
         { print!("{} ", *i as char); }
         println!("\nOOB::({}, {})", self.oob.0, self.oob.1);
         println!("PARSE::({} % {} == {} && {} % {} == {})", self.oob.1 + 1, (self.right_border / col) + 1, (self.oob.1 + 1) % ((self.right_border / col) + 1), self.right_border, col + 1, self.right_border % (col + 1));
-
-
 */
 
     /// The method `print_char` print an unicode character (1 to 4 chars range)
@@ -352,19 +347,15 @@ impl Display {
     { let wrap = self.line_wrap;
       let row = self.size.get_row();
       let col = self.size.get_col();
-      if self.oob.0 < col - 1 && !(((self.oob.1 + 1) % ((self.right_border / col) + 1) == 0) && (self.oob.0 + 1) == (self.right_border % col))
+      if self.oob.0 < col - 1
       { self.oob.0 += 1; }
       else if self.oob.1 < row - 1
-      { if ((self.oob.1 + 1) % ((self.right_border / col) + 1) == 0) && (self.oob.0 + 1) == (self.right_border % col)
-        { self.print_enter();
-          self.goto_begin_line(); }
-        else
-        { self.oob.1 += 1;
-          self.oob.0 = 0;
-          if !next.is_empty() && next[0] == b' '
-          { match next
-            { &[] => {},
-              &[_, ref tmp..] => return self.screen.write(first).and_then(|f| self.write(tmp).and_then(|n| Ok(f.add(&n)) )) }}}}
+      { self.oob.1 += 1;
+        self.oob.0 = 0;
+        if !next.is_empty() && next[0] == b' '
+        { match next
+          { &[] => {},
+          &[_, ref tmp..] => return self.screen.write(first).and_then(|f| self.write(tmp).and_then(|n| Ok(f.add(&n)) )) }}}
       else
       { self.scroll_down();
         self.goto_begin_line();
@@ -389,9 +380,8 @@ impl Display {
 */
     /// The method `next_tab` return the size of the current printed tabulation
     pub fn next_tab(&self) -> libc::size_t
-    { let pos = self.screen.position();
-      let mut get: libc::size_t = 1;
-      while (pos + get) % 8 != 0
+    { let mut get: libc::size_t = 1;
+      while (self.oob.0 + get) % 8 != 0
       { get += 1; };
       get }
 
@@ -459,7 +449,7 @@ impl Write for Display {
             &[b'\x1B', b'[', b'>', b'c', ref next..] =>
               { //println!("Cursor::TermVersionIn");
                 self.write(next) },
-            &[b'\x1B', b'[', b'7', b'h', ref next..] |
+            &[b'\x1B', b'[', b'?', b'7', b'h', ref next..] |
             &[b'\x1B', b'[', b'2', b'0', b'h', ref next..] =>
             { //println!("Cursor::LineWrap(true)");
                 self.line_wrap = true;
@@ -509,30 +499,38 @@ impl Write for Display {
             { self.goto_home();
             self.write(next) },
             &[b'\x1B', b'[', b'A', ref next..] |
-            &[b'A', b'\x08', ref next..] |
             &[b'\x1B', b'[', b'm', b'A', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'A', ref next..] =>
             { self.goto_up(1);
             self.write(next) },
+            &[b'A', b'\x08'] =>
+            { self.goto_up(1);
+              Ok(0) },
             &[b'\x1B', b'[', b'B', ref next..] |
-            &[b'B', b'\x08', ref next..] |
             &[b'\x1B', b'[', b'm', b'B', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'B', ref next..] =>
             { self.goto_down(1);
             self.write(next) },
+            &[b'B', b'\x08'] =>
+            { self.goto_down(1);
+              Ok(0) },
             &[b'\x1B', b'[', b'C', ref next..] |
-            &[b'C', b'\x08', ref next..] |
             &[b'\x1B', b'[', b'm', b'C', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'C', ref next..] =>
             { self.goto_right(1);
             self.write(next) },
+            &[b'C', b'\x08'] =>
+            { self.goto_right(1);
+              Ok(0) },
             &[b'\x1B', b'[', b'D', ref next..] |
-            &[b'D', b'\x08', ref next..] |
             &[b'\x1B', b'[', b'm', b'D', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'D', ref next..] |
             &[b'\x08', ref next..] =>
             { self.goto_left(1);
             self.write(next) },
+            &[b'D', b'\x08'] =>
+            { self.goto_left(1);
+              Ok(0) },
 
             //--------- POSITION SAVE ----------
             &[b'\x1B', b'[', b's', ref next..] |
@@ -562,6 +560,7 @@ impl Write for Display {
             &[b'\x1B', b'[', b'?', ref next..] |
             &[b'\x1B', b'[', b'>', ref next..] |
             &[b'\x1B', b'[', ref next..] |
+            &[b'\x1B', b'(', ref next..] |
             &[b'\x1B', b'?', ref next..] |
             &[b'\x1B', ref next..] =>
             { let (mut bonjour, coucou) =
@@ -635,6 +634,7 @@ impl Write for Display {
               { self.bell += 1;
                 self.write(next) },
             &[b'\x0A', b'\x0D', ref next..] |
+            &[b'\x0A', ref next..] |
             &[b'\x0D', b'\x0A', ref next..] =>
               { self.goto_begin_line();
                 self.print_enter();
@@ -646,9 +646,6 @@ impl Write for Display {
                 Ok(0) },
             &[b'\x0D', ref next..] =>
               { self.goto_begin_line();
-                self.write(next) },
-            &[b'\x0A', ref next..] =>
-              { self.print_enter();
                 self.write(next) },
             &[b'\x09', ref next..] =>
             { let resize = self.region;

@@ -33,6 +33,19 @@ pub struct Shell {
   state: ShellState,
 }
 
+#[repr(C)]
+#[derive(PartialEq, Clone, Copy, Debug, Default)]
+pub struct Winszed {
+  /// Rows, in characters.
+  pub ws_row: libc::c_ushort,
+  /// Columns, in characters.
+  pub ws_col: libc::c_ushort,
+  /// Horizontal size, pixels.
+  pub ws_xpixel: libc::c_ushort,
+  /// Vertical size, pixels.
+  pub ws_ypixel: libc::c_ushort,
+}
+
 impl Shell {
 
   /// The constructor method `new` returns a shell interface according to
@@ -53,15 +66,17 @@ impl Shell {
       command: Option<&'static str>,
       mode: Mode,
     ) -> Result<Self> {
+    unsafe {
+    let winsz: Winszed = Winszed::default();
+    libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
+    println!("WINSIZE::{:?}", winsz);
+  
     match pty::Fork::from_ptmx() {
       Err(cause) => Err(ShellError::BadFork(cause)),
       Ok(fork) => match fork {
-
-        // CETTE LIGNE EST UN PROBLEME CAR ELLE RELANCE LE CHILD A CHAQUE
-        // ITERATION shell.next();
-        pty::Fork::Child(ref slave) => slave.exec(command.unwrap_or("/Users/jpepin/work42/minishell/21sh")),
-        
-
+        pty::Fork::Child(ref slave) =>
+         { libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
+           slave.exec(command.unwrap_or("/bin/bash")) },
         pty::Fork::Parent(pid, master) => {
         mem::forget(fork);
           Ok(Shell {
@@ -75,7 +90,7 @@ impl Shell {
         },
       },
     }
-  }
+  }}
 
   /// The accessor method `get_pid` returns the pid from the master.
   pub fn get_pid(&self) -> &libc::pid_t {

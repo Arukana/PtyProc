@@ -92,6 +92,9 @@ impl ShellState {
     pub fn set_input(&mut self, down: Option<Control>) {
         self.in_down = down;
         if let Some(after) = down {
+            print!("INPUT::");
+            print!("{:?}", after.as_slice());
+            println!("");
             if let Some(before) = self.in_up {
                 if before.eq(&after).bitand(
                     before.as_time().add(
