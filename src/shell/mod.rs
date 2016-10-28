@@ -109,7 +109,9 @@ impl Shell {
         state: &ShellState,
     ) {
         if self.mode == Mode::Character {
+
           if let Some(ref text) = state.is_input_slice() {
+              println!("IN::| {:?} |", text);
              self.write(text).unwrap();
              self.flush().unwrap();
           }

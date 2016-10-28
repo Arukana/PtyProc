@@ -22,6 +22,7 @@ pub type In = [libc::c_uchar; 16];
 pub struct Display {
     save_position: (libc::size_t, libc::size_t),
     save_terminal: Option<Box<Display>>,
+    ss_mod: bool,
     ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
     region: (libc::size_t, libc::size_t),
     collection: Vec<libc::size_t>,
@@ -48,6 +49,7 @@ impl Display {
         Display {
             save_position: (0, 0),
             save_terminal: None,
+            ss_mod: false,
             region: (0, size.get_row()),
             collection: Vec::new(),
             oob: (0, 0),
@@ -61,6 +63,10 @@ impl Display {
             ),
         }
     }
+
+    /// The accessor `ss` returns the value of ss_mod.
+    pub fn ss(&self) -> bool
+    { self.ss_mod }
 
     /// Converts a Vector of Control into a byte vector.
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
@@ -79,7 +85,7 @@ impl Display {
         mem::size_of::<In>().mul(&self.size.row_by_col())
     }
 
-    /// The method `clear` puges the screen vector.
+    /// The method `clear` purges the screen vector.
     pub fn clear(&mut self) -> io::Result<libc::size_t> {
         self.goto(0).is_ok().bitand(
             self.screen.get_mut().iter_mut().all(|mut term: &mut Control|
@@ -461,6 +467,14 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'r', ref next..] =>
               { //println!("Cursor::ScrollEnable");
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'1', b'h', ref next..] =>
+              { //println!("Cursor::SSEnable");
+                self.ss_mod = true;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'1', b'l', ref next..] =>
+              { //println!("Cursor:b'1', :SSDisable");
+                self.ss_mod = false;
                 self.write(next) },
 
             //------------ ERASE -----------------
