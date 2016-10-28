@@ -340,14 +340,6 @@ impl Display {
       else
       { self.scroll_down(); }}
 
-/*
-        print!("FIRST::{:?} | ", first);
-        for i in first
-        { print!("{} ", *i as char); }
-        println!("\nOOB::({}, {})", self.oob.0, self.oob.1);
-        println!("PARSE::({} % {} == {} && {} % {} == {})", self.oob.1 + 1, (self.right_border / col) + 1, (self.oob.1 + 1) % ((self.right_border / col) + 1), self.right_border, col + 1, self.right_border % (col + 1));
-*/
-
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
     { let wrap = self.line_wrap;
