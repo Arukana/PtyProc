@@ -99,7 +99,9 @@ impl Display {
     pub fn resize(&mut self) -> Result<()> {
     match Winszed::new(0) {
         Err(why) => Err(DisplayError::WinszedFail(why)),
-    Ok(size) => Ok(self.size = size),
+        Ok(size) => 
+        /*{ println!("*/
+        { Ok(self.size = size) },
       }
     }
 
@@ -539,7 +541,7 @@ impl Write for Display {
               Ok(0) },
             &[b'\x1B', b'[', b'1', b'0', b'd', ref next..] =>
             { //println!("Goto::Line_10");
-              if self.size.get_col() >= 10
+              if self.size.get_row() >= 10
               { self.goto_coord(0, 9); }
               self.write(next) },
 
@@ -554,10 +556,10 @@ impl Write for Display {
                 self.write(next) },
 
             //------------- SCROLL ---------------
-            &[b'\x1B', b'D', ref next..] =>
+            &[b'\x1B', b'M', ref next..] =>
             { self.scroll_up();
             self.write(next) },
-            &[b'\x1B', b'M', ref next..] =>
+            &[b'\x1B', b'D', ref next..] =>
             { self.scroll_down();
             self.write(next) },
 
@@ -649,10 +651,14 @@ impl Write for Display {
                 Ok(0) },
             &[b'\x0A', b'\x0D', ref next..] |
             &[b'\x0A', ref next..] |
-            &[b'\x0D', b'\x0A', ref next..] |
-            &[b'\x0D', ref next..] =>
+            &[b'\x0D', b'\x0A', ref next..] =>
               { self.goto_begin_line();
                 self.print_enter();
+                self.write(next) },
+            &[b'\x0D', ref next..] =>
+              { self.goto_begin_line();
+                if self.ss_mod && self.oob.1 + 1 < self.size.get_row()
+                { self.print_enter(); }
                 self.write(next) },
 
             &[b'\x09', ref next..] =>
