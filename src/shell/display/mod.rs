@@ -279,7 +279,7 @@ impl Display {
         { get -= col; }
         if get == col - 1 && !self.screen.get_ref()[pos-((pos%col)+get)].is_space().is_some()
         { get = 0; }
-        self.screen.get_mut().into_iter().skip(get).take(pos+1).all(|mut term: &mut Control|
+        self.screen.get_mut().into_iter().skip(get).take(pos - get +1).all(|mut term: &mut Control|
         { term.clear().is_ok() }); }
       else
       { self.screen.get_mut()[pos].clear(); }}
