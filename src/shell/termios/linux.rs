@@ -1,12 +1,14 @@
 use ::libc;
 
-use std::io::Result;
 use std::io::{self, Write};
 use std::ops::BitOr;
 use std::mem;
 
+pub use super::err::{TermiosError, Result};
+
 pub struct Termios {
   fd: libc::c_int,
+  /// Save the original configuration of terminal.
   config: libc::termios,
 }
 
@@ -17,14 +19,15 @@ impl Termios {
     unsafe {
       let config: libc::termios = mem::zeroed();
 
-      libc::ioctl(fd, 0x00005401, &config);
-
-      let setup: Termios = Termios {
-        fd: fd,
-        config: config,
-      };
-      try!(setup.enter_raw_mode());
-      Ok(setup)
+      if libc::ioctl(fd, 0x00005401, &config).eq(&-1) {
+         Err(TermiosError::TcgGet)
+      } else {
+        let setup: Termios = Termios {
+            fd: fd,
+            config: config,
+        };
+        setup.enter_raw_mode().and(Ok(setup))
+      }
     }
   }
 
@@ -32,17 +35,28 @@ impl Termios {
     unsafe {
       let mut new_termios: libc::termios = mem::zeroed();
 
-      libc::ioctl(self.fd, 0x00005401, &new_termios);
-      new_termios.c_lflag &= !(libc::ECHO | libc::ICANON | libc::IEXTEN | libc::ISIG);
-      new_termios.c_iflag &= !(libc::BRKINT | libc::ICRNL | libc::INPCK | libc::ISTRIP | libc::IXON);
-      new_termios.c_cflag &= !(libc::CSIZE | libc::PARENB);
-      new_termios.c_cflag |= libc::CS8;
-      new_termios.c_oflag &= !(libc::OPOST);
-      new_termios.c_cc[libc::VMIN] = 1;
-      new_termios.c_cc[libc::VTIME] = 0;
-      libc::ioctl(self.fd, 0x00005402, &new_termios);
-      io::stdout().write(super::SPEC_MOUSE_ON).unwrap(); // MOUSE ON
-      Ok(())
+      if libc::ioctl(self.fd, 0x00005401, &new_termios).eq(&-1) {
+        Err(TermiosError::TcgGet)
+      } else {
+        new_termios.c_lflag &= !(libc::ECHO | libc::ICANON | libc::IEXTEN
+                                              | libc::ISIG);
+        new_termios.c_iflag &= !(libc::BRKINT | libc::ICRNL | libc::INPCK
+                                              | libc::ISTRIP | libc::IXON);
+        new_termios.c_cflag &= !(libc::CSIZE | libc::PARENB);
+        new_termios.c_cflag |= libc::CS8;
+        new_termios.c_oflag &= !(libc::OPOST);
+        new_termios.c_cc[libc::VMIN] = 1;
+        new_termios.c_cc[libc::VTIME] = 0;
+        if libc::ioctl(self.fd, 0x00005402, &new_termios).eq(&-1) {
+            Err(TermiosError::TcgSet)
+        } else {
+          if io::stdout().write(super::SPEC_MOUSE_ON).is_err() {
+            Err(TermiosError::WriteMouseOn)
+          } else {
+            Ok(())
+          }
+        }
+      }
     }
   }
 }

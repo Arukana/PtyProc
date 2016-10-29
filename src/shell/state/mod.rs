@@ -51,7 +51,7 @@ impl ShellState {
     ) -> Self {
         ShellState {
             repeat: repeat.unwrap_or(DEFAULT_REPEAT),
-            interval: repeat.unwrap_or(DEFAULT_INTERVAL),
+            interval: interval.unwrap_or(DEFAULT_INTERVAL),
             idle: None,
             sig: None,
             in_down: None,
@@ -103,14 +103,9 @@ impl ShellState {
               _ => 0, };
             if ss > 0
             { down = Some(Control::new([b'\x1B', b'O', ss, 0, 0, 0, 0, 0, 0, 0, 0, 0], 3)); }}
-          //    println!("NEW::{:?}", down.unwrap()); }}
-             //self.in_down.clone_from_buf(&[b'\x1B', b'O'][..]); }}
 
         self.in_down = down;
         if let Some(after) = down {
-            print!("INPUT::");
-            print!("{:?}", after.as_slice());
-            println!("");
             if let Some(before) = self.in_up {
                 if before.eq(&after).bitand(
                     before.as_time().add(
@@ -140,10 +135,6 @@ impl ShellState {
     pub fn set_output(&mut self, entry: Option<(Out, libc::size_t)>) {
         if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
-            print!("SCREEN::");
-            for i in {0..len}
-            { print!(" {}, {} |", buf[i], if buf[i]>=32{buf[i] as char}else{'\0'}); }
-            println!("");
             self.out_screen.write(&buf[..len]);
         } else {
             self.out_last = None;
@@ -262,7 +253,6 @@ impl Clone for ShellState {
     fn clone_from(&mut self, event: DeviceState) {
         self.set_idle(event.is_idle());
         self.set_signal(event.is_signal());
-        //  print!(" {:?} |", unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked( &((*text).0)[..(*text).1] ) });
         self.set_output(event.is_out_text());
         self.set_input(event.is_input());
     }

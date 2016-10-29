@@ -100,14 +100,13 @@ impl Display {
     match Winszed::new(0) {
         Err(why) => Err(DisplayError::WinszedFail(why)),
         Ok(size) => 
-        /*{ println!("*/
         { Ok(self.size = size) },
       }
     }
 
     /// The method `tricky_resize` updates the size of the output screen.
     pub fn tricky_resize(&mut self, begin: libc::size_t, end: libc::size_t)
-    { //println!("Resize::({}, {})", begin, end);
+    { 
       if begin <= end
       { self.region = (begin - 1, end); }}
 
@@ -138,7 +137,7 @@ impl Display {
 
     /// The method `goto_down` moves the cursor down.
     pub fn goto_down(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
-    { println!("Goto::Down({})", mv);
+    {
       let row = self.size.get_row();
       let col = self.size.get_col();
       let pos = self.screen.position();
@@ -162,7 +161,6 @@ impl Display {
       { self.goto_end_line(); }
       Ok(0) }
 
-    /// The method `goto_left` moves the cursor to its left.
     pub fn goto_left(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
     { let col = self.size.get_col();
       let pos = self.screen.position();
@@ -252,10 +250,6 @@ impl Display {
         (*coucou).remove(resize.1 * col);
         true }); }
 
-/*
-      ************************* FLAG *************************** 
-      ERASE
-*/
     /// The method `erase_right_line` erase the current line from the cursor
     /// to the next '\n' encountered
     /// (char under the cursor included)
@@ -268,7 +262,6 @@ impl Display {
         { get += 1; }
         while get < self.len() && !self.screen.get_ref()[pos+(get-(pos%col))].is_space().is_some()
         { get += col; }
-        println!("POS::{}, GET::{}, COL::{}", pos, get, col);
         self.screen.get_mut().into_iter().skip(pos).take(get + 1).all(|mut term: &mut Control|
         { term.clear().is_ok() }); }
       else
@@ -354,10 +347,6 @@ impl Display {
         _ =>
           { (acc, buf) }, }}
 
-/*
-      ************************* FLAG *************************** 
-        !!! REMPLACER '8' PAR LA LONGUEUR D'UNE TABULATION !!!
-*/
     /// The method `next_tab` return the size of the current printed tabulation
     pub fn next_tab(&self) -> libc::size_t
     { let mut get: libc::size_t = 1;

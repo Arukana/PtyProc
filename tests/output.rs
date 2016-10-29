@@ -241,6 +241,7 @@ fn test_iter()
   assert!(iterator.next().is_none()); }
 
 #[test]
+#[ignore]
 fn test_save_terminal()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.into_bytes(), vec![b' ', b' ', b' ', b' ', b' ', b' ']);

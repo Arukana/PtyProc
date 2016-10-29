@@ -1,33 +1,37 @@
 use ::libc;
 
-use std::io::Result;
-use std::mem;
 use std::io::{self, Write};
 use std::ops::BitOr;
+use std::mem;
+
+pub use super::err::{TermiosError, Result};
 
 pub struct Termios {
   fd: libc::c_int,
+  /// Save the original configuration of terminal.
   config: libc::termios,
 }
 
 impl Termios {
+
   /// The constructor method `new` setups the terminal.
   pub fn new(fd: libc::c_int) -> Result<Self> {
     unsafe {
       let config: libc::termios = mem::zeroed();
 
-      libc::ioctl(fd,
+      if libc::ioctl(fd,
         (0x40000000 | (116 << 8) | 19 |
         (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
         &config
-      );
-      
-      let setup: Termios = Termios {
-        fd: fd,
-        config: config,
-      };
-      setup.enter_raw_mode().unwrap();
-      Ok(setup)
+      ).eq(&-1) {
+        Err(TermiosError::TcgGet)
+      } else {
+        let setup: Termios = Termios {
+            fd: fd,
+            config: config,
+        };
+        setup.enter_raw_mode().and(Ok(setup))
+      }
     }
   }
 
@@ -35,22 +39,31 @@ impl Termios {
     unsafe {
       let mut new_termios: libc::termios = mem::zeroed();
 
-      libc::ioctl(self.fd,
+      if libc::ioctl(self.fd,
         (0x40000000 | (116 << 8) | 19 |
         (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
         &new_termios
-      );
-      new_termios.c_lflag ^= !(libc::ICANON);
-      new_termios.c_lflag ^= !(libc::ECHO);
-      new_termios.c_cc[libc::VMIN] = 1;
-      new_termios.c_cc[libc::VTIME] = 0;
-      libc::ioctl(self.fd,
-        (0x80000000 | (116 << 8) | 20 |
-        (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
-        &new_termios
-      );
-      io::stdout().write(super::SPEC_MOUSE_ON).unwrap(); // MOUSE ON
-      Ok(())
+      ).eq(&-1) {
+        Err(TermiosError::TcgGet)
+      } else {
+        new_termios.c_lflag ^= !(libc::ICANON);
+        new_termios.c_lflag ^= !(libc::ECHO);
+        new_termios.c_cc[libc::VMIN] = 1;
+        new_termios.c_cc[libc::VTIME] = 0;
+        if libc::ioctl(self.fd,
+          (0x80000000 | (116 << 8) | 20 |
+          (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
+          &new_termios
+        ).eq(&-1) {
+          Err(TermiosError::TcgSet)
+        } else {
+          if io::stdout().write(super::SPEC_MOUSE_ON).is_err() {
+            Err(TermiosError::WriteMouseOn)
+          } else {
+            Ok(())
+          }
+        }
+      }
     }
   }
 }

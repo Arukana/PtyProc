@@ -2,7 +2,7 @@ pub mod display;
 pub mod device;
 pub mod state;
 pub mod mode;
-mod termios;
+pub mod termios;
 mod err;
 
 use std::os::unix::io::AsRawFd;
@@ -69,10 +69,9 @@ impl Shell {
     unsafe {
     let winsz: Winszed = Winszed::default();
     libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
-    println!("WINSIZE::{:?}", winsz);
   
     match pty::Fork::from_ptmx() {
-      Err(cause) => Err(ShellError::BadFork(cause)),
+      Err(cause) => Err(ShellError::ForkFail(cause)),
       Ok(fork) => match fork {
         pty::Fork::Child(ref slave) =>
          { libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
@@ -111,7 +110,6 @@ impl Shell {
         if self.mode == Mode::Character {
 
           if let Some(ref text) = state.is_input_slice() {
-              println!("IN::| {:?} |", text);
              self.write(text).unwrap();
              self.flush().unwrap();
           }
@@ -138,7 +136,7 @@ impl Drop for Shell {
     }
   }
 }
-// ./sig/target/debug/examples/winch
+
 impl Iterator for Shell {
   type Item = ShellState;
 
