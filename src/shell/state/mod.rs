@@ -89,7 +89,21 @@ impl ShellState {
 
     /// The mutator method `set_input` update the `in_text`
     /// and save the old `in_text` to `in_text_past`.
-    pub fn set_input(&mut self, down: Option<Control>) {
+    pub fn set_input(&mut self, mut down: Option<Control>) {
+
+          if self.out_screen.ss()
+          { let ss: libc::c_uchar = match down
+            { Some(after) =>
+              { match after.as_slice()
+                { &[b'\x1B', b'[', b'A', ref next..] => b'A',
+                  &[b'\x1B', b'[', b'B', ref next..] => b'B',
+                  &[b'\x1B', b'[', b'C', ref next..] => b'C',
+                  &[b'\x1B', b'[', b'D', ref next..] => b'D',
+                  _ => 0, }},
+              _ => 0, };
+            if ss > 0
+            { down = Some(Control::new([b'\x1B', b'O', ss, 0, 0, 0, 0, 0, 0, 0, 0, 0], 3)); }}
+
         self.in_down = down;
         if let Some(after) = down {
             if let Some(before) = self.in_up {
@@ -239,7 +253,6 @@ impl Clone for ShellState {
     fn clone_from(&mut self, event: DeviceState) {
         self.set_idle(event.is_idle());
         self.set_signal(event.is_signal());
-        //  print!(" {:?} |", unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked( &((*text).0)[..(*text).1] ) });
         self.set_output(event.is_out_text());
         self.set_input(event.is_input());
     }

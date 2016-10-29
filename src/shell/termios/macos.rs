@@ -71,7 +71,7 @@ impl Termios {
 impl Default for Termios {
   fn default() -> Termios {
     Termios::new(
-      libc::STDIN_FILENO
+      libc::STDOUT_FILENO
     ).expect(
       &format!("{}", ::errno::errno())
     )

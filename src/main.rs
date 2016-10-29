@@ -15,10 +15,8 @@ fn main() {
         shell::Mode::Character
     ).unwrap();
     while let Some(event) = shell.next() {
-        if let Some(line) = event.is_output_last() {
-            print!("{}", unsafe {
-                    str::from_utf8_unchecked(&line)
-            });
+        if let Some(screen) = event.is_output_screen() {
+            print!("{}", screen);
         }
     }
 }
