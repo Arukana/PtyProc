@@ -119,15 +119,13 @@ impl Display {
 
     /// The method `goto_home` moves the cursor to the top left of the output screen.
     pub fn goto_home(&mut self) -> io::Result<libc::size_t>
-    { println!("Goto::Home");
-      self.goto(0);
+    { self.goto(0);
       self.oob = (0, 0);
       Ok(0) }
 
     /// The method `goto_up` moves the cursor up.
     pub fn goto_up(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
-    { println!("Goto::Up({})", mv);
-      let col = self.size.get_col();
+    { let col = self.size.get_col();
       let pos = self.screen.position();
       if self.oob.1 >= mv
       { self.goto(pos.sub(&((col.mul(&mv)))));
@@ -155,8 +153,7 @@ impl Display {
 
     /// The method `goto_right` moves the cursor to its right.
     pub fn goto_right(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
-    { println!("Goto::Right({})", mv);
-      let col = self.size.get_col();
+    { let col = self.size.get_col();
       let pos = self.screen.position();
       if self.oob.0 + mv <= col - 1
       { self.goto(pos.add(&mv));
@@ -167,13 +164,10 @@ impl Display {
 
     /// The method `goto_left` moves the cursor to its left.
     pub fn goto_left(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
-    { print!("Goto::Left({})", mv);
-      let col = self.size.get_col();
+    { let col = self.size.get_col();
       let pos = self.screen.position();
-      println!("   POS::{}, OOB::{:?}, COL::{}", pos, self.oob, col);
       if self.oob.0 >= mv
       { self.goto(pos.sub(&mv));
-      println!("LEFT POS::{} or {}", pos.sub(&mv), self.screen.position());
         self.oob.0 = self.oob.0.sub(&mv); }
       else
       { self.goto_begin_line(); }
@@ -191,8 +185,7 @@ impl Display {
 
     /// The method `goto_coord` moves the cursor to the given coordinates
     pub fn goto_coord(&mut self, x: libc::size_t, y: libc::size_t)
-    { //println!("Cursor::CursorGoto({}, {})", x, y);
-      let col = self.size.get_col();
+    { let col = self.size.get_col();
       let row = self.size.get_row();
       let c;
       let r;
@@ -213,8 +206,7 @@ impl Display {
     /// The method `scroll_up` insert an empty line on top of the screen
     /// (the cursor doesn't move)
     pub fn scroll_up(&mut self)
-    { //println!("Cursor::ScrollUp");
-      let col = self.size.get_col();
+    { let col = self.size.get_col();
       let resize = self.region;
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
@@ -225,8 +217,7 @@ impl Display {
     /// The method `scroll_down` append an empty line on bottom of the screen
     /// (the cursor doesn't move)
     pub fn scroll_down(&mut self)
-    { //println!("Cursor::ScrollDown");
-      let col = self.size.get_col();
+    { let col = self.size.get_col();
       let resize = self.region;
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
@@ -238,22 +229,19 @@ impl Display {
     /// restored with self.restore_position() described right after.
     /// If save_position() is called many times, only the newest safe will be kept.
     pub fn save_position(&mut self)
-    { //println!("Cursor::SaveCursor");
-      self.save_position = (self.oob.0, self.oob.1); }
+    { self.save_position = (self.oob.0, self.oob.1); }
 
     /// The method `restore_position` move the cursor to coordinates safe
     /// with self.save_position() described right before.
     /// If no coordinates were safe, cursor moves to the top left of the output screen
     pub fn restore_position(&mut self)
-    { //println!("Cursor::RestoreCursor");
-      let (x, y) = self.save_position;
+    { let (x, y) = self.save_position;
       self.goto_coord(x, y); }
 
     /// The method `insert_empty_line` insert an empty line on the right of the cursor
     /// (the cursor doesn't move)
     pub fn insert_empty_line(&mut self)
-    { //println!("InsertEmptyLine");
-      let mut col = self.size.get_col();
+    { let mut col = self.size.get_col();
       let resize = self.region;
       let pos = self.screen.position();
       if pos + col > self.len()
@@ -266,19 +254,13 @@ impl Display {
 
 /*
       ************************* FLAG *************************** 
-                !!! OBTENIR 'get' AVEC UNE CLOSURE !!!
-      self.screen.get_mut().iter().skip(pos+(col-(pos%col)-1)).map(|&h| h.fold(col-1, |get, &x|
-      { if !x.is_space().is_some() // Il faut faire un x.skip(get)
-        { get + col }              // sinon on s'arrete au premier espace
-        else
-        { get }} ));
+      ERASE
 */
     /// The method `erase_right_line` erase the current line from the cursor
     /// to the next '\n' encountered
     /// (char under the cursor included)
     pub fn erase_right_line(&mut self)
-    { //println!("Cursor::EraseRightLine");
-      let col = self.size.get_col();
+    { let col = self.size.get_col();
       let pos = self.screen.position();
       if (pos + 1) % col != 0
       { let mut get = col - 1;
@@ -293,8 +275,7 @@ impl Display {
     /// to the cursor
     /// (char under the cursor included)
     pub fn erase_left_line(&mut self)
-    { //println!("Cursor::EraseLeftLine");
-      let col = self.size.get_col();
+    { let col = self.size.get_col();
       let pos = self.screen.position();
       if pos % col != 0
       { let mut get = pos - (pos%col);
@@ -309,8 +290,7 @@ impl Display {
 
     /// The method `erase_line` erase the entire current line
     pub fn erase_line(&mut self)
-    { //println!("Cursor::EraseLine");
-      self.erase_left_line();
+    { self.erase_left_line();
       self.erase_right_line(); }
 
     /// The method `erase_up` erase all lines from the current line up to
@@ -318,8 +298,7 @@ impl Display {
     /// column to the cursor.
     /// (char under the cursor included)
     pub fn erase_up(&mut self)
-    { //println!("Cursor::EraseUp");
-      let pos = self.screen.position();
+    { let pos = self.screen.position();
       self.screen.get_mut().into_iter().take(pos + 1).all(|mut term: &mut Control|
       { term.clear().is_ok() }); }
 
@@ -328,16 +307,14 @@ impl Display {
     /// the right border column
     /// (char under the cursor included)
     pub fn erase_down(&mut self)
-    { //println!("Cursor::EraseDown");
-      let pos = self.screen.position();
+    { let pos = self.screen.position();
       let len = self.len();
       self.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Control|
       { term.clear().is_ok() }); }
 
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
-    { println!("PRINT_ENTER::{:?}", self.region);
-      if self.oob.1 < self.region.1 - 1
+    { if self.oob.1 < self.region.1 - 1
       { self.goto_down(1); }
       else
       { self.scroll_down(); }}
@@ -433,117 +410,107 @@ impl Write for Display {
 
             //---------- TERMINAL SAVE -----------
             &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'h', ref next..] =>
-              { //println!("Save Terminal State");
-                self.save_terminal();
+              { self.save_terminal();
                 self.write(next) },
             &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'l', ref next..] =>
-              { //println!("Restore Terminal State");
-                self.restore_terminal();
+              { self.restore_terminal();
                 self.write(next) },
 
             //------------ SETTINGS -------------
             &[b'\x1B', b'c', ref next..] =>
-              { //println!("Cursor::TermReset");
-                self.write(next) },
+              { self.write(next) },
             &[b'\x1B', b'[', b'>', b'0', b'c', ref next..] |
             &[b'\x1B', b'[', b'>', b'c', ref next..] =>
-              { //println!("Cursor::TermVersionIn");
-                self.write(next) },
+              { self.write(next) },
             &[b'\x1B', b'[', b'?', b'7', b'h', ref next..] |
             &[b'\x1B', b'[', b'2', b'0', b'h', ref next..] =>
-            { //println!("Cursor::LineWrap(true)");
-                self.line_wrap = true;
+              { self.line_wrap = true;
                 self.write(next) },
             &[b'\x1B', b'[', b'7', b'l', ref next..] |
             &[b'\x1B', b'[', b'2', b'0', b'l', ref next..] =>
-              { //println!("Cursor::LineWrap(false)");
-                self.line_wrap = false;
+              { self.line_wrap = false;
                 self.write(next) },
             &[b'\x1B', b'[', b'r', ref next..] =>
-              { //println!("Cursor::ScrollEnable");
-                self.write(next) },
+              { self.write(next) },
             &[b'\x1B', b'[', b'?', b'1', b'h', ref next..] =>
-              { //println!("Cursor::SSEnable");
-                self.ss_mod = true;
+              { self.ss_mod = true;
                 self.write(next) },
             &[b'\x1B', b'[', b'?', b'1', b'l', ref next..] =>
-              { //println!("Cursor::SSDisable");
-                self.ss_mod = false;
+              { self.ss_mod = false;
                 self.write(next) },
 
             //------------ ERASE -----------------
             &[b'\x1B', b'[', b'K', ref next..] |
             &[b'\x1B', b'[', b'0', b'K', ref next..] =>
-            { self.erase_right_line();
-            self.write(next) },
+              { self.erase_right_line();
+                self.write(next) },
             &[b'\x1B', b'[', b'1', b'K', ref next..] =>
-            { self.erase_left_line();
-            self.write(next) },
+              { self.erase_left_line();
+                self.write(next) },
             &[b'\x1B', b'[', b'2', b'K', ref next..] =>
-            { self.erase_line();
-            self.write(next) },
+              { self.erase_line();
+                self.write(next) },
             &[b'\x1B', b'[', b'J', ref next..] |
             &[b'\x1B', b'[', b'0', b'J', ref next..] =>
-            { self.erase_down();
-            self.write(next) },
+              { self.erase_down();
+                self.write(next) },
             &[b'\x1B', b'[', b'1', b'J', ref next..] =>
-            { self.erase_up();
-            self.write(next) },
+              { self.erase_up();
+                self.write(next) },
             &[b'\x1B', b'[', b'2', b'J', ref next..] => self.clear().and(self.write(next)),
             &[b'\x1B', b'[', b'P', ref next..] =>
-            { self.erase_chars(1);
-              self.write(next) },
+              { self.erase_chars(1);
+                self.write(next) },
 
             //------------ INSERT -----------------
             &[b'\x1B', b'[', b'L', ref next..] =>
-            { self.insert_empty_line();
-            self.write(next) },
+              { self.insert_empty_line();
+                self.write(next) },
 
             //------------- GOTO ------------------
             &[b'\x1B', b'[', b';', b'H', ref next..] |
             &[b'\x1B', b'[', b';', b'f', ref next..] |
             &[b'\x1B', b'[', b'H', ref next..] |
             &[b'\x1B', b'[', b'f', ref next..] =>
-            { self.goto_home();
-            self.write(next) },
+              { self.goto_home();
+                self.write(next) },
             &[b'\x1B', b'[', b'A', ref next..] |
             &[b'\x1B', b'[', b'm', b'A', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'A', ref next..] =>
-            { self.goto_up(1);
-            self.write(next) },
+              { self.goto_up(1);
+                self.write(next) },
             &[b'A', b'\x08'] =>
-            { self.goto_up(1);
-              Ok(0) },
+              { self.goto_up(1);
+                Ok(0) },
             &[b'\x1B', b'[', b'B', ref next..] |
             &[b'\x1B', b'[', b'm', b'B', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'B', ref next..] =>
-            { self.goto_down(1);
-            self.write(next) },
+              { self.goto_down(1);
+                self.write(next) },
             &[b'B', b'\x08'] =>
-            { self.goto_down(1);
-              Ok(0) },
+              { self.goto_down(1);
+                Ok(0) },
             &[b'\x1B', b'[', b'C', ref next..] |
             &[b'\x1B', b'[', b'm', b'C', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'C', ref next..] =>
-            { self.goto_right(1);
-            self.write(next) },
+              { self.goto_right(1);
+                self.write(next) },
             &[b'C', b'\x08'] =>
-            { self.goto_right(1);
-              Ok(0) },
+              { self.goto_right(1);
+                Ok(0) },
             &[b'\x1B', b'[', b'D', ref next..] |
             &[b'\x1B', b'[', b'm', b'D', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'D', ref next..] |
             &[b'\x08', ref next..] =>
-            { self.goto_left(1);
-            self.write(next) },
+              { self.goto_left(1);
+                self.write(next) },
             &[b'D', b'\x08'] =>
-            { self.goto_left(1);
-              Ok(0) },
+              { self.goto_left(1);
+                Ok(0) },
             &[b'\x1B', b'[', b'1', b'0', b'd', ref next..] =>
-            { //println!("Goto::Line_10");
-              if self.size.get_row() >= 10
-              { self.goto_coord(0, 9); }
-              self.write(next) },
+              { if self.size.get_row() >= 10
+                { self.goto_coord(0, 9); }
+                self.write(next) },
 
             //--------- POSITION SAVE ----------
             &[b'\x1B', b'[', b's', ref next..] |
@@ -557,17 +524,16 @@ impl Write for Display {
 
             //------------- SCROLL ---------------
             &[b'\x1B', b'M', ref next..] =>
-            { self.scroll_up();
-            self.write(next) },
+              { self.scroll_up();
+                self.write(next) },
             &[b'\x1B', b'D', ref next..] =>
-            { self.scroll_down();
-            self.write(next) },
+              { self.scroll_down();
+                self.write(next) },
 
             //------------ CL ATTR -------------
             &[b'\x1B', b'[', b'0', b'm', ref next..] |
             &[b'\x1B', b'[', b'm', ref next..] =>
-              { //println!("Cursor::ClearAttribute");
-                self.collection.clear();
+              { self.collection.clear();
                 self.write(next) },
 
             &[b'\x1B', b'[', b'?', ref next..] |
@@ -631,19 +597,15 @@ impl Write for Display {
 
                 //----------- TERM VERSION --------------
                 &[b'c', ref next..] =>
-                  { if bonjour.len() == 2
-                    { /*println!("Cursor::TermVersionOut({}, {})", x, y);*/ }
-                    self.write(next) },
+                  { self.write(next) },
                 &[b';', b'c', ref next..] =>
-                  { if bonjour.len() == 3 && bonjour[2] == 0
-                    { /*println!("Cursor::TermVersionOut({}, {})", x, y);*/ }
-                    self.write(next) },
+                  { self.write(next) },
 
                 &[_, ref next..] |
                 &[ref next..] =>
                   { self.write(next) }, }},
 
-            &[b'\x07', ref next..] => //BELL \b
+            &[b'\x07', ref next..] =>
               { self.bell += 1;
                 self.write(next) },
             &[b'\x0D'] =>
