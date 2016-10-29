@@ -1,6 +1,0 @@
-+ Trouver comment déterminer la longueur d'une tabulation
-
-+ Patcher la condition d'arrêt dans erase_(right/left)_line
-  '-> is_space().some() a l'air de dysfonctionner;
-      ou peut etre pos+(get-(pos%col))?
-  Test: Touche BackSpace dans Vim
