@@ -465,7 +465,7 @@ impl Write for Display {
                 self.ss_mod = true;
                 self.write(next) },
             &[b'\x1B', b'[', b'?', b'1', b'l', ref next..] =>
-              { //println!("Cursor:b'1', :SSDisable");
+              { //println!("Cursor::SSDisable");
                 self.ss_mod = false;
                 self.write(next) },
 
@@ -537,6 +537,11 @@ impl Write for Display {
             &[b'D', b'\x08'] =>
             { self.goto_left(1);
               Ok(0) },
+            &[b'\x1B', b'[', b'1', b'0', b'd', ref next..] =>
+            { //println!("Goto::Line_10");
+              if self.size.get_col() >= 10
+              { self.goto_coord(0, 9); }
+              self.write(next) },
 
             //--------- POSITION SAVE ----------
             &[b'\x1B', b'[', b's', ref next..] |
@@ -639,20 +644,17 @@ impl Write for Display {
             &[b'\x07', ref next..] => //BELL \b
               { self.bell += 1;
                 self.write(next) },
+            &[b'\x0D'] =>
+              { self.goto_begin_line();
+                Ok(0) },
             &[b'\x0A', b'\x0D', ref next..] |
             &[b'\x0A', ref next..] |
-            &[b'\x0D', b'\x0A', ref next..] =>
+            &[b'\x0D', b'\x0A', ref next..] |
+            &[b'\x0D', ref next..] =>
               { self.goto_begin_line();
                 self.print_enter();
                 self.write(next) },
-            &[b'\x0D'] =>
-              { self.goto_begin_line();
-              //  if self.oob.1 < self.region.1 - 1
-              //  { self.print_enter(); }
-                Ok(0) },
-            &[b'\x0D', ref next..] =>
-              { self.goto_begin_line();
-                self.write(next) },
+
             &[b'\x09', ref next..] =>
             { let resize = self.region;
               let col = self.size.get_col();
