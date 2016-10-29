@@ -263,9 +263,12 @@ impl Display {
     { let col = self.size.get_col();
       let pos = self.screen.position();
       if (pos + 1) % col != 0
-      { let mut get = col - 1;
-        while !self.screen.get_ref()[pos+(get-(pos%col))].is_space().is_some()
+      { let mut get = 1;
+        while (pos + get + 1) % col != 0
+        { get += 1; }
+        while get < self.len() && !self.screen.get_ref()[pos+(get-(pos%col))].is_space().is_some()
         { get += col; }
+        println!("POS::{}, GET::{}, COL::{}", pos, get, col);
         self.screen.get_mut().into_iter().skip(pos).take(get + 1).all(|mut term: &mut Control|
         { term.clear().is_ok() }); }
       else
@@ -470,6 +473,7 @@ impl Write for Display {
             //------------- GOTO ------------------
             &[b'\x1B', b'[', b';', b'H', ref next..] |
             &[b'\x1B', b'[', b';', b'f', ref next..] |
+            &[b'\x1B', b'[', b'd', ref next..] |
             &[b'\x1B', b'[', b'H', ref next..] |
             &[b'\x1B', b'[', b'f', ref next..] =>
               { self.goto_home();
@@ -507,10 +511,6 @@ impl Write for Display {
             &[b'D', b'\x08'] =>
               { self.goto_left(1);
                 Ok(0) },
-            &[b'\x1B', b'[', b'1', b'0', b'd', ref next..] =>
-              { if self.size.get_row() >= 10
-                { self.goto_coord(0, 9); }
-                self.write(next) },
 
             //--------- POSITION SAVE ----------
             &[b'\x1B', b'[', b's', ref next..] |
@@ -562,6 +562,10 @@ impl Write for Display {
                   { if bonjour.len() == 1
                     { self.goto_left(bonjour[0]); }
                     self.write(next) },
+                &[b'd', ref next..] =>
+                  { if bonjour.len() == 1 && self.size.get_row() >= bonjour[0]
+                    { self.goto_coord(0, bonjour[0] - 1); }
+                    self.write(next) },
 
                 //------------- INSERT ---------------
                 &[b'L', ref next..] =>
@@ -608,9 +612,6 @@ impl Write for Display {
             &[b'\x07', ref next..] =>
               { self.bell += 1;
                 self.write(next) },
-            &[b'\x0D'] =>
-              { self.goto_begin_line();
-                Ok(0) },
             &[b'\x0A', b'\x0D', ref next..] |
             &[b'\x0A', ref next..] |
             &[b'\x0D', b'\x0A', ref next..] =>
@@ -619,8 +620,6 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x0D', ref next..] =>
               { self.goto_begin_line();
-                if self.ss_mod && self.oob.1 + 1 < self.size.get_row()
-                { self.print_enter(); }
                 self.write(next) },
 
             &[b'\x09', ref next..] =>
