@@ -46,8 +46,7 @@ impl Termios {
       ).eq(&-1) {
         Err(TermiosError::TcgGet)
       } else {
-        new_termios.c_lflag ^= !(libc::ICANON);
-        new_termios.c_lflag ^= !(libc::ECHO);
+        new_termios.c_lflag ^= libc::ICANON | libc::ECHO;
         new_termios.c_cc[libc::VMIN] = 1;
         new_termios.c_cc[libc::VTIME] = 0;
         if libc::ioctl(self.fd,

@@ -3,7 +3,7 @@ mod winsz;
 pub mod cursor;
 pub mod control;
 
-use std::ops::{BitAnd, Add, Sub, Mul, Not};
+use std::ops::{BitOr, BitAnd, Add, Sub, Mul, Not};
 use std::io::{self, Write};
 use std::fmt;
 use std::str;
@@ -23,6 +23,7 @@ pub struct Display {
     save_position: (libc::size_t, libc::size_t),
     save_terminal: Option<Box<Display>>,
     ss_mod: bool,
+    newline: Vec<(libc::size_t, libc::size_t)>,
     ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
     region: (libc::size_t, libc::size_t),
     collection: Vec<libc::size_t>,
@@ -50,6 +51,7 @@ impl Display {
             save_position: (0, 0),
             save_terminal: None,
             ss_mod: false,
+            newline: Vec::new(),
             region: (0, size.get_row()),
             collection: Vec::new(),
             oob: (0, 0),
@@ -106,9 +108,14 @@ impl Display {
 
     /// The method `tricky_resize` updates the size of the output screen.
     pub fn tricky_resize(&mut self, begin: libc::size_t, end: libc::size_t)
-    { 
-      if begin <= end
+    { if begin <= end
       { self.region = (begin - 1, end); }}
+
+    /// The method ``
+    pub fn check_newline(&mut self)
+    { match self.newline.iter().position(|&(x, y)| y.eq(&self.oob.1).bitand(&x.le(&self.oob.0)))
+      { Some(a) => { self.newline.remove(a); },
+        None => {}, }}
 
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
@@ -133,12 +140,12 @@ impl Display {
       { self.oob.1 = 0;
         let x = self.oob.0;
         self.goto_coord(x, 0); }
+      self.check_newline();
       Ok(0) }
 
     /// The method `goto_down` moves the cursor down.
     pub fn goto_down(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
-    {
-      let row = self.size.get_row();
+    { let row = self.size.get_row();
       let col = self.size.get_col();
       let pos = self.screen.position();
       if self.oob.1 + mv <= row - 1
@@ -148,6 +155,7 @@ impl Display {
       { self.oob.1 = row - 1;
         let x = self.oob.0;
         self.goto_coord(x, row - 1); }
+      self.check_newline();
       Ok(0) }
 
     /// The method `goto_right` moves the cursor to its right.
@@ -199,13 +207,22 @@ impl Display {
       else
       { self.oob.1 = row - 1;
         r = row - 1; }
-      self.goto(c + (r * col)); }
+      self.goto(c + (r * col));
+      self.check_newline(); }
 
     /// The method `scroll_up` insert an empty line on top of the screen
     /// (the cursor doesn't move)
     pub fn scroll_up(&mut self)
     { let col = self.size.get_col();
       let resize = self.region;
+      if !self.newline.is_empty()
+      { match self.newline.iter().position(|&i| i.1 == resize.1 - 1)
+        { Some(n) => { self.newline.remove(n); },
+          None => {}, }
+        self.newline.iter_mut().all(|mut a|
+        { if a.1.ge(&resize.0).bitand(a.1.lt(&resize.1))
+          { a.1 += 1; }
+          true }); }
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
       { (*coucou).insert(resize.0 * col, Control::new(&[b' '][..]));
@@ -217,6 +234,14 @@ impl Display {
     pub fn scroll_down(&mut self)
     { let col = self.size.get_col();
       let resize = self.region;
+      if !self.newline.is_empty()
+      { match self.newline.iter().position(|&i| i.1 == resize.0)
+        { Some(n) => { self.newline.remove(n); },
+          None => {}, }
+        self.newline.iter_mut().all(|mut a|
+        { if a.1.gt(&resize.0).bitand(a.1.le(&resize.1))
+          { a.1 -= 1; }
+          true }); }
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
       { (*coucou).insert(resize.1 * col, Control::new(&[b' '][..]));
@@ -256,6 +281,20 @@ impl Display {
     pub fn erase_right_line(&mut self)
     { let col = self.size.get_col();
       let pos = self.screen.position();
+
+      //next newline
+      //self.goto(c + (r * col));
+      /* if !self.newline.is_empty()
+      { let (_, y) = (0, pos / col);
+        match self.newline.iter().position(|&a| a.1.ge(&y))
+        { Some(n) => 
+            { self.screen.get_mut().into_iter().skip(pos).take(self.newline[n].0 + (self.newline[n].1 * col) - pos).all(|mut term: &mut Control| { term.clear().is_ok() });
+              self.newline.remove(n); },
+          None => 
+          { self.erase_down(); }, }}
+      else
+      { self.erase_down(); } */
+
       if (pos + 1) % col != 0
       { let mut get = 1;
         while (pos + get + 1) % col != 0
@@ -308,9 +347,29 @@ impl Display {
       self.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Control|
       { term.clear().is_ok() }); }
 
+/*
+   pub fn is_oob(&self) -> Option<(libc::ssize_t, libc::ssize_t)> {
+   let (x, y): (libc::ssize_t, libc::ssize_t) = self.oob;
+
+   if x.is_negative().not().bitand(&x.gt(&self.size.get_icol()))
+   .bitand(
+   y.is_negative().not().bitand(&y.gt(&self.size.get_irow()))
+   ) {
+   Some((x, y))
+   } else {
+   None
+   }
+   }
+   if self.newline.iter().find(|&&i| i.0.eq(&self.oob.0)).is_some()
+   {}
+*/
+
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
-    { if self.oob.1 < self.region.1 - 1
+    { let pos = self.screen.position();
+      self.newline.push(self.oob);
+      self.newline.sort_by(|&(_, a), &(_, b)| a.cmp(&b));
+      if self.oob.1 < self.region.1 - 1
       { self.goto_down(1); }
       else
       { self.scroll_down(); }}
@@ -328,7 +387,7 @@ impl Display {
         if !next.is_empty() && next[0] == b' '
         { match next
           { &[] => {},
-          &[_, ref tmp..] => return self.screen.write(first).and_then(|f| self.write(tmp).and_then(|n| Ok(f.add(&n)) )) }}}
+            &[_, ref tmp..] => return self.screen.write(first).and_then(|f| self.write(tmp).and_then(|n| Ok(f.add(&n)) )) }}}
       else
       { self.scroll_down();
         self.goto_begin_line();
@@ -604,8 +663,8 @@ impl Write for Display {
             &[b'\x0A', b'\x0D', ref next..] |
             &[b'\x0A', ref next..] |
             &[b'\x0D', b'\x0A', ref next..] =>
-              { self.goto_begin_line();
-                self.print_enter();
+              { self.print_enter();
+                self.goto_begin_line();
                 self.write(next) },
             &[b'\x0D', ref next..] =>
               { self.goto_begin_line();
