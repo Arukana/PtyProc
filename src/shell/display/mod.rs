@@ -117,20 +117,24 @@ impl Display {
               None => {}, }}
 
           if self.size.ws_col < size.ws_col
-          { match self.size.get_row().checked_mul((size.ws_col - self.size.ws_col) as usize)
-            { Some(start) =>
-                { self.screen.get_mut().drain(start..);
-                  },
-              None => {}, }}
-
-      /*      {0..self.size.get_row()}.all(|i|
-            { if self.newline.iter().position(|&(_, y)| y.eq(&i)).is_some()
-              { //self.
-                }
-              true });
-             */
+          { let col = self.size.ws_col;
+            let row = self.size.ws_row;
+            let coucou = self.screen.get_mut();
+            println!("RESIZE GRAND HORIZONTAL");
+            {1..row+1}.all(|i|
+            { {0..size.ws_col-col}.all(|_|
+              { (*coucou).insert(((row+1 - i) * col) as usize, Control::new(&[b' '][..]));
+                true }) }); }
           else if self.size.ws_col > size.ws_col
-          {}
+          { let col = self.size.ws_col;
+            let row = self.size.ws_row;
+            let coucou = self.screen.get_mut();
+            println!("RESIZE PETIT HORIZONTAL");
+            {1..row+1}.all(|i|
+            { {0..col-size.ws_col}.all(|_|
+              { println!("i::{}, col::{}, row::{}", i, col-size.ws_col, row);
+                (*coucou).remove(((row+1 - i) * col) as usize);
+                true }) }); }
           Ok(self.size = size) },
       }
     }
