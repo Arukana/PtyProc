@@ -16,7 +16,7 @@ pub use self::err::{DisplayError, Result};
 use self::cursor::Cursor;
 use self::control::Control;
 
-pub type In = [libc::c_uchar; 16];
+pub type In = [libc::c_uchar; 4];
 
 #[derive(Debug, Clone)]
 pub struct Display {
@@ -100,18 +100,47 @@ impl Display {
     /// The method `resize` updates the size of the output screen.
     pub fn resize(&mut self) -> Result<()> {
     match Winszed::new(0) {
-        Err(why) => Err(DisplayError::WinszedFail(why)),
-        Ok(size) => 
-        { Ok(self.size = size) },
+      Err(why) => Err(DisplayError::WinszedFail(why)),
+      Ok(size) => 
+        { if self.size.ws_row < size.ws_row
+          { match self.size.get_col().checked_mul((size.ws_row - self.size.ws_row) as usize)
+            { Some(get) =>
+                { let mut vide = {0..get}.map(|_: usize| Control::new(&[b' '][..])).collect::<Vec<Control>>();
+                  self.screen.get_mut().append(&mut vide); },
+              None => {}, }}
+          else if self.size.ws_row > size.ws_row
+          { match self.size.get_col().checked_mul((self.size.ws_row - size.ws_row) as usize)
+            { Some(get) =>
+                { match self.size.row_by_col().checked_sub(get)
+                  { Some(start) => { self.screen.get_mut().drain(start..); },
+                    None => {}, }},
+              None => {}, }}
+
+          if self.size.ws_col < size.ws_col
+          { match self.size.get_row().checked_mul((size.ws_col - self.size.ws_col) as usize)
+            { Some(start) =>
+                { self.screen.get_mut().drain(start..);
+                  },
+              None => {}, }}
+
+      /*      {0..self.size.get_row()}.all(|i|
+            { if self.newline.iter().position(|&(_, y)| y.eq(&i)).is_some()
+              { //self.
+                }
+              true });
+             */
+          else if self.size.ws_col > size.ws_col
+          {}
+          Ok(self.size = size) },
       }
     }
 
     /// The method `tricky_resize` updates the size of the output screen.
     pub fn tricky_resize(&mut self, begin: libc::size_t, end: libc::size_t)
-    { if begin <= end
+    { if begin > 0 && begin <= end
       { self.region = (begin - 1, end); }}
 
-    /// The method ``
+    /// The method `check_newline` removes the newline before the cursor if it exists.
     pub fn check_newline(&mut self)
     { match self.newline.iter().position(|&(x, y)| y.eq(&self.oob.1).bitand(&x.le(&self.oob.0)))
       { Some(a) => { self.newline.remove(a); },
@@ -167,6 +196,7 @@ impl Display {
         self.oob.0 = self.oob.0.add(&mv); }
       else
       { self.goto_end_line(); }
+      self.check_newline();
       Ok(0) }
 
     pub fn goto_left(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
@@ -177,6 +207,7 @@ impl Display {
         self.oob.0 = self.oob.0.sub(&mv); }
       else
       { self.goto_begin_line(); }
+      self.check_newline();
       Ok(0) }
 
     /// The method `goto_begin_line` moves the cursor to the beginning of the line
@@ -610,17 +641,21 @@ impl Write for Display {
                   { if bonjour.len() == 1
                     { self.goto_left(bonjour[0]); }
                     self.write(next) },
+                &[b'G', ref next..] =>
+                  { if bonjour.len() == 1 && self.size.get_col() >= bonjour[0]
+                    { let y = self.oob.1;
+                      self.goto_coord(bonjour[0] - 1, y); }
+                    self.write(next) },
                 &[b'd', ref next..] =>
                   { if bonjour.len() == 1 && self.size.get_row() >= bonjour[0]
-                    { self.goto_coord(0, bonjour[0] - 1); }
+                    { let x = self.oob.0;
+                      self.goto_coord(x, bonjour[0] - 1); }
                     self.write(next) },
 
                 //------------- INSERT ---------------
                 &[b'L', ref next..] =>
                   { if bonjour.len() == 1
-                    { {0..bonjour[0]}.all(|_|
-                      { self.insert_empty_line();
-                        true }); }
+                    { self.insert_empty_line(); }
                     self.write(next) },
 
                 //-------------- ERASE ----------------

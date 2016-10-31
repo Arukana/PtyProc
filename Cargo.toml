@@ -44,3 +44,7 @@ version       = "0.2"
 [dependencies.clippy]
 version       = "*"
 optional      = true
+
+[dependencies.baum]
+git           ="https://github.com/limaconoob/baum.git"
+version       = "*"
