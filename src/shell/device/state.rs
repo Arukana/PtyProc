@@ -5,19 +5,26 @@ use super::Out;
 use super::Sig;
 use super::control::Control;
 
-#[derive(Copy)]
 pub enum DeviceState {
-  /// Update.
-  Idle,
-  /// As catched a signal.
-  Sig(Sig),
-  /// The output of new lines.
-  OutText(Out, libc::size_t),
-  /// The current character.
-  InText(Control),
+    /// The current task.
+    #[cfg(feature = "task")] Proc(String),
+    /// Update.
+    Idle,
+    /// As catched a signal.
+    Sig(Sig),
+    /// The output of new lines.
+    OutText(Out, libc::size_t),
+    /// The current character.
+    InText(Control),
 }
 
 impl DeviceState {
+
+    #[cfg(feature = "task")]
+    /// The constructor method `from_idle` returns a Update's event.
+    pub fn from_proc(name: String) -> Self {
+        DeviceState::Proc(name)
+    }
 
   /// The constructor method `from_idle` returns a Update's event.
   pub fn from_idle() -> Self {
@@ -74,7 +81,13 @@ impl DeviceState {
 }
 
 impl Clone for DeviceState {
-  fn clone(&self) -> DeviceState {
-    *self
-  }
+    fn clone(&self) -> DeviceState {
+        match *self {
+            #[cfg(feature = "task")] DeviceState::Proc(ref name) => DeviceState::Proc(name.clone()),
+            DeviceState::Idle => DeviceState::Idle,
+            DeviceState::Sig(sig) => DeviceState::Sig(sig),
+            DeviceState::OutText(out, len) => DeviceState::OutText(out, len),
+            DeviceState::InText(control) => DeviceState::InText(control),
+        }
+    }
 }

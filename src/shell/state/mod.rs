@@ -39,11 +39,35 @@ pub struct ShellState {
   out_last: Option<(Out, libc::size_t)>,
   /// The output of matrix Screen interface.
   out_screen: Display,
+  #[cfg(feature = "task")] task: Option<String>,
 }
 
 impl ShellState {
 
     /// The constructor method `new` returns a empty ShellState.
+    #[cfg(feature = "task")]
+    pub fn new (
+        repeat: Option<libc::c_long>,
+        interval: Option<libc::c_long>,
+        fd: libc::c_int
+    ) -> Self {
+        ShellState {
+            repeat: repeat.unwrap_or(DEFAULT_REPEAT),
+            interval: interval.unwrap_or(DEFAULT_INTERVAL),
+            idle: None,
+            sig: None,
+            in_down: None,
+            in_up: None,
+            in_repeat: None,
+            in_interval: None,
+            out_last: None,
+            out_screen: Display::new(fd).unwrap(),
+            task: None,
+        }
+    }
+
+    /// The constructor method `new` returns a empty ShellState.
+    #[cfg(not(feature = "task"))]
     pub fn new (
         repeat: Option<libc::c_long>,
         interval: Option<libc::c_long>,
@@ -219,6 +243,25 @@ impl ShellState {
 
 impl Clone for ShellState {
     /// The method `clone` return a copy of the ShellState.
+    #[cfg(feature = "task")]
+    fn clone(&self) -> Self {
+        ShellState {
+            repeat: self.repeat,
+            interval: self.interval,
+            idle: self.idle,
+            sig: self.sig,
+            in_down: self.in_down,
+            in_up: self.in_up,
+            in_repeat: self.in_repeat,
+            in_interval: self.in_interval,
+            out_last: self.out_last,
+            out_screen: self.out_screen.clone(),
+            task: self.task.clone(),
+        }
+    }
+
+    /// The method `clone` return a copy of the ShellState.
+    #[cfg(not(feature = "task"))]
     fn clone(&self) -> Self {
         ShellState {
             repeat: self.repeat,
@@ -239,7 +282,6 @@ impl Clone for ShellState {
     fn clone_from(&mut self, event: DeviceState) {
         self.set_idle(event.is_idle());
         self.set_signal(event.is_signal());
-        //  print!(" {:?} |", unsafe { ::std::ffi::CStr::from_bytes_with_nul_unchecked( &((*text).0)[..(*text).1] ) });
         self.set_output(event.is_out_text());
         self.set_input(event.is_input());
     }

@@ -24,13 +24,13 @@ pub use self::display::Display;
 /// The struct `Shell` is the speudo terminal interface.
 
 pub struct Shell {
-  pid: libc::pid_t,
-  mode: Mode,
-  #[allow(dead_code)]
-  config: Termios,
-  speudo: pty::Master,
-  device: Device,
-  state: ShellState,
+    pid: libc::pid_t,
+    mode: Mode,
+    #[allow(dead_code)]
+    config: Termios,
+    speudo: pty::Master,
+    device: Device,
+    state: ShellState,
 }
 
 impl Shell {
@@ -38,8 +38,8 @@ impl Shell {
   /// The constructor method `new` returns a shell interface according to
   /// the command's option and a configured mode Line by Line.
   pub fn new (
-      repeat: Option<i64>,
-      interval: Option<i64>,
+      repeat: Option<libc::c_long>,
+      interval: Option<libc::c_long>,
       command: Option<&'static str>,
   ) -> Result<Self> {
     Shell::from_mode(repeat, interval, command, Mode::None)
@@ -48,8 +48,8 @@ impl Shell {
   /// The constructor method `from_mode` returns a shell interface according to
   /// the command's option and the mode.
     pub fn from_mode (
-      repeat: Option<i64>,
-      interval: Option<i64>,
+      repeat: Option<libc::c_long>,
+      interval: Option<libc::c_long>,
       command: Option<&'static str>,
       mode: Mode,
     ) -> Result<Self> {
@@ -67,7 +67,7 @@ impl Shell {
                                 config: termios,
                                 mode: mode,
                                 speudo: master,
-                                device: Device::from_speudo(master),
+                                device: Device::from_speudo(master, pid),
                                 state: ShellState::new(
                                     repeat,
                                     interval,
