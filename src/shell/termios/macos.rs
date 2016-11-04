@@ -87,7 +87,7 @@ impl Drop for Termios {
           (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
           &self.config
         ).eq(&-1)
-      ) {
+      ).bitor(io::stdout().write(b"\x1B[?25h").is_err()) {
         panic!("{}", ::errno::errno());
       }
     }

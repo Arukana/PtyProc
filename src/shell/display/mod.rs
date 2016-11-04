@@ -70,6 +70,10 @@ impl Display {
     pub fn ss(&self) -> bool
     { self.ss_mod }
 
+    /// The accessor `ss` returns the value of ss_mod.
+    pub fn get_cursor_coords(&self) -> (libc::size_t, libc::size_t)
+    { self.oob }
+
     /// Converts a Vector of Control into a byte vector.
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
         let mut screen: Vec<libc::c_uchar> = Vec::with_capacity(self.len());
@@ -94,6 +98,7 @@ impl Display {
                                                 term.clear().is_ok()
             )
         );
+        self.newline.clear();
         Ok(0)
     }
 
@@ -123,7 +128,7 @@ impl Display {
             println!("RESIZE GRAND HORIZONTAL");
             {1..row+1}.all(|i|
             { {0..size.ws_col-col}.all(|_|
-              { (*coucou).insert(((row+1 - i) * col) as usize, Control::new(&[b' '][..]));
+              { (*coucou).insert(((row - i) * col) as usize, Control::new(&[b' '][..]));
                 true }) }); }
           else if self.size.ws_col > size.ws_col
           { let col = self.size.ws_col;
@@ -133,7 +138,7 @@ impl Display {
             {1..row+1}.all(|i|
             { {0..col-size.ws_col}.all(|_|
               { println!("i::{}, col::{}, row::{}", i, col-size.ws_col, row);
-                (*coucou).remove(((row+1 - i) * col) as usize);
+                (*coucou).remove(((row - i) * col) as usize);
                 true }) }); }
           Ok(self.size = size) },
       }
@@ -146,9 +151,13 @@ impl Display {
 
     /// The method `check_newline` removes the newline before the cursor if it exists.
     pub fn check_newline(&mut self)
-    { match self.newline.iter().position(|&(x, y)| y.eq(&self.oob.1).bitand(&x.le(&self.oob.0)))
-      { Some(a) => { self.newline.remove(a); },
-        None => {}, }}
+    { if !self.newline.is_empty()
+      { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
+        { Some(n) =>
+          { if self.newline[n].0 < self.oob.0
+            { self.newline[n].0 = self.oob.0; }},
+          None =>
+          {}, }}}
 
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
@@ -230,6 +239,7 @@ impl Display {
       let row = self.size.get_row();
       let c;
       let r;
+      self.check_newline();
       if x < col
       { self.oob.0 = x;
         c = x; }
@@ -274,7 +284,7 @@ impl Display {
         { Some(n) => { self.newline.remove(n); },
           None => {}, }
         self.newline.iter_mut().all(|mut a|
-        { if a.1.gt(&resize.0).bitand(a.1.le(&resize.1))
+        { if a.1.gt(&resize.0).bitand(a.1.lt(&resize.1))
           { a.1 -= 1; }
           true }); }
       let coucou = self.screen.get_mut();
@@ -300,14 +310,17 @@ impl Display {
     /// (the cursor doesn't move)
     pub fn insert_empty_line(&mut self)
     { let mut col = self.size.get_col();
-      let resize = self.region;
+      let region = self.region;
       let pos = self.screen.position();
-      if pos + col > self.len()
-      { col = self.len() - pos; }
+      if pos + col > self.size.row_by_col()
+      { col = self.size.row_by_col() - pos; }
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
       { (*coucou).insert(pos, Control::new(&[b' '][..]));
-        (*coucou).remove(resize.1 * col);
+        if self.oob.1.ge(&region.0).bitand(self.oob.1.lt(region.1))
+        { (*coucou).remove(region.1 * col); }
+        else
+        { (*coucou).pop(); }
         true }); }
 
     /// The method `erase_right_line` erase the current line from the cursor
@@ -316,30 +329,14 @@ impl Display {
     pub fn erase_right_line(&mut self)
     { let col = self.size.get_col();
       let pos = self.screen.position();
-
-      //next newline
-      //self.goto(c + (r * col));
-      /* if !self.newline.is_empty()
-      { let (_, y) = (0, pos / col);
-        match self.newline.iter().position(|&a| a.1.ge(&y))
+      if !self.newline.is_empty()
+      { match self.newline.iter().position(|&a| a.1.ge(&(pos/col)))
         { Some(n) => 
-            { self.screen.get_mut().into_iter().skip(pos).take(self.newline[n].0 + (self.newline[n].1 * col) - pos).all(|mut term: &mut Control| { term.clear().is_ok() });
-              self.newline.remove(n); },
+            { self.screen.get_mut().into_iter().skip(pos).take(self.newline[n].0 + (self.newline[n].1 * col) - pos + 1).all(|mut term: &mut Control| { term.clear().is_ok() }); },
           None => 
-          { self.erase_down(); }, }}
+            { self.erase_down(); }, }}
       else
-      { self.erase_down(); } */
-
-      if (pos + 1) % col != 0
-      { let mut get = 1;
-        while (pos + get + 1) % col != 0
-        { get += 1; }
-        while get < self.len() && !self.screen.get_ref()[pos+(get-(pos%col))].is_space().is_some()
-        { get += col; }
-        self.screen.get_mut().into_iter().skip(pos).take(get + 1).all(|mut term: &mut Control|
-        { term.clear().is_ok() }); }
-      else
-      { self.screen.get_mut()[pos].clear(); }}
+      { self.erase_down(); }}
 
     /// The method `erase_left_line` erase the current line from the previous '\n'
     /// to the cursor
@@ -347,16 +344,16 @@ impl Display {
     pub fn erase_left_line(&mut self)
     { let col = self.size.get_col();
       let pos = self.screen.position();
-      if pos % col != 0
-      { let mut get = pos - (pos%col);
-        while get >= col && !self.screen.get_ref()[get-1].is_space().is_some()
-        { get -= col; }
-        if get == col - 1 && !self.screen.get_ref()[pos-((pos%col)+get)].is_space().is_some()
-        { get = 0; }
-        self.screen.get_mut().into_iter().skip(get).take(pos - get +1).all(|mut term: &mut Control|
-        { term.clear().is_ok() }); }
+      if !self.newline.is_empty()
+      { self.newline.reverse();
+        match self.newline.iter().position(|&a| a.1.lt(&(pos/col)))
+        { Some(n) => 
+            { self.screen.get_mut().into_iter().skip(self.newline[n].0 + (self.newline[n].1 * col)).take(pos - (self.newline[n].0 + (self.newline[n].1 * col)) + 1).all(|mut term: &mut Control| { term.clear().is_ok() }); },
+          None => 
+            { self.erase_up(); }, }
+        self.newline.reverse(); }
       else
-      { self.screen.get_mut()[pos].clear(); }}
+      { self.erase_up(); }}
 
     /// The method `erase_line` erase the entire current line
     pub fn erase_line(&mut self)
@@ -378,32 +375,23 @@ impl Display {
     /// (char under the cursor included)
     pub fn erase_down(&mut self)
     { let pos = self.screen.position();
-      let len = self.len();
+      let len = self.size.row_by_col();
       self.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Control|
       { term.clear().is_ok() }); }
 
-/*
-   pub fn is_oob(&self) -> Option<(libc::ssize_t, libc::ssize_t)> {
-   let (x, y): (libc::ssize_t, libc::ssize_t) = self.oob;
-
-   if x.is_negative().not().bitand(&x.gt(&self.size.get_icol()))
-   .bitand(
-   y.is_negative().not().bitand(&y.gt(&self.size.get_irow()))
-   ) {
-   Some((x, y))
-   } else {
-   None
-   }
-   }
-   if self.newline.iter().find(|&&i| i.0.eq(&self.oob.0)).is_some()
-   {}
-*/
+    /// The method `add_newline` add a newline
+    pub fn add_newline(&mut self)
+    { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
+      { Some(n) =>
+          { self.newline[n].0 = self.oob.0; },
+        None =>
+          { self.newline.push(self.oob);
+            self.newline.sort_by(|&(_, a), &(_, b)| a.cmp(&b)); }, }}
 
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
     { let pos = self.screen.position();
-      self.newline.push(self.oob);
-      self.newline.sort_by(|&(_, a), &(_, b)| a.cmp(&b));
+      self.add_newline();
       if self.oob.1 < self.region.1 - 1
       { self.goto_down(1); }
       else
@@ -415,19 +403,19 @@ impl Display {
       let row = self.size.get_row();
       let col = self.size.get_col();
       if self.oob.0 < col - 1
-      { self.oob.0 += 1; }
-      else if self.oob.1 < row - 1
+      { self.oob.0 += 1;
+        self.check_newline(); }
+      else if self.oob.1 < self.region.1 - 1
       { self.oob.1 += 1;
-        self.oob.0 = 0;
-        if !next.is_empty() && next[0] == b' '
-        { match next
-          { &[] => {},
-            &[_, ref tmp..] => return self.screen.write(first).and_then(|f| self.write(tmp).and_then(|n| Ok(f.add(&n)) )) }}}
-      else
+        self.oob.0 = 0; }
+      else if self.oob.1 == self.region.1 - 1
       { self.scroll_down();
         self.goto_begin_line();
         { let pos = self.screen.position();
           self.goto(pos - 1); }}
+      else
+      { let pos = self.screen.position();
+        self.goto(pos - 1); }
       self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
 
     pub fn catch_numbers<'a>(&self, mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
