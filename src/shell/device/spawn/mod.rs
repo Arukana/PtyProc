@@ -13,6 +13,7 @@ pub fn task(tx_task: chan::Sender<String>, pid: libc::pid_t) {
     let mut task = Proc::new(pid).unwrap();
     if let Some(name) = task.get_name(pid) {
         tx_task.send(name);
+        println!("SSSSSSS");
     }
     loop {
         if let Some(name) = task.next() {
