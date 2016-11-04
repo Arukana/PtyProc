@@ -3,6 +3,7 @@ pub mod clone;
 pub const DEFAULT_REPEAT: libc::c_long = 1_000i64;
 pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 
+use std::fmt;
 use std::io::Write;
 use std::ops::BitOr;
 use std::ops::{Add, Sub, BitAnd};
@@ -312,5 +313,24 @@ impl Clone for ShellState {
         self.set_signal(event.is_signal());
         self.set_output(event.is_out_text());
         self.set_input(event.is_input());
+    }
+}
+
+impl fmt::Debug for ShellState {
+
+    #[cfg(feature = "task")]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+            "ShellState {{ task: {:?}, idle: {:?}, signal: {:?}, input: {:?}, task: {:?} }}",
+            self.task, self.idle, self.sig, self.in_down, self.task
+        )
+    }
+
+    #[cfg(not(feature = "task"))]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+          "ShellState {{ idle: {:?}, signal: {:?}, input: {:?}, task: {:?} }}",
+               self.idle, self.sig, self.in_down, self.task
+        )
     }
 }

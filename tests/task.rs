@@ -22,15 +22,30 @@ fn test_proc_new() {
 #[test]
 #[cfg(feature = "task")]
 fn test_proc_next() {
-    let mut shell: Shell = Shell::new(None, None, Some("/bin/bash")).unwrap();
-    let pid: libc::pid_t = *shell.get_pid();
-    let mut process: Proc = Proc::new(pid).unwrap();
+    {
+        let mut shell: Shell = Shell::new(None, None, Some("/bin/bash")).unwrap();
+        let pid: libc::pid_t = *shell.get_pid();
+        let mut process: Proc = Proc::new(pid).unwrap();
 
-    assert!(shell.write(b"/bin/sh\n").is_ok());
-    thread::sleep(time::Duration::from_millis(200));
+        assert!(shell.write(b"/bin/sh\n").is_ok());
+        thread::sleep(time::Duration::from_millis(200));
 
-    let sh: Option<String> = process.next();
-    assert!(shell.write(b"exit\n").is_ok());
-    assert!(shell.write(b"exit\n").is_ok());
-    assert_eq!(sh, Some("sh".to_string()));
+        let sh: Option<String> = process.next();
+        assert!(shell.write(b"exit\n").is_ok());
+        assert!(shell.write(b"exit\n").is_ok());
+        assert_eq!(sh, Some("sh".to_string()));
+    }
+    {
+        let mut shell: Shell = Shell::new(
+            None,
+            None,
+            Some("/bin/bash"),
+        ).unwrap();
+
+        thread::sleep(time::Duration::from_millis(200));
+        assert!(shell.write(b"exit\n").is_ok());
+        assert!(shell.take(3).find(|event| {
+            event.is_task() == Some(&"bash".to_string())
+        }).is_some());
+    }
 }

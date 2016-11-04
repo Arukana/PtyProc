@@ -23,6 +23,7 @@ impl DeviceState {
     #[cfg(feature = "task")]
     /// The constructor method `from_task` returns a Process' event.
     pub fn from_task(name: String) -> Self {
+        println!("ssss{}", name);
         DeviceState::Proc(name)
     }
 
