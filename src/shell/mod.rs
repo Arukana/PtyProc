@@ -119,13 +119,18 @@ impl Write for Shell {
 }
 
 impl Drop for Shell {
-  fn drop(&mut self) {
-    unsafe {
-      if libc::close(self.speudo.as_raw_fd()).eq(&-1) {
-        unimplemented!()
-      }
+
+    /// The destructor method `drop` closes the file descriptor of the master
+    /// and kill the process child if there hasn't properly end.
+    fn drop(&mut self) {
+        unsafe {
+            if libc::close(self.speudo.as_raw_fd()).eq(&-1) {
+                unimplemented!()
+            } else {
+                libc::kill(self.pid, libc::SIGKILL);
+            }
+        }
     }
-  }
 }
 
 impl Iterator for Shell {
