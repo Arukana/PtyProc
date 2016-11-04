@@ -43,7 +43,7 @@ fn test_proc_next() {
         ).unwrap();
 
         thread::sleep(time::Duration::from_millis(200));
-        assert!(shell.write(b"exit\n").is_ok());
+        //assert!(shell.write(b"exit\n").is_ok());
         assert!(shell.take(200).find(|event| {
             event.is_task() == Some(&"bash".to_string())
         }).is_some());
