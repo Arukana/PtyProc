@@ -53,7 +53,7 @@ impl Device {
         thread::spawn(move || spawn::input(tx_in));
         thread::spawn(move || spawn::task(tx_task, pid));
         thread::spawn(move || spawn::output(tx_out, master));
-        thread::spawn(move || spawn::signal(tx_sig, master));
+        thread::spawn(move || spawn::signal(tx_sig));
         Device::new(rx_task, rx_in, rx_out, rx_sig)
     }
 }
@@ -74,14 +74,14 @@ impl Device {
         }
     }
 
-    pub fn from_speudo(mut master: pty::Master, _: libc::pid_t) -> Self {
+    pub fn from_speudo(master: pty::Master, _: libc::pid_t) -> Self {
         let (tx_out, rx_out) = chan::sync(0);
         let (tx_in, rx_in) = chan::sync(0);
         let (tx_sig, rx_sig) = chan::sync(0);
 
         thread::spawn(move || spawn::input(tx_in));
         thread::spawn(move || spawn::output(tx_out, master));
-        thread::spawn(move || spawn::signal(tx_sig, master));
+        thread::spawn(move || spawn::signal(tx_sig));
         Device::new(rx_in, rx_out, rx_sig)
     }
 }

@@ -1,9 +1,12 @@
 extern crate pty_proc;
 extern crate libc;
 
+#[cfg(feature = "task")]
 use pty_proc::prelude::*;
 
+#[cfg(feature = "task")]
 use self::std::io::Write;
+#[cfg(feature = "task")]
 use self::std::{thread, time};
 
 #[test]
@@ -26,7 +29,7 @@ fn test_proc_next() {
     assert!(shell.write(b"/bin/sh\n").is_ok());
 
     // Wait for the kernel.
-    thread::sleep(time::Duration::from_millis(10));
+    thread::sleep(time::Duration::from_millis(200));
     let sh: Option<String> = process.next();
     assert!(shell.write(b"exit\n").is_ok());
     assert!(shell.write(b"exit\n").is_ok());

@@ -145,7 +145,7 @@ impl ShellState {
     pub fn set_output(&mut self, entry: Option<(Out, libc::size_t)>) {
         if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
-            self.out_screen.write(&buf[..len]);
+            self.out_screen.write(&buf[..len]).unwrap();
         } else {
             self.out_last = None;
         }

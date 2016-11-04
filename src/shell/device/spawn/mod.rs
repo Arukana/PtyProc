@@ -35,7 +35,7 @@ pub fn output(tx_out: chan::Sender<(Out, libc::size_t)>, mut master: pty::Master
     }
 }
 
-pub fn signal(tx_sig: chan::Sender<libc::c_int>, master: pty::Master) {
+pub fn signal(tx_sig: chan::Sender<libc::c_int>) {
     use std::sync::atomic::{AtomicI32, ATOMIC_I32_INIT, Ordering};
     use std::time::Duration;
     use std::ops::Div;
