@@ -1,0 +1,4 @@
+!+ Redimensionnement
+
++ Caractère de l'Unicode
+  '-> Voir prompt adjivas
