@@ -321,16 +321,16 @@ impl fmt::Debug for ShellState {
     #[cfg(feature = "task")]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
-            "ShellState {{ task: {:?}, idle: {:?}, signal: {:?}, input: {:?}, task: {:?} }}",
-            self.task, self.idle, self.sig, self.in_down, self.task
+            "ShellState {{ task: {:?}, idle: {:?}, signal: {:?}, input: {:?}, output: {:?} }}",
+               self.task, self.idle, self.sig, self.in_down, self.out_last.is_some()
         )
     }
 
     #[cfg(not(feature = "task"))]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
-          "ShellState {{ idle: {:?}, signal: {:?}, input: {:?}, task: {:?} }}",
-               self.idle, self.sig, self.in_down, self.task
+          "ShellState {{ idle: {:?}, signal: {:?}, input: {:?}, output: {:?}}}",
+               self.idle, self.sig, self.in_down, self.out_last.is_some()
         )
     }
 }
