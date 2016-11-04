@@ -151,6 +151,12 @@ impl ShellState {
         }
     }
 
+    /// The mutator method `set_task` updates the task event.
+    #[cfg(feature = "task")]
+    pub fn set_task(&mut self, task: Option<String>) {
+        self.task = task;
+    }
+
     /// The accessor method `is_idle` returns the Idle event.
     pub fn is_idle(&self) -> Option<()> {
         self.idle
@@ -239,6 +245,16 @@ impl ShellState {
             None
         }
     }
+
+    /// The mutator method `set_task` updates the task event.
+    #[cfg(feature = "task")]
+    pub fn is_task(&self) -> Option<&String> {
+        if let Some(ref task) = self.task {
+            Some(task)
+        } else {
+            None
+        }
+    }
 }
 
 impl Clone for ShellState {
@@ -279,6 +295,18 @@ impl Clone for ShellState {
 
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
+    #[cfg(feature = "task")]
+    fn clone_from(&mut self, event: DeviceState) {
+        self.set_idle(event.is_idle());
+        self.set_signal(event.is_signal());
+        self.set_output(event.is_out_text());
+        self.set_input(event.is_input());
+        self.set_task(event.is_task());
+    }
+
+    /// The method `with_device` updates the state from
+    /// the event DeviceState interface.
+    #[cfg(not(feature = "task"))]
     fn clone_from(&mut self, event: DeviceState) {
         self.set_idle(event.is_idle());
         self.set_signal(event.is_signal());

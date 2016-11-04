@@ -27,9 +27,8 @@ fn test_proc_next() {
     let mut process: Proc = Proc::new(pid).unwrap();
 
     assert!(shell.write(b"/bin/sh\n").is_ok());
-
-    // Wait for the kernel.
     thread::sleep(time::Duration::from_millis(200));
+
     let sh: Option<String> = process.next();
     assert!(shell.write(b"exit\n").is_ok());
     assert!(shell.write(b"exit\n").is_ok());
