@@ -312,12 +312,13 @@ impl Display {
     { let mut col = self.size.get_col();
       let region = self.region;
       let pos = self.screen.position();
+      let oob = self.oob;
       if pos + col > self.size.row_by_col()
       { col = self.size.row_by_col() - pos; }
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
       { (*coucou).insert(pos, Control::new(&[b' '][..]));
-        if self.oob.1.ge(&region.0).bitand(self.oob.1.lt(region.1))
+        if oob.1.ge(&region.0).bitand(oob.1.lt(&region.1))
         { (*coucou).remove(region.1 * col); }
         else
         { (*coucou).pop(); }
