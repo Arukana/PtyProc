@@ -16,7 +16,7 @@ pub use self::err::{DisplayError, Result};
 use self::cursor::Cursor;
 use self::control::Control;
 
-pub type In = [libc::c_uchar; 16];
+pub type In = [libc::c_uchar; 4];
 
 #[derive(Debug, Clone)]
 pub struct Display {

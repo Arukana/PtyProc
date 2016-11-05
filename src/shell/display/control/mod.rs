@@ -1,6 +1,7 @@
 pub mod operate;
 
 use std::io::{self, Write};
+use std::mem;
 
 use ::libc;
 
@@ -20,21 +21,28 @@ pub struct Control {
 impl Control {
     /// The constructor method `new` returns a term character.
     pub fn new(buf: &[libc::c_uchar]) -> Self {
-      let mut control: Control = Control::default();
+        let mut control: Control = Control::default();
 
-      control.write(buf);
-      control
+        control.write(buf);
+        control
     }
 
     /// The method `clear` resets the term character.
     pub fn clear(&mut self) -> io::Result<usize> {
-      *self = Default::default();
-      self.write(&[b' '][..])
+        *self = Default::default();
+        self.write(&[b' '][..])
     }
 
     /// The accessor method `get_ref` returns a reference on term character buffer.
     pub fn get_ref(&self) -> &[libc::c_uchar] {
-      &self.buf[..self.len]
+        &self.buf[..self.len]
+    }
+
+    /// The accessor method `get_ref` returns a reference on term character buffer.
+    pub fn as_char(&self) -> char {
+        unsafe {
+            mem::transmute::<In, char>(self.buf)
+        }
     }
 }
 
