@@ -261,6 +261,7 @@ fn test_move_coord()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b'c', b'o', b'u', b'c', b'o', b'u', b' ', b' ', b' ' ]); }
 
+
 #[test]
 /// fn save_position(&mut self)
 /// fn restore_position(&mut self)
@@ -347,3 +348,10 @@ fn test_position_save()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]); }
+
+/*
+#[test]
+/// fn goto_begin_row(&mut self)
+fn test_begin_row()
+{}
+*/

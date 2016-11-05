@@ -256,6 +256,7 @@ fn test_erase_up_down()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]); }
 
 #[test]
+/// fn erase_chars(&mut self, mv: libc::size_t)
 fn test_erase_chars()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.into_bytes(),

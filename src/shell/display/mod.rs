@@ -447,7 +447,7 @@ impl Display {
 
     /// The method `next_tab` return the size of the current printed tabulation
     pub fn next_tab(&self) -> libc::size_t
-    { self.oob.0 % 8 }
+    { 8 - (self.oob.0 % 8) }
 
     /// The method `save_terminal` saves the terminal Display configuration.
     pub fn save_terminal(&mut self)
@@ -465,7 +465,7 @@ impl Display {
     { let pos = self.screen.position();
       let border = match self.newline.iter().position(|&x| x.1.ge(&self.oob.1))
       { Some(n) => self.newline[n].0 + (self.newline[n].1 * self.size.get_col()) + 1,
-        None => self.size.row_by_col() - 1,};
+        None => self.size.row_by_col() - 1, };
       let coucou = self.screen.get_mut();
       {0..mv}.all(|i|
       { (*coucou).insert(border, Control::new(&[b' '][..]));
