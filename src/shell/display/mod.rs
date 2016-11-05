@@ -66,13 +66,18 @@ impl Display {
         }
     }
 
-    /// The accessor `ss` returns the value of ss_mod.
+    /// The accessor `ss` returns the value of 'ss_mod'.
     pub fn ss(&self) -> bool
     { self.ss_mod }
 
-    /// The accessor `ss` returns the value of ss_mod.
+    /// The accessor `get_cursor_coords` returns the value of 'oob', that is the coordinates of the cursor.
     pub fn get_cursor_coords(&self) -> (libc::size_t, libc::size_t)
     { self.oob }
+
+    /// The accessor `newlines` returns the value of 'newline', that contains all newlines that are now
+    /// displayed on the screen.
+    pub fn newlines(&self) -> &Vec<(libc::size_t, libc::size_t)>
+    { &self.newline }
 
     /// Converts a Vector of Control into a byte vector.
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
@@ -93,10 +98,8 @@ impl Display {
 
     /// The method `clear` purges the screen vector.
     pub fn clear(&mut self) -> io::Result<libc::size_t> {
-        self.goto(0).is_ok().bitand(
-            self.screen.get_mut().iter_mut().all(|mut term: &mut Control|
-                                                term.clear().is_ok()
-            )
+        self.screen.get_mut().iter_mut().all(|mut term: &mut Control|
+                                             term.clear().is_ok()
         );
         self.newline.clear();
         Ok(0)
@@ -149,16 +152,6 @@ impl Display {
     { if begin > 0 && begin <= end
       { self.region = (begin - 1, end); }}
 
-    /// The method `check_newline` removes the newline before the cursor if it exists.
-    pub fn check_newline(&mut self)
-    { if !self.newline.is_empty()
-      { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
-        { Some(n) =>
-          { if self.newline[n].0 < self.oob.0
-            { self.newline[n].0 = self.oob.0; }},
-          None =>
-          {}, }}}
-
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
         self.screen.set_position(index);
@@ -208,7 +201,7 @@ impl Display {
       { self.goto(pos.add(&mv));
         self.oob.0 = self.oob.0.add(&mv); }
       else
-      { self.goto_end_line(); }
+      { self.goto_end_row(); }
       self.check_newline();
       Ok(0) }
 
@@ -219,17 +212,17 @@ impl Display {
       { self.goto(pos.sub(&mv));
         self.oob.0 = self.oob.0.sub(&mv); }
       else
-      { self.goto_begin_line(); }
+      { self.goto_begin_row(); }
       self.check_newline();
       Ok(0) }
 
-    /// The method `goto_begin_line` moves the cursor to the beginning of the line
-    pub fn goto_begin_line(&mut self)
+    /// The method `goto_begin_row` moves the cursor to the beginning of the row
+    pub fn goto_begin_row(&mut self)
     { let x = self.oob.0;
       self.goto_left(x); }
 
-    /// The method `goto_end_line` moves the cursor to the end of the line
-    pub fn goto_end_line(&mut self)
+    /// The method `goto_end_row` moves the cursor to the end of the row
+    pub fn goto_end_row(&mut self)
     { let x = self.size.get_col() - self.oob.0 - 1;
       self.goto_right(x); }
 
@@ -380,6 +373,16 @@ impl Display {
       self.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Control|
       { term.clear().is_ok() }); }
 
+    /// The method `check_newline` removes the newline before the cursor if it exists.
+    pub fn check_newline(&mut self)
+    { if !self.newline.is_empty()
+      { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
+        { Some(n) =>
+          { if self.newline[n].0 < self.oob.0
+            { self.newline[n].0 = self.oob.0; }},
+          None =>
+          {}, }}}
+
     /// The method `add_newline` add a newline
     pub fn add_newline(&mut self)
     { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
@@ -411,7 +414,7 @@ impl Display {
         self.oob.0 = 0; }
       else if self.oob.1 == self.region.1 - 1
       { self.scroll_down();
-        self.goto_begin_line();
+        self.goto_begin_row();
         { let pos = self.screen.position();
           self.goto(pos - 1); }}
       else
@@ -692,10 +695,10 @@ impl Write for Display {
             &[b'\x0A', ref next..] |
             &[b'\x0D', b'\x0A', ref next..] =>
               { self.print_enter();
-                self.goto_begin_line();
+                self.goto_begin_row();
                 self.write(next) },
             &[b'\x0D', ref next..] =>
-              { self.goto_begin_line();
+              { self.goto_begin_row();
                 self.write(next) },
 
             &[b'\x09', ref next..] =>
