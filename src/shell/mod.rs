@@ -75,7 +75,7 @@ impl Shell {
       Ok(fork) => match fork {
         pty::Fork::Child(ref slave) =>
          { libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
-           slave.exec(command.unwrap_or("/Users/jpepin/work42/minishell/21sh")) },
+           slave.exec(command.unwrap_or("/bin/bash")) },
         pty::Fork::Parent(pid, master) => {
         mem::forget(fork);
           Ok(Shell {

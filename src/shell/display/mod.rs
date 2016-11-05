@@ -51,7 +51,12 @@ impl Display {
             save_position: (0, 0),
             save_terminal: None,
             ss_mod: false,
-            newline: Vec::new(),
+            newline:
+            { let mut end_row_newlines: Vec<(libc::size_t, libc::size_t)> = Vec::with_capacity(size.get_row());
+              {0..size.ws_row}.all(|i|
+              { end_row_newlines.push((size.get_col() - 1, i as usize));
+                true });
+              end_row_newlines },
             region: (0, size.get_row()),
             collection: Vec::new(),
             oob: (0, 0),
@@ -102,6 +107,9 @@ impl Display {
                                              term.clear().is_ok()
         );
         self.newline.clear();
+        {0..self.size.ws_row}.all(|i|
+        { self.newline.push((self.size.get_col() - 1, i as usize));
+          true });
         Ok(0)
     }
 
@@ -410,7 +418,11 @@ impl Display {
       { self.oob.0 += 1;
         self.check_newline(); }
       else if self.oob.1 < self.region.1 - 1
-      { self.oob.1 += 1;
+      { if self.newline.is_empty().not().bitand(next.eq(&[]).not().bitand(next[0].eq(&b'\x1B').not()))
+        { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
+          { Some(n) => { self.newline.remove(n); },
+            None => {}, }; }
+        self.oob.1 += 1;
         self.oob.0 = 0; }
       else if self.oob.1 == self.region.1 - 1
       { self.scroll_down();
@@ -435,10 +447,7 @@ impl Display {
 
     /// The method `next_tab` return the size of the current printed tabulation
     pub fn next_tab(&self) -> libc::size_t
-    { let mut get: libc::size_t = 1;
-      while (self.oob.0 + get) % 8 != 0
-      { get += 1; };
-      get }
+    { self.oob.0 % 8 }
 
     /// The method `save_terminal` saves the terminal Display configuration.
     pub fn save_terminal(&mut self)
@@ -451,13 +460,15 @@ impl Display {
       { *self = *save; }}
 
 
-    /// The method `erase_chars` erases couple of chars on the right of the cursor.
+    /// The method `erase_chars` erases couple of chars in the current line from the cursor.
     pub fn erase_chars(&mut self, mv: libc::size_t)
     { let pos = self.screen.position();
-      let border = self.size.get_col() - (pos % self.size.get_col());
+      let border = match self.newline.iter().position(|&x| x.1.ge(&self.oob.1))
+      { Some(n) => self.newline[n].0 + (self.newline[n].1 * self.size.get_col()) + 1,
+        None => self.size.row_by_col() - 1,};
       let coucou = self.screen.get_mut();
       {0..mv}.all(|i|
-      { (*coucou).insert(pos + border, Control::new(&[b' '][..]));
+      { (*coucou).insert(border, Control::new(&[b' '][..]));
         (*coucou).remove(pos);
         true }); }
 }

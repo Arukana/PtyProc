@@ -1,4 +1,4 @@
-+ Faire des tests unitaires précis et poussé popur chacune des méthodes
++ Faire des tests unitaires précis et poussés pour chacune des méthodes
 + Rédiger un peu de documentation
 
 !+ Redimensionnement
