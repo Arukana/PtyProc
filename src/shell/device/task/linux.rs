@@ -21,8 +21,8 @@ impl Proc {
     pub fn new(fpid: libc::pid_t) -> Result<Self> {
         let mut status: Proc = Proc::default();
 
+        status.fpid = fpid;
         status.with_list_process().and_then(|_| {
-            status.fpid = fpid;
             Ok(status)
         })
     }

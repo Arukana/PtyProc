@@ -1,4 +1,4 @@
-pub mod err;
+mod err;
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
 mod linux;
