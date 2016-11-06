@@ -77,10 +77,11 @@ impl Iterator for Proc {
             if cfpid.eq(&self.fpid).not().bitand(
                self.lpid.eq(&self.fpid).not()
             ) {
-               println!("next: {}-{}-{}",
+               println!("next: {}-{}-{}\t{:?}",
                         self.fpid,
                         self.lpid,
-                        cfpid);
+                        cfpid,
+                        self);
                self.lpid = cfpid;
                self.get_name(cfpid)
             } else {

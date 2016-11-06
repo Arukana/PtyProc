@@ -29,7 +29,6 @@ fn test_proc_next() {
         let pid: libc::pid_t = *shell.get_pid();
         let mut process: Proc = Proc::new(pid).unwrap();
 
-        println!("{:?}\n", process);
         assert_eq!(process.next(), None);
 
         println!("{:?}\n", process);
