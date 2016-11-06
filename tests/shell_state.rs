@@ -1,8 +1,7 @@
 extern crate pty_proc;
 extern crate libc;
 
-use std::thread;
-use std::time;
+use std::{thread, time};
 
 use self::pty_proc::prelude::*;
 
@@ -15,7 +14,6 @@ const B: In = [b'b',
 ];
 
 #[test]
-#[cfg(target_os = "linux")]
 fn test_key_down() {
     let mut state: ShellState = ShellState::new(None, None, libc::STDIN_FILENO);
 
@@ -30,7 +28,6 @@ fn test_key_down() {
 }
 
 #[test]
-#[cfg(target_os = "linux")]
 fn test_key_repeat() {
     let mut state: ShellState = ShellState::new(Some(REPEAT), None, libc::STDIN_FILENO);
 
@@ -39,7 +36,7 @@ fn test_key_repeat() {
     state.set_input(None);
     state.set_input(Some(Control::new(A, 1)));
     assert_eq!(state.is_input_keyrepeat(), Some(2));
-    thread::sleep(time::Duration::from_millis(REPEAT as u64 -1));
+    thread::sleep(time::Duration::from_millis(REPEAT as u64 -200));
     state.set_input(None);
     assert_eq!(state.is_input_keyrepeat(), Some(2));
     thread::sleep(time::Duration::from_millis(REPEAT as u64));
@@ -54,7 +51,7 @@ fn test_key_repeat() {
 }
 
 #[test]
-#[cfg(target_os = "linux")]
+#[ignore]
 fn test_key_interval() {
     let mut state: ShellState = ShellState::new(None, Some(INTERVAL), libc::STDIN_FILENO);
     state.set_input(Some(Control::new(A, 1)));
@@ -64,10 +61,10 @@ fn test_key_interval() {
     assert_eq!(state.is_input_keyrepeat(), Some(2));
     assert_eq!(state.is_input_keyinterval(), Some(0));
 
-    thread::sleep(time::Duration::from_millis(REPEAT as u64 -1));
+    thread::sleep(time::Duration::from_millis(REPEAT as u64 -200));
     state.set_input(Some(Control::new(A, 1)));
     assert_eq!(state.is_input_keyrepeat(), Some(3));
-    thread::sleep(time::Duration::from_millis(REPEAT as u64 -1));
+    thread::sleep(time::Duration::from_millis(REPEAT as u64 -200));
     state.set_input(Some(Control::new(A, 1)));
     assert_eq!(state.is_input_keyrepeat(), Some(4));
     assert_eq!(state.is_input_keyinterval(), Some(1));

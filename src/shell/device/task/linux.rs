@@ -17,16 +17,6 @@ pub struct Proc {
 
 impl Proc {
 
-    /// The constructor method `new` returns the list of process.
-    pub fn new(fpid: libc::pid_t) -> Result<Self> {
-        let mut status: Proc = Proc::default();
-
-        status.with_list_process().and_then(|_| {
-            status.fpid = fpid;
-            Ok(status)
-        })
-    }
-
     /// The method `with_list_process` pushes all process after the first pid.
     fn with_list_process(&mut self) -> Result<()> {
         let fpid: PathBuf = PathBuf::from(self.fpid.to_string());
@@ -79,75 +69,6 @@ impl Proc {
                 )))
             },
             _ => None,
-        }
-    }
-
-    /// The accessor method `get_name` returns the name of
-    /// the process according to the pid.
-    pub fn get_name(&self, pid: libc::pid_t)-> Option<String> {
-        self.list.iter().find(
-            |&&(ref cpid, _, _, _)| pid.eq(cpid)
-        ).and_then(|&(_, _, _, ref name)|
-                Some(name.clone())
-        )
-    }
-
-    /// The method `from_pid` returns the last active child process
-    /// from the fpid process argument.
-    fn from_pid(&self, fpid: Option<libc::pid_t>) -> Option<libc::pid_t> {
-        if let Some(&(cpid, _, _, _)) = self.list.iter().find(
-            |&&(_, ref ppid, _, _)| fpid.unwrap_or(self.fpid).eq(ppid)
-        ) {
-            self.from_pid(Some(cpid))
-        }
-        else {
-            fpid.or(Some(self.fpid))
-        }
-    }
-}
-
-impl Clone for Proc {
-    /// The method `clone` copies the first pid of Proc self-interface
-    /// and recharge the list of process.
-    fn clone(&self) -> Self {
-        let mut status: Proc = Proc::default();
-
-        status.fpid = self.fpid;
-        status.with_list_process().unwrap();
-        status
-    }
-
-    /// The method `clone_from` copies the first pid from a Proc interface
-    /// and recharge the list of process.
-    fn clone_from(&mut self, source: &Self) {
-        self.fpid = source.fpid;
-        self.with_list_process().unwrap();
-    }
-}
-
-impl Iterator for Proc {
-    type Item = String;
-
-    fn next(&mut self) -> Option<String> {
-        let current: Proc = self.clone();
-
-        current.from_pid(None).and_then(|cfpid|
-            if cfpid.eq(&self.fpid).not() {
-                current.get_name(cfpid)
-            } else {
-                None
-            }
-        )
-    }
-}
-
-impl Default for Proc {
-
-    /// The constructor method `default` returns a empty list of process.
-    fn default() -> Proc {
-        Proc {
-            fpid: 0,
-            list: Vec::with_capacity(SPEC_CAPACITY_PROC),
         }
     }
 }

@@ -3,6 +3,7 @@ use super::task::Proc;
 pub use super::{In, Out, Sig};
 
 use std::io::{self, Read};
+use std::{thread, time};
 
 use ::chan;
 use ::libc;
@@ -11,11 +12,10 @@ use ::pty::prelude as pty;
 #[cfg(feature = "task")]
 pub fn task(tx_task: chan::Sender<String>, pid: libc::pid_t) {
     let mut task = Proc::new(pid).unwrap();
-    if let Some(name) = task.get_name(pid) {
-        tx_task.send(name);
-    }
     loop {
-        if let Some(name) = task.next() {
+        thread::sleep(time::Duration::from_millis(200));
+        let next = task.next();
+        if let Some(name) = next {
             tx_task.send(name);
         }
     }

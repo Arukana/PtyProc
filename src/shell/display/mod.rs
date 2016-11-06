@@ -151,7 +151,7 @@ impl Display {
 
     /// The method `goto_up` moves the cursor up.
     pub fn goto_up(&mut self) -> io::Result<libc::size_t>
-    { println!("Goto::Up(1)");
+    { 
       let col = self.size.get_icol();
       let pos = self.screen.position() as libc::ssize_t;
       if !self.is_oob().is_some() && pos - col >= 0 && self.line_wrap
@@ -164,13 +164,12 @@ impl Display {
 
     /// The method `goto_down` moves the cursor down.
     pub fn goto_down(&mut self) -> io::Result<libc::size_t>
-    { println!("Goto::Down(1)");
+    { 
       let col = self.size.get_col();
       let pos = self.screen.position();
       let len = { (*self.into_bytes()).len() };
       if !self.is_oob().is_some() && (pos + col) < len && self.line_wrap
       { self.goto(pos + col);
-        println!("POS::{}, COL::{}", pos, col);
         self.oob.1 += 1;
         Ok(0) }
       else
@@ -181,7 +180,7 @@ impl Display {
     /// If 'line_wrap' is true and the cursor is on the right border,
     /// it moves the cursor to the next line's left border
     pub fn goto_right(&mut self) -> io::Result<libc::size_t>
-    { println!("Goto::Right(1)");
+    { 
       let col = self.size.get_col();
       let pos = self.screen.position();
       if !self.is_oob().is_some() && (pos + 1 % col != 0 || pos < col - 1 || self.line_wrap)
@@ -200,7 +199,7 @@ impl Display {
     /// If 'line_wrap' is true and the cursor is on the left border,
     /// it moves the cursor to the previous line's right border
     pub fn goto_left(&mut self) -> io::Result<libc::size_t>
-    { println!("Goto::Left(1)");
+    { 
       let col = self.size.get_col();
       let pos = self.screen.position();
       if !self.is_oob().is_some() && pos > 0 && (pos % col != 0 || self.line_wrap)
@@ -389,12 +388,6 @@ impl Display {
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
     {
         let wrap = self.line_wrap;
-      print!("FIRST::{:?} | ", first);
-      for i in first
-      { print!("{} ", *i as char); }
-      println!("");
-      { println!("OOB::({}, {})", self.oob.0, self.oob.1); }
-
       if !self.is_oob().is_some() || self.is_border()
         {
             {
@@ -425,7 +418,6 @@ impl Display {
     pub fn next_tab(&self) -> u8
     { let pos = self.screen.position();
       let mut get: u8 = 1;
-      println!("TAB::{}", pos);
       while (pos + get as usize) % 8 != 0
       { get += 1; };
       get }

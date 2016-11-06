@@ -5,6 +5,8 @@ extern crate libc;
 use pty_proc::prelude::*;
 
 #[cfg(feature = "task")]
+use std::ops::Not;
+#[cfg(feature = "task")]
 use self::std::io::Write;
 #[cfg(feature = "task")]
 use self::std::{thread, time};
@@ -29,22 +31,29 @@ fn test_proc_next() {
 
         assert!(shell.write(b"/bin/sh\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
+        assert_eq!(process.next(), Some("sh".to_string()));
 
-        let sh: Option<String> = process.next();
+        assert!(shell.write(b"/bin/bash\n").is_ok());
+        thread::sleep(time::Duration::from_millis(200));
+        assert_eq!(process.next(), Some("bash".to_string()));
+
+        thread::sleep(time::Duration::from_millis(200));
         assert!(shell.write(b"exit\n").is_ok());
-        assert!(shell.write(b"exit\n").is_ok());
-        assert_eq!(sh, Some("sh".to_string()));
+        thread::sleep(time::Duration::from_millis(200));
+        process.next();
+        assert_eq!(process.next(), Some("sh".to_string()));
     }
     {
         let mut shell: Shell = Shell::new(
             None,
             None,
-            Some("/bin/bash"),
+            Some("/bin/sh"),
         ).unwrap();
-
+        assert!(shell.write(b"/bin/sh\n").is_ok());
+        assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
-        assert!(shell.take(5).find(|event| {
-            event.is_task() == Some(&"bash".to_string())
-        }).is_some());
+        assert!(shell.all(|event| {
+             event.is_task().eq(&Some(&"bash".to_string())).not()
+        }));
     }
 }
