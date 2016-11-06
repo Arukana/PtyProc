@@ -114,7 +114,21 @@ impl ShellState {
 
     /// The mutator method `set_input` update the `in_text`
     /// and save the old `in_text` to `in_text_past`.
-    pub fn set_input(&mut self, down: Option<Control>) {
+    pub fn set_input(&mut self, mut down: Option<Control>) {
+
+          if self.out_screen.ss()
+          { let ss: libc::c_uchar = match down
+            { Some(after) =>
+              { match after.as_slice()
+                { &[b'\x1B', b'[', b'A', ref next..] => b'A',
+                  &[b'\x1B', b'[', b'B', ref next..] => b'B',
+                  &[b'\x1B', b'[', b'C', ref next..] => b'C',
+                  &[b'\x1B', b'[', b'D', ref next..] => b'D',
+                  _ => 0, }},
+              _ => 0, };
+            if ss > 0
+            { down = Some(Control::new([b'\x1B', b'O', ss, 0, 0, 0, 0, 0, 0, 0, 0, 0], 3)); }}
+
         self.in_down = down;
         if let Some(after) = down {
             if let Some(before) = self.in_up {

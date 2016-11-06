@@ -46,8 +46,7 @@ impl Termios {
       ).eq(&-1) {
         Err(TermiosError::TcgGet)
       } else {
-        new_termios.c_lflag ^= !(libc::ICANON);
-        new_termios.c_lflag ^= !(libc::ECHO);
+        new_termios.c_lflag ^= libc::ICANON | libc::ECHO;
         new_termios.c_cc[libc::VMIN] = 1;
         new_termios.c_cc[libc::VTIME] = 0;
         if libc::ioctl(self.fd,
@@ -71,7 +70,7 @@ impl Termios {
 impl Default for Termios {
   fn default() -> Termios {
     Termios::new(
-      libc::STDIN_FILENO
+      libc::STDOUT_FILENO
     ).expect(
       &format!("{}", ::errno::errno())
     )
@@ -88,7 +87,7 @@ impl Drop for Termios {
           (((mem::size_of::<libc::termios>() & 0x1FFF) << 16) as u64)),
           &self.config
         ).eq(&-1)
-      ) {
+      ).bitor(io::stdout().write(b"\x1B[?25h").is_err()) {
         panic!("{}", ::errno::errno());
       }
     }

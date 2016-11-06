@@ -27,6 +27,22 @@ impl Control {
         control
     }
 
+    pub fn is_enter(&self) -> Option<()> {
+      if self.buf.first().eq(&Some(&b'\n')) {
+        Some(())
+      } else {
+        None
+      }
+    }
+
+    pub fn is_space(&self) -> Option<()> {
+      if self.buf.first().eq(&Some(&b' ')) {
+        Some(())
+      } else {
+        None
+      }
+    }
+
     /// The method `clear` resets the term character.
     pub fn clear(&mut self) -> io::Result<usize> {
         *self = Default::default();

@@ -33,6 +33,19 @@ pub struct Shell {
     state: ShellState,
 }
 
+#[repr(C)]
+#[derive(PartialEq, Clone, Copy, Debug, Default)]
+pub struct Winszed {
+  /// Rows, in characters.
+  pub ws_row: libc::c_ushort,
+  /// Columns, in characters.
+  pub ws_col: libc::c_ushort,
+  /// Horizontal size, pixels.
+  pub ws_xpixel: libc::c_ushort,
+  /// Vertical size, pixels.
+  pub ws_ypixel: libc::c_ushort,
+}
+
 impl Shell {
 
   /// The constructor method `new` returns a shell interface according to
@@ -53,34 +66,35 @@ impl Shell {
       command: Option<&'static str>,
       mode: Mode,
     ) -> Result<Self> {
-      if let Some(shell) = command.or(option_env!("SHELL")) {
-            match pty::Fork::from_ptmx() {
-                Err(cause) => Err(ShellError::ForkFail(cause)),
-                Ok(fork) => match fork {
-                    pty::Fork::Child(ref slave) => slave.exec(shell),
-                    pty::Fork::Parent(pid, master) => {
-                        mem::forget(fork);
-                        match Termios::new(libc::STDIN_FILENO) {
-                            Err(cause) => Err(ShellError::TermiosFail(cause)),
-                            Ok(termios) => Ok(Shell {
-                                pid: pid,
-                                config: termios,
-                                mode: mode,
-                                speudo: master,
-                                device: Device::from_speudo(master, pid),
-                                state: ShellState::new(
-                                    repeat,
-                                    interval,
-                                    libc::STDIN_FILENO
-                                ),
-                            }),
-                        }
+        unsafe {
+            let winsz: Winszed = Winszed::default();
+            libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
+          
+            if let Some(shell) = command.or(option_env!("SHELL")) {
+                match pty::Fork::from_ptmx() {
+                  Err(cause) => Err(ShellError::ForkFail(cause)),
+                  Ok(fork) => match fork {
+                    pty::Fork::Child(ref slave) => {
+                        libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
+                        slave.exec(shell)
                     },
-                },
+                    pty::Fork::Parent(pid, master) => {
+                    mem::forget(fork);
+                      Ok(Shell {
+                        pid: pid,
+                        config: Termios::default(),
+                        mode: mode,
+                        speudo: master,
+                        device: Device::from_speudo(master, pid),
+                        state: ShellState::new(repeat, interval, libc::STDOUT_FILENO),
+                      })
+                    },
+                  },
+                }
+            } else {
+                    Err(ShellError::NotFound)
             }
-      } else {
-            Err(ShellError::NotFound)
-      }
+        }
     }
 
   /// The accessor method `get_pid` returns the pid from the master.
@@ -100,6 +114,7 @@ impl Shell {
         state: &ShellState,
     ) {
         if self.mode == Mode::Character {
+
           if let Some(ref text) = state.is_input_slice() {
              self.write(text).unwrap();
              self.flush().unwrap();
@@ -143,6 +158,11 @@ impl Iterator for Shell {
           self.state.clone_from(event);
           let state: ShellState = self.state.clone();
           self.mode_pass(&state);
+          if state.is_signal_resized().is_some() {
+              unsafe {
+                  libc::kill(self.pid, libc::SIGWINCH);
+              }
+          }
           Some(state)
       },
     }

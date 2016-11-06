@@ -33,12 +33,19 @@ impl Control {
     }
   }
 
+/*  pub fn clone_from_buf(&mut self, buf: In) {
+    self.buf.write(buf);
+  } */
+
+  pub fn ss_mod(&mut self, ss: libc::c_uchar)
+  { self.buf = [b'\x1B', b'O', ss, 0, 0, 0, 0, 0, 0, 0, 0, 0]; } 
+
   /// The accessor method `as_slice` returns the Control Event.
   pub fn as_slice(&self) -> &[libc::c_uchar] {
     &self.buf[..self.len]
   }
 
-  /// The accessor method `as_timer` returns the Time.
+  /// The accessor method `as_time` returns the Time.
   pub fn as_time(&self) -> time::Tm {
     self.time
   }
