@@ -35,16 +35,16 @@ fn test_proc_next() {
         env::set_var("HOME", "/tmp");
         assert_eq!(process.next(), Some("bash".to_string()));
         assert!(shell.write(b"/bin/sh\n").is_ok());
-        thread::sleep(time::Duration::from_millis(200));
+        thread::sleep(time::Duration::from_millis(2000));
         assert_eq!(process.next(), Some("sh".to_string()));
 
         assert!(shell.write(b"/bin/bash\n").is_ok());
-        thread::sleep(time::Duration::from_millis(200));
+        thread::sleep(time::Duration::from_millis(2000));
         assert_eq!(process.next(), Some("bash".to_string()));
 
-        thread::sleep(time::Duration::from_millis(200));
+        thread::sleep(time::Duration::from_millis(2000));
         assert!(shell.write(b"exit\n").is_ok());
-        thread::sleep(time::Duration::from_millis(200));
+        thread::sleep(time::Duration::from_millis(2000));
         process.next();
         assert_eq!(process.next(), Some("sh".to_string()));
     }
