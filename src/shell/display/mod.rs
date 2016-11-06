@@ -331,8 +331,6 @@ impl Display {
     pub fn erase_right_line(&mut self)
     { let col = self.size.get_col();
       let pos = self.screen.position();
-      for i in self.newlines()
-      { println!("NEW::{:?}", i); }
       if !self.newline.is_empty()
       { match self.newline.iter().position(|&a| a.1.ge(&(pos/col)))
         { Some(n) => 
@@ -389,9 +387,7 @@ impl Display {
       if self.oob.1 < self.region.1 - 1
       { self.goto_down(1); }
       else
-      { self.scroll_down(); }
-      for i in self.newlines()
-      { println!("THE::{:?}", i); }}
+      { self.scroll_down(); }}
 
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>

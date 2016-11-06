@@ -5,4 +5,4 @@
 + Rédiger un peu de documentation
 
 + Caractère de l'Unicode
-  '-> Voir prompt adjivas
+  /! Certaines pages de l'Unicode ne sont pas gérées !/
