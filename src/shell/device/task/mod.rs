@@ -73,13 +73,15 @@ impl Iterator for Proc {
         self.with_list_process().unwrap();
 
         self.from_pid(None).and_then(|cfpid| {
-            if cfpid.eq(&self.fpid).not() {
-               if self.lpid.eq(&self.fpid).not() {
-                    self.lpid = cfpid;
-                    self.get_name(cfpid)
-                } else {
-                    None
-                }
+            if cfpid.eq(&self.fpid).not().bitand(
+               self.lpid.eq(&self.fpid).not()
+            ) {
+               println!("next: {}-{}-{}",
+                        self.fpid,
+                        self.lpid,
+                        cfpid);
+               self.lpid = cfpid;
+               self.get_name(cfpid)
             } else {
                 None
             }
