@@ -29,10 +29,13 @@ fn test_proc_next() {
         let pid: libc::pid_t = *shell.get_pid();
         let mut process: Proc = Proc::new(pid).unwrap();
 
+        println!("{:?}", process);
         assert_eq!(process.next(), None);
 
+        println!("{:?}", process);
         assert!(shell.write(b"/bin/sh\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
+        println!("{:?}", process);
         assert_eq!(process.next(), Some("sh".to_string()));
 
         assert!(shell.write(b"/bin/bash\n").is_ok());
@@ -54,8 +57,13 @@ fn test_proc_next() {
         assert!(shell.write(b"/bin/sh\n").is_ok());
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
-        assert!(shell.take(50).find(|event| {
+/*        assert!(shell.take(50).find(|event| {
              event.is_task().eq(&Some(&"bash".to_string())).not()
+        }).is_some());*/
+        assert!(shell.write(b"exit\n").is_ok());
+        thread::sleep(time::Duration::from_millis(200));
+        assert!(shell.take(50).find(|event| {
+             event.is_task().eq(&Some(&"sh".to_string())).not()
         }).is_some());
     }
 }
