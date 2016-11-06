@@ -30,33 +30,23 @@ fn test_proc_next() {
     {
         let mut shell: Shell = Shell::new(None, None, Some("/bin/bash")).unwrap();
         let pid: libc::pid_t = *shell.get_pid();
-        let mut process: Proc = Proc::new(pid).unwrap();
+        let process: Proc = Proc::new(pid).unwrap();
 
         env::set_var("HOME", "/tmp");
-        assert_eq!(process.next(), Some("bash".to_string()));
-        assert!(shell.write(b"/bin/sh\n").is_ok());
-        thread::sleep(time::Duration::from_millis(2000));
-        assert_eq!(process.next(), Some("sh".to_string()));
-
         assert!(shell.write(b"/bin/bash\n").is_ok());
-        thread::sleep(time::Duration::from_millis(2000));
-        assert_eq!(process.next(), Some("bash".to_string()));
-
-        thread::sleep(time::Duration::from_millis(2000));
-        assert!(shell.write(b"exit\n").is_ok());
-        thread::sleep(time::Duration::from_millis(2000));
-        process.next();
-        assert_eq!(process.next(), Some("sh".to_string()));
+        thread::sleep(time::Duration::from_millis(200));
+        assert!(process.take(50).find(|event| {
+             event.eq(&"bash".to_string())
+        }).is_some());
     }
     {
         let mut shell: Shell = Shell::new(
             None,
             None,
-            Some("/bin/sh"),
+            Some("/bin/bash"),
         ).unwrap();
 
         env::set_var("HOME", "/tmp");
-        assert!(shell.write(b"/bin/sh\n").is_ok());
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
         assert!(shell.take(50).find(|event| {
