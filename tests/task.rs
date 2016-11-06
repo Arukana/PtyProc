@@ -29,13 +29,13 @@ fn test_proc_next() {
         let pid: libc::pid_t = *shell.get_pid();
         let mut process: Proc = Proc::new(pid).unwrap();
 
-        println!("{:?}", process);
+        println!("{:?}\n", process);
         assert_eq!(process.next(), None);
 
-        println!("{:?}", process);
+        println!("{:?}\n", process);
         assert!(shell.write(b"/bin/sh\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
-        println!("{:?}", process);
+        println!("{:?}\n", process);
         assert_eq!(process.next(), Some("sh".to_string()));
 
         assert!(shell.write(b"/bin/bash\n").is_ok());
