@@ -11,11 +11,22 @@ use ::libc;
 pub struct Proc {
     /// The first pid for tree.
     fpid: libc::pid_t,
+    lpid: libc::pid_t,
     /// List by pid, ppid. status and unsized-name.
     list: Vec<(libc::pid_t, libc::pid_t, libc::c_uchar, String)>,
 }
 
 impl Proc {
+
+    /// The constructor method `new` returns the list of process.
+    pub fn new(fpid: libc::pid_t) -> Result<Self> {
+        let mut status: Proc = Proc::default();
+
+        status.fpid = fpid;
+        status.with_list_process().and_then(|_| {
+            Ok(status)
+        })
+    }
 
     /// The method `with_list_process` pushes all process after the first pid.
     fn with_list_process(&mut self) -> Result<()> {
