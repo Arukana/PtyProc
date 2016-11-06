@@ -1,7 +1,8 @@
-+ Faire des tests unitaires précis et poussés pour chacune des méthodes
-+ Rédiger un peu de documentation
-
 !+ Redimensionnement
+
+√ Faire des tests unitaires précis et poussés pour chacune des méthodes
+  + Faire des tests unitaires sur la gestion d'erreurs
++ Rédiger un peu de documentation
 
 + Caractère de l'Unicode
   '-> Voir prompt adjivas

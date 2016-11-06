@@ -65,7 +65,7 @@ fn test_enter()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(5, 0), (9, 1), (9, 2), (9, 3),
+  assert_eq!(display.newlines(), &vec![(9, 0), (9, 1), (9, 2), (9, 3),
                                        (9, 4), (9, 5), (9, 6), (9, 7)]);
 
   // Print "bonjour
@@ -80,7 +80,7 @@ fn test_enter()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(5, 0), (7, 1), (9, 2), (9, 3),
+  assert_eq!(display.newlines(), &vec![(9, 0), (9, 1), (9, 2), (9, 3),
                                        (9, 4), (9, 5), (9, 6), (9, 7)]);
 
   // Print "hello lorem ipsum
@@ -95,6 +95,33 @@ fn test_enter()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(5, 0), (7, 1), (7, 3), (9, 4), 
+  assert_eq!(display.newlines(), &vec![(9, 0), (9, 1), (9, 3), (9, 4), 
                                        (9, 5), (9, 6), (9, 7)]);
 }
+
+
+#[test]
+/// fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
+fn test_unicode()
+{ let mut display: Display = Display::from_winszed(SIZE);
+  assert_eq!(display.into_bytes(),
+      vec![b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
+
+  // Print "Léopard"
+  assert_eq!(display.write(b"L\xE9opard").ok(), Some(7usize));
+  assert_eq!(display.into_bytes(),
+      vec![b'L', b'\xE9', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]); }

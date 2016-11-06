@@ -183,7 +183,6 @@ impl Display {
       { self.oob.1 = 0;
         let x = self.oob.0;
         self.goto_coord(x, 0); }
-      self.check_newline();
       Ok(0) }
 
     /// The method `goto_down` moves the cursor down.
@@ -198,7 +197,6 @@ impl Display {
       { self.oob.1 = row - 1;
         let x = self.oob.0;
         self.goto_coord(x, row - 1); }
-      self.check_newline();
       Ok(0) }
 
     /// The method `goto_right` moves the cursor to its right.
@@ -210,7 +208,6 @@ impl Display {
         self.oob.0 = self.oob.0.add(&mv); }
       else
       { self.goto_end_row(); }
-      self.check_newline();
       Ok(0) }
 
     pub fn goto_left(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
@@ -221,7 +218,6 @@ impl Display {
         self.oob.0 = self.oob.0.sub(&mv); }
       else
       { self.goto_begin_row(); }
-      self.check_newline();
       Ok(0) }
 
     /// The method `goto_begin_row` moves the cursor to the beginning of the row
@@ -240,7 +236,6 @@ impl Display {
       let row = self.size.get_row();
       let c;
       let r;
-      self.check_newline();
       if x < col
       { self.oob.0 = x;
         c = x; }
@@ -253,27 +248,7 @@ impl Display {
       else
       { self.oob.1 = row - 1;
         r = row - 1; }
-      self.goto(c + (r * col));
-      self.check_newline(); }
-
-    /// The method `scroll_up` insert an empty line on top of the screen
-    /// (the cursor doesn't move)
-    pub fn scroll_up(&mut self)
-    { let col = self.size.get_col();
-      let resize = self.region;
-      if !self.newline.is_empty()
-      { match self.newline.iter().position(|&i| i.1 == resize.1 - 1)
-        { Some(n) => { self.newline.remove(n); },
-          None => {}, }
-        self.newline.iter_mut().all(|mut a|
-        { if a.1.ge(&resize.0).bitand(a.1.lt(&resize.1))
-          { a.1 += 1; }
-          true }); }
-      let coucou = self.screen.get_mut();
-      {0..col}.all(|_|
-      { (*coucou).insert(resize.0 * col, Control::new(&[b' '][..]));
-        (*coucou).remove(resize.1 * col);
-        true }); }
+      self.goto(c + (r * col)); }
 
     /// The method `scroll_down` append an empty line on bottom of the screen
     /// (the cursor doesn't move)
@@ -281,13 +256,38 @@ impl Display {
     { let col = self.size.get_col();
       let resize = self.region;
       if !self.newline.is_empty()
-      { match self.newline.iter().position(|&i| i.1 == resize.0)
+      { match self.newline.iter().position(|&i| i.1.eq(&(resize.1 - 1)).bitand(i.1.eq(&(self.size.get_row() - 1)).not()))
+        { Some(n) => { self.newline.remove(n); },
+          None => {}, }
+        self.newline.iter_mut().all(|mut a|
+        { if a.1.ge(&resize.0).bitand(a.1.lt(&(resize.1 - 1)))
+          { a.1 += 1; }
+          true }); }
+      self.newline.push((self.size.get_col() - 1, resize.0));
+      self.newline.sort_by(|&(_, a), &(_, b)| a.cmp(&b));
+      self.newline.dedup();
+      let coucou = self.screen.get_mut();
+      {0..col}.all(|_|
+      { (*coucou).insert(resize.0 * col, Control::new(&[b' '][..]));
+        (*coucou).remove(resize.1 * col);
+        true }); }
+
+    /// The method `scroll_up` insert an empty line on top of the screen
+    /// (the cursor doesn't move)
+    pub fn scroll_up(&mut self)
+    { let col = self.size.get_col();
+      let resize = self.region;
+      if !self.newline.is_empty()
+      { match self.newline.iter().position(|&i| i.1.eq(&resize.0))
         { Some(n) => { self.newline.remove(n); },
           None => {}, }
         self.newline.iter_mut().all(|mut a|
         { if a.1.gt(&resize.0).bitand(a.1.lt(&resize.1))
           { a.1 -= 1; }
           true }); }
+      self.newline.push((self.size.get_col() - 1, resize.1 - 1));
+      self.newline.sort_by(|&(_, a), &(_, b)| a.cmp(&b));
+      self.newline.dedup();
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
       { (*coucou).insert(resize.1 * col, Control::new(&[b' '][..]));
@@ -331,6 +331,8 @@ impl Display {
     pub fn erase_right_line(&mut self)
     { let col = self.size.get_col();
       let pos = self.screen.position();
+      for i in self.newlines()
+      { println!("NEW::{:?}", i); }
       if !self.newline.is_empty()
       { match self.newline.iter().position(|&a| a.1.ge(&(pos/col)))
         { Some(n) => 
@@ -381,33 +383,15 @@ impl Display {
       self.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Control|
       { term.clear().is_ok() }); }
 
-    /// The method `check_newline` removes the newline before the cursor if it exists.
-    pub fn check_newline(&mut self)
-    { if !self.newline.is_empty()
-      { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
-        { Some(n) =>
-          { if self.newline[n].0 < self.oob.0
-            { self.newline[n].0 = self.oob.0; }},
-          None =>
-          {}, }}}
-
-    /// The method `add_newline` add a newline
-    pub fn add_newline(&mut self)
-    { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
-      { Some(n) =>
-          { self.newline[n].0 = self.oob.0; },
-        None =>
-          { self.newline.push(self.oob);
-            self.newline.sort_by(|&(_, a), &(_, b)| a.cmp(&b)); }, }}
-
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
     { let pos = self.screen.position();
-      self.add_newline();
       if self.oob.1 < self.region.1 - 1
       { self.goto_down(1); }
       else
-      { self.scroll_down(); }}
+      { self.scroll_down(); }
+      for i in self.newlines()
+      { println!("THE::{:?}", i); }}
 
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
@@ -415,10 +399,9 @@ impl Display {
       let row = self.size.get_row();
       let col = self.size.get_col();
       if self.oob.0 < col - 1
-      { self.oob.0 += 1;
-        self.check_newline(); }
+      { self.oob.0 += 1; }
       else if self.oob.1 < self.region.1 - 1
-      { if self.newline.is_empty().not().bitand(next.eq(&[]).not().bitand(next[0].eq(&b'\x1B').not()))
+      { if self.newline.is_empty().not().bitand(next.eq(&[]).not().bitand(next[0].eq(&b'\x1B').not())).bitand(self.ss_mod.not())
         { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
           { Some(n) => { self.newline.remove(n); },
             None => {}, }; }
@@ -610,10 +593,10 @@ impl Write for Display {
 
             //------------- SCROLL ---------------
             &[b'\x1B', b'M', ref next..] =>
-              { self.scroll_up();
+              { self.scroll_down();
                 self.write(next) },
             &[b'\x1B', b'D', ref next..] =>
-              { self.scroll_down();
+              { self.scroll_up();
                 self.write(next) },
 
             //------------ CL ATTR -------------
