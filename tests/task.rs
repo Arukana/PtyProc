@@ -23,6 +23,48 @@ fn test_proc_new() {
 
 #[test]
 #[cfg(feature = "task")]
+#[cfg(any(target_os = "linux", target_os = "android"))]
+fn test_proc_next() {
+    {
+        let mut shell: Shell = Shell::new(None, None, Some("/bin/bash")).unwrap();
+        let pid: libc::pid_t = *shell.get_pid();
+        let mut process: Proc = Proc::new(pid).unwrap();
+
+        thread::sleep(time::Duration::from_millis(200));
+        assert_eq!(process.next(), Some("bash".to_string()));
+
+        assert!(shell.write(b"/bin/sh\n").is_ok());
+        thread::sleep(time::Duration::from_millis(200));
+        assert_eq!(process.next(), Some("sh".to_string()));
+
+        assert!(shell.write(b"/bin/bash\n").is_ok());
+        thread::sleep(time::Duration::from_millis(200));
+        assert_eq!(process.next(), Some("bash".to_string()));
+
+        thread::sleep(time::Duration::from_millis(200));
+        assert!(shell.write(b"exit\n").is_ok());
+        thread::sleep(time::Duration::from_millis(200));
+        process.next();
+        assert_eq!(process.next(), Some("sh".to_string()));
+    }
+    {
+        let mut shell: Shell = Shell::new(
+            None,
+            None,
+            Some("/bin/sh"),
+        ).unwrap();
+        assert!(shell.write(b"/bin/sh\n").is_ok());
+        assert!(shell.write(b"/bin/bash\n").is_ok());
+        thread::sleep(time::Duration::from_millis(200));
+        assert!(shell.take(50).find(|event| {
+             event.is_task().eq(&Some(&"bash".to_string())).not()
+        }).is_some());
+    }
+}
+
+#[test]
+#[cfg(feature = "task")]
+#[cfg(target_os = "macos")]
 fn test_proc_next() {
     {
         let mut shell: Shell = Shell::new(None, None, Some("/bin/bash")).unwrap();

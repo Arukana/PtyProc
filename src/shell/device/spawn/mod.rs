@@ -14,7 +14,6 @@ use ::pty::prelude as pty;
 pub fn task(tx_task: chan::Sender<String>, pid: libc::pid_t) {
     let mut task = Proc::new(pid).unwrap();
     loop {
-        thread::sleep(time::Duration::from_millis(200));
         let next = task.next();
         if let Some(name) = next {
             tx_task.send(name);
