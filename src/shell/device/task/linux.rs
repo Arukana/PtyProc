@@ -10,10 +10,10 @@ use ::libc;
 #[derive(Debug)]
 pub struct Proc {
     /// The first pid for tree.
-    fpid: libc::pid_t,
-    lpid: libc::pid_t,
+    pub fpid: libc::pid_t,
+    pub lpid: libc::pid_t,
     /// List by pid, ppid. status and unsized-name.
-    list: Vec<(libc::pid_t, libc::pid_t, libc::c_uchar, String)>,
+    pub list: Vec<(libc::pid_t, libc::pid_t, libc::c_uchar, String)>,
 }
 
 impl Proc {
