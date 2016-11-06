@@ -4,6 +4,9 @@ extern crate libc;
 #[cfg(feature = "task")]
 use pty_proc::prelude::*;
 
+
+#[cfg(feature = "task")]
+use self::std::env;
 #[cfg(feature = "task")]
 use std::ops::Not;
 #[cfg(feature = "task")]
@@ -29,10 +32,10 @@ fn test_proc_next() {
         let pid: libc::pid_t = *shell.get_pid();
         let mut process: Proc = Proc::new(pid).unwrap();
 
+        env::set_var("HOME", "/tmp");
         assert_eq!(process.next(), Some("bash".to_string()));
         assert!(shell.write(b"/bin/sh\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
-        println!("{:?}\n", process);
         assert_eq!(process.next(), Some("sh".to_string()));
 
         assert!(shell.write(b"/bin/bash\n").is_ok());
@@ -51,6 +54,8 @@ fn test_proc_next() {
             None,
             Some("/bin/sh"),
         ).unwrap();
+
+        env::set_var("HOME", "/tmp");
         assert!(shell.write(b"/bin/sh\n").is_ok());
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
