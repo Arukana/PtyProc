@@ -14,8 +14,8 @@ const B: In = [b'b',
 ];
 
 #[test]
+#[cfg(any(target_os = "linux", target_os = "android"))]
 fn test_key_down() {
-    #[cfg(any(target_os = "linux", target_os = "android"))]
     let mut state: ShellState = ShellState::new(None, None, libc::STDIN_FILENO);
 
     state.set_input(Some(Control::new(A, 1)));
