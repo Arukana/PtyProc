@@ -3,6 +3,7 @@ pub mod clone;
 pub const DEFAULT_REPEAT: libc::c_long = 1_000i64;
 pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 
+use std::fmt;
 use std::io::Write;
 use std::ops::BitOr;
 use std::ops::{Add, Sub, BitAnd};
@@ -39,11 +40,35 @@ pub struct ShellState {
   out_last: Option<(Out, libc::size_t)>,
   /// The output of matrix Screen interface.
   out_screen: Display,
+  #[cfg(feature = "task")] task: Option<String>,
 }
 
 impl ShellState {
 
     /// The constructor method `new` returns a empty ShellState.
+    #[cfg(feature = "task")]
+    pub fn new (
+        repeat: Option<libc::c_long>,
+        interval: Option<libc::c_long>,
+        fd: libc::c_int
+    ) -> Self {
+        ShellState {
+            repeat: repeat.unwrap_or(DEFAULT_REPEAT),
+            interval: interval.unwrap_or(DEFAULT_INTERVAL),
+            idle: None,
+            sig: None,
+            in_down: None,
+            in_up: None,
+            in_repeat: None,
+            in_interval: None,
+            out_last: None,
+            out_screen: Display::new(fd).unwrap(),
+            task: None,
+        }
+    }
+
+    /// The constructor method `new` returns a empty ShellState.
+    #[cfg(not(feature = "task"))]
     pub fn new (
         repeat: Option<libc::c_long>,
         interval: Option<libc::c_long>,
@@ -135,14 +160,16 @@ impl ShellState {
     pub fn set_output(&mut self, entry: Option<(Out, libc::size_t)>) {
         if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
-            print!("SCREEN::");
-            for i in {0..len}
-            { print!(" {}, {} |", buf[i], if buf[i]>=32{buf[i] as char}else{'\0'}); }
-            println!("");
-            self.out_screen.write(&buf[..len]);
+            self.out_screen.write(&buf[..len]).unwrap();
         } else {
             self.out_last = None;
         }
+    }
+
+    /// The mutator method `set_task` updates the task event.
+    #[cfg(feature = "task")]
+    pub fn set_task(&mut self, task: Option<String>) {
+        self.task = task;
     }
 
     /// The accessor method `is_idle` returns the Idle event.
@@ -233,10 +260,39 @@ impl ShellState {
             None
         }
     }
+
+    /// The mutator method `set_task` updates the task event.
+    #[cfg(feature = "task")]
+    pub fn is_task(&self) -> Option<&String> {
+        if let Some(ref task) = self.task {
+            Some(task)
+        } else {
+            None
+        }
+    }
 }
 
 impl Clone for ShellState {
     /// The method `clone` return a copy of the ShellState.
+    #[cfg(feature = "task")]
+    fn clone(&self) -> Self {
+        ShellState {
+            repeat: self.repeat,
+            interval: self.interval,
+            idle: self.idle,
+            sig: self.sig,
+            in_down: self.in_down,
+            in_up: self.in_up,
+            in_repeat: self.in_repeat,
+            in_interval: self.in_interval,
+            out_last: self.out_last,
+            out_screen: self.out_screen.clone(),
+            task: self.task.clone(),
+        }
+    }
+
+    /// The method `clone` return a copy of the ShellState.
+    #[cfg(not(feature = "task"))]
     fn clone(&self) -> Self {
         ShellState {
             repeat: self.repeat,
@@ -254,10 +310,41 @@ impl Clone for ShellState {
 
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
+    #[cfg(feature = "task")]
     fn clone_from(&mut self, event: DeviceState) {
         self.set_idle(event.is_idle());
         self.set_signal(event.is_signal());
         self.set_output(event.is_out_text());
         self.set_input(event.is_input());
+        self.set_task(event.is_task());
+    }
+
+    /// The method `with_device` updates the state from
+    /// the event DeviceState interface.
+    #[cfg(not(feature = "task"))]
+    fn clone_from(&mut self, event: DeviceState) {
+        self.set_idle(event.is_idle());
+        self.set_signal(event.is_signal());
+        self.set_output(event.is_out_text());
+        self.set_input(event.is_input());
+    }
+}
+
+impl fmt::Debug for ShellState {
+
+    #[cfg(feature = "task")]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+            "ShellState {{ task: {:?}, idle: {:?}, signal: {:?}, input: {:?}, output: {:?} }}",
+               self.task, self.idle, self.sig, self.in_down, self.out_last.is_some()
+        )
+    }
+
+    #[cfg(not(feature = "task"))]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+          "ShellState {{ idle: {:?}, signal: {:?}, input: {:?}, output: {:?}}}",
+               self.idle, self.sig, self.in_down, self.out_last.is_some()
+        )
     }
 }

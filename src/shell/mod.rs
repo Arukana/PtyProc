@@ -24,13 +24,13 @@ pub use self::display::Display;
 /// The struct `Shell` is the speudo terminal interface.
 
 pub struct Shell {
-  pid: libc::pid_t,
-  mode: Mode,
-  #[allow(dead_code)]
-  config: Termios,
-  speudo: pty::Master,
-  device: Device,
-  state: ShellState,
+    pid: libc::pid_t,
+    mode: Mode,
+    #[allow(dead_code)]
+    config: Termios,
+    speudo: pty::Master,
+    device: Device,
+    state: ShellState,
 }
 
 #[repr(C)]
@@ -51,8 +51,8 @@ impl Shell {
   /// The constructor method `new` returns a shell interface according to
   /// the command's option and a configured mode Line by Line.
   pub fn new (
-      repeat: Option<i64>,
-      interval: Option<i64>,
+      repeat: Option<libc::c_long>,
+      interval: Option<libc::c_long>,
       command: Option<&'static str>,
   ) -> Result<Self> {
     Shell::from_mode(repeat, interval, command, Mode::None)
@@ -61,35 +61,41 @@ impl Shell {
   /// The constructor method `from_mode` returns a shell interface according to
   /// the command's option and the mode.
     pub fn from_mode (
-      repeat: Option<i64>,
-      interval: Option<i64>,
+      repeat: Option<libc::c_long>,
+      interval: Option<libc::c_long>,
       command: Option<&'static str>,
       mode: Mode,
     ) -> Result<Self> {
-    unsafe {
-    let winsz: Winszed = Winszed::default();
-    libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
-  
-    match pty::Fork::from_ptmx() {
-      Err(cause) => Err(ShellError::ForkFail(cause)),
-      Ok(fork) => match fork {
-        pty::Fork::Child(ref slave) =>
-         { libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
-           slave.exec(command.unwrap_or("/bin/bash")) },
-        pty::Fork::Parent(pid, master) => {
-        mem::forget(fork);
-          Ok(Shell {
-            pid: pid,
-            config: Termios::default(),
-            mode: mode,
-            speudo: master,
-            device: Device::from_speudo(master),
-            state: ShellState::new(repeat, interval, libc::STDOUT_FILENO),
-          })
-        },
-      },
+        unsafe {
+            let winsz: Winszed = Winszed::default();
+            libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
+          
+            if let Some(shell) = command.or(option_env!("SHELL")) {
+                match pty::Fork::from_ptmx() {
+                  Err(cause) => Err(ShellError::ForkFail(cause)),
+                  Ok(fork) => match fork {
+                    pty::Fork::Child(ref slave) => {
+                        libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
+                        slave.exec(shell)
+                    },
+                    pty::Fork::Parent(pid, master) => {
+                    mem::forget(fork);
+                      Ok(Shell {
+                        pid: pid,
+                        config: Termios::default(),
+                        mode: mode,
+                        speudo: master,
+                        device: Device::from_speudo(master, pid),
+                        state: ShellState::new(repeat, interval, libc::STDOUT_FILENO),
+                      })
+                    },
+                  },
+                }
+            } else {
+                    Err(ShellError::NotFound)
+            }
+        }
     }
-  }}
 
   /// The accessor method `get_pid` returns the pid from the master.
   pub fn get_pid(&self) -> &libc::pid_t {
@@ -128,13 +134,18 @@ impl Write for Shell {
 }
 
 impl Drop for Shell {
-  fn drop(&mut self) {
-    unsafe {
-      if libc::close(self.speudo.as_raw_fd()).eq(&-1) {
-        unimplemented!()
-      }
+
+    /// The destructor method `drop` closes the file descriptor of the master
+    /// and kill the process child if there hasn't properly end.
+    fn drop(&mut self) {
+        unsafe {
+            if libc::close(self.speudo.as_raw_fd()).eq(&-1) {
+                unimplemented!()
+            } else {
+                libc::kill(self.pid, libc::SIGKILL);
+            }
+        }
     }
-  }
 }
 
 impl Iterator for Shell {

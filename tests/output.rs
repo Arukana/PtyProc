@@ -103,6 +103,7 @@ fn test_scroll()
 }
 
 #[test]
+#[ignore]
 fn test_save_terminal()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.into_bytes(),
