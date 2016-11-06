@@ -24,9 +24,6 @@ unstable      = [] # for building with unstable features on stable Rust
 debug         = [] # for building with debug messages
 travis        = ["lints", "nightly"] # for building with travis-cargo
 
-[dependencies.sysinfo]
-git           = "https://github.com/GuillaumeGomez/sysinfo"
-
 [dependencies.pty]
 version       = "0.2"
 
@@ -45,7 +42,3 @@ version       = "0.2"
 [dependencies.clippy]
 version       = "*"
 optional      = true
-
-[dependencies.baum]
-git           ="https://github.com/limaconoob/baum.git"
-version       = "*"

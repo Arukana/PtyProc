@@ -18,7 +18,6 @@ extern crate pty;
 extern crate libc;
 extern crate time;
 extern crate errno;
-extern crate sysinfo;
 
 #[macro_use]
 mod macros;
