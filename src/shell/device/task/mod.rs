@@ -8,6 +8,7 @@ mod macos;
 mod ffi;
 
 use std::ops::Not;
+use std::ops::BitAnd;
 
 pub use self::err::{ProcError, Result};
 
