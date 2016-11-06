@@ -18,18 +18,8 @@ pub struct Proc {
 
 impl Proc {
 
-    /// The constructor method `new` returns the list of process.
-    pub fn new(fpid: libc::pid_t) -> Result<Self> {
-        let mut status: Proc = Proc::default();
-
-        status.fpid = fpid;
-        status.with_list_process().and_then(|_| {
-            Ok(status)
-        })
-    }
-
     /// The method `with_list_process` pushes all process after the first pid.
-    fn with_list_process(&mut self) -> Result<()> {
+    pub fn with_list_process(&mut self) -> Result<()> {
         let fpid: PathBuf = PathBuf::from(self.fpid.to_string());
         match fs::read_dir(Path::new(SPEC_PROC)) {
             Err(why) => Err(ProcError::ReadDir(why)),

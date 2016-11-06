@@ -52,8 +52,8 @@ fn test_proc_next() {
         assert!(shell.write(b"/bin/sh\n").is_ok());
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
-        assert!(shell.all(|event| {
+        assert!(shell.take(50).find(|event| {
              event.is_task().eq(&Some(&"bash".to_string())).not()
-        }));
+        }).is_some());
     }
 }

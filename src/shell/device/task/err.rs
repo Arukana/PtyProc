@@ -1,5 +1,7 @@
 use std::error::Error;
 use std::fmt;
+#[cfg(any(target_os = "linux", target_os = "android"))]
+use std::io;
 
 pub type Result<T> = ::std::result::Result<T, ProcError>;
 

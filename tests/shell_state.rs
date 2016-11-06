@@ -51,7 +51,7 @@ fn test_key_repeat() {
 }
 
 #[test]
-#[ignore]
+#[cfg(any(target_os = "linux", target_os = "android"))]
 fn test_key_interval() {
     let mut state: ShellState = ShellState::new(None, Some(INTERVAL), libc::STDIN_FILENO);
     state.set_input(Some(Control::new(A, 1)));
