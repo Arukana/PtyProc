@@ -387,7 +387,7 @@ impl Display {
       if self.oob.1 < self.region.1 - 1
       { self.goto_down(1); }
       else
-      { self.scroll_down(); }}
+      { self.scroll_up(); }}
 
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
@@ -397,14 +397,14 @@ impl Display {
       if self.oob.0 < col - 1
       { self.oob.0 += 1; }
       else if self.oob.1 < self.region.1 - 1
-      { if self.newline.is_empty().not().bitand(next.eq(&[]).not().bitand(next[0].eq(&b'\x1B').not())).bitand(self.ss_mod.not())
+      { if self.newline.is_empty().not().bitand(self.ss_mod.not())
         { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
           { Some(n) => { self.newline.remove(n); },
             None => {}, }; }
         self.oob.1 += 1;
         self.oob.0 = 0; }
       else if self.oob.1 == self.region.1 - 1
-      { self.scroll_down();
+      { self.scroll_up();
         self.goto_begin_row();
         { let pos = self.screen.position();
           self.goto(pos - 1); }}

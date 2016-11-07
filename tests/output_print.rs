@@ -102,7 +102,7 @@ fn test_enter()
 
 #[test]
 /// fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
-fn test_unicode()
+fn test_unicode_prints()
 { let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.into_bytes(),
       vec![b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
@@ -114,8 +114,9 @@ fn test_unicode()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
 
-  // Print "Léopard"
-  assert_eq!(display.write(b"L\xE9opard").ok(), Some(7usize));
+  // Print "Léopard
+  //        "
+  assert_eq!(display.write(b"L\xE9opard\n\r").ok(), Some(7usize));
   assert_eq!(display.into_bytes(),
       vec![b'L', b'\xE9', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
@@ -124,4 +125,56 @@ fn test_unicode()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
-           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]); }
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
+
+  // Print "hey!"
+  assert_eq!(display.write(b"hey!").ok(), Some(4usize));
+  assert_eq!(display.into_bytes(),
+      vec![b'L', b'\xE9', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
+           b'h', b'e', b'y', b'!', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
+
+  // Goto::(8, 7), then Print "A"
+  assert_eq!(display.write(b"\x1B[8;9HA").ok(), Some(1usize));
+  assert_eq!(display.into_bytes(),
+      vec![b'L', b'\xE9', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
+           b'h', b'e', b'y', b'!', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b'A', b' ' ]);
+  // Here, the cursor is on the last character (bottom right)
+  // So the next print will occur in : if self.oob.1 == self.region.1 - 1 {}
+
+  // Print "Bonjour"
+  assert_eq!(display.write(b"Bonjour").ok(), Some(7usize));
+  assert_eq!(display.into_bytes(),
+      vec![b'h', b'e', b'y', b'!', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b'A', b'B',
+           b'o', b'n', b'j', b'o', b'u', b'r', b' ', b' ', b' ', b' ' ]);
+
+  // Print "
+  //        coucou"
+  assert_eq!(display.write(b"\n\rcoucou").ok(), Some(6usize));
+  assert_eq!(display.into_bytes(),
+      vec![b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b'A', b'B',
+           b'o', b'n', b'j', b'o', b'u', b'r', b' ', b' ', b' ', b' ',
+           b'c', b'o', b'u', b'c', b'o', b'u', b' ', b' ', b' ', b' ' ]);
+}

@@ -1,4 +1,5 @@
 !+ Redimensionnement
+   '-> fonction forkpty(3)
 
 √ Faire des tests unitaires précis et poussés pour chacune des méthodes
   + Faire des tests unitaires sur la gestion d'erreurs

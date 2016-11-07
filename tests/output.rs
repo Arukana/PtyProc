@@ -179,7 +179,7 @@ fn test_save_terminal()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
 
   // Print "bonjour"
-  assert_eq!(display.write(b"hello world!").ok(), Some(7usize));
+  assert_eq!(display.write(b"bonjour").ok(), Some(7usize));
   assert_eq!(display.into_bytes(),
       vec![b'b', b'o', b'n', b'j', b'o', b'u', b'r', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
@@ -193,14 +193,15 @@ fn test_save_terminal()
   // Restore Terminal
   assert_eq!(display.write(b"\x1B[?1049l").ok(), Some(0usize));
   assert_eq!(display.into_bytes(),
-      vec![b'h', b'e', b'l', b'l', b'o', b' ', b'l', b'o', b'r', b'e',
-           b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
-           b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm',
-           b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o', b' ', b'l',
-           b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'm',
-           b' ', b'd', b'o', b'l', b'o', b'r', b' ', b's', b'i', b't',
-           b' ', b'a', b'm', b'e', b't', b' ', b'b', b'o', b'n', b'j',
-           b'o', b'u', b'r', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]); }
+      vec![b'b', b'o', b'n', b'j', b'o', b'u', b'r', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]); }
+
 
 /*
 #[test]
