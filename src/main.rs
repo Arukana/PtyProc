@@ -1,9 +1,9 @@
 extern crate pty_proc;
 extern crate libc;
 
-extern crate baum;
+/*extern crate baum;
 use baum::baum::{Baum};
-
+*/
 use pty_proc::prelude as shell;
 
 use std::str;
@@ -21,11 +21,11 @@ fn main() {
         if let Some(screen) = event.is_output_screen() {
             print!("{}", screen);
         }
-        if let Some(sig) = event.is_signal()
+/*        if let Some(sig) = event.is_signal()
         { unsafe
           { let baum: Baum = Baum::new(libc::getpid());
             baum.childs.iter().map(|i|
             { libc::kill(i.pid, libc::SIGWINCH);
-              true }); }}
+              true }); }}*/
     }
 }

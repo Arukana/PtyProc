@@ -136,8 +136,7 @@ impl Display {
           { let col = self.size.ws_col;
             let row = self.size.ws_row;
             let coucou = self.screen.get_mut();
-            println!("RESIZE GRAND HORIZONTAL");
-            {1..row+1}.all(|i|
+            {0..row}.all(|i|
             { {0..size.ws_col-col}.all(|_|
               { (*coucou).insert(((row - i) * col) as usize, Control::new(&[b' '][..]));
                 true }) }); }
@@ -145,11 +144,9 @@ impl Display {
           { let col = self.size.ws_col;
             let row = self.size.ws_row;
             let coucou = self.screen.get_mut();
-            println!("RESIZE PETIT HORIZONTAL");
-            {1..row+1}.all(|i|
+            {0..row}.all(|i|
             { {0..col-size.ws_col}.all(|_|
-              { println!("i::{}, col::{}, row::{}", i, col-size.ws_col, row);
-                (*coucou).remove(((row - i) * col) as usize);
+              { (*coucou).remove(((row - i) * col) as usize);
                 true }) }); }
           Ok(self.size = size) },
       }
@@ -398,6 +395,8 @@ impl Display {
     { let wrap = self.line_wrap;
       let row = self.size.get_row();
       let col = self.size.get_col();
+     // if col.eq(&0).bitor(row.eq(&0))
+     // { Ok(0); }
       if self.oob.0 < col - 1
       { self.oob.0 += 1; }
       else if self.oob.1 < self.region.1 - 1
