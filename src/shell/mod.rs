@@ -69,15 +69,28 @@ impl Shell {
     unsafe {
     let winsz: Winszed = Winszed::default();
     libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
+    let mut pipefd: Vec<i32> = Vec::with_capacity(2);
+    let mut coucou = pipefd.as_ptr() as *mut i32;
+    libc::pipe(coucou);
+    pipefd = Vec::from_raw_parts(coucou, 2, pipefd.capacity());
   
+    let mut the: Vec<u8> = Vec::with_capacity(50);
     match pty::Fork::from_ptmx() {
       Err(cause) => Err(ShellError::ForkFail(cause)),
       Ok(fork) => match fork {
         pty::Fork::Child(ref slave) =>
-         { libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
-           slave.exec(command.unwrap_or("/bin/bash")) },
+         {          
+            libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
+            libc::close(pipefd[0]);
+            let mut bonjour = the.as_ptr() as *mut libc::c_void;
+            libc::fcntl(libc::STDOUT_FILENO, libc::F_GETPATH, bonjour);
+            the = Vec::from_raw_parts(bonjour as *mut u8, 50, the.capacity());
+            let tty_message_for_fd_extract = String::from_utf8_lossy(&the);
+            //slave.exec(command.unwrap_or("/Users/jpepin/work42/minishell/21sh")) },
+            slave.exec(command.unwrap_or("/bin/bash")) },
         pty::Fork::Parent(pid, master) => {
         mem::forget(fork);
+           libc::close(pipefd[1]);
           Ok(Shell {
             pid: pid,
             config: Termios::default(),
