@@ -145,8 +145,8 @@ impl Display {
             let row = self.size.ws_row;
             let coucou = self.screen.get_mut();
             {0..row}.all(|i|
-            { {0..col-size.ws_col}.all(|_|
-              { (*coucou).remove(((row - i) * col) as usize);
+            { {0..col-size.ws_col}.all(|k|
+              { (*coucou).remove((((row - i) * col) - (k + 1)) as usize);
                 true }) }); }
           Ok(self.size = size) },
       }
