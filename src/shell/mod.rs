@@ -111,21 +111,22 @@ impl Shell {
 
             // Receive the /dev/tty of the child
             libc::read(pipefd[0], buf, 1024);
+            libc::close(pipefd[0]);
             get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
             let mut buf = get.as_ptr() as *const i8;
             
             // DEBUG : Ici 'get' contient le /dev/tty du child
-             print!("MASTER::");
-             for i in get
-             { print!("{}", i as char); }
-             println!("");
+            // print!("MASTER::");
+            // for i in get
+            // { print!("{}", i as char); }
+            // println!("");
             // DEBUG
 
             // Collect the file desciptor of the child
             let child_fd = libc::open(buf, libc::O_RDWR);
             println!("FD::{}", child_fd);
 
-            // Gestion d'erreur
+            // Cas d'erreur si le fd est inférieur ou égal à 2
             // child_fd.gt(&2).except("Can't get file desciptor of the child");
 
           Ok(Shell {
@@ -200,7 +201,7 @@ impl Iterator for Shell {
           self.mode_pass(&state);
           if state.is_signal_resized().is_some() {
               unsafe
-              { // Manually set size of child size
+              { // Manually set child size
                 let winsz: Winszed = Winszed::default();
                 libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
                 libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &winsz);

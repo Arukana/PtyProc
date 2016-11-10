@@ -21,11 +21,5 @@ fn main() {
         if let Some(screen) = event.is_output_screen() {
             print!("{}", screen);
         }
-        if let Some(sig) = event.is_signal()
-        { unsafe
-          { let baum: Baum = Baum::new(libc::getpid());
-            baum.childs.iter().map(|i|
-            { libc::kill(i.pid, libc::SIGWINCH);
-              true }); }}
     }
 }
