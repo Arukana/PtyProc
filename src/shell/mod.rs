@@ -24,6 +24,7 @@ pub use self::display::Display;
 /// The struct `Shell` is the speudo terminal interface.
 
 pub struct Shell {
+  child_fd: libc::c_int,
   pid: libc::pid_t,
   mode: Mode,
   #[allow(dead_code)]
@@ -84,14 +85,16 @@ impl Shell {
             
             // Use pipe
             libc::close(pipefd[0]);
-            let mut the: Vec<u8> = Vec::with_capacity(50);
+
+            // Max path length = 1024
+            let mut the: Vec<u8> = Vec::with_capacity(1024);
             let mut bonjour = the.as_ptr() as *mut libc::c_void;
             
             // Get info about /dev/tty of the child
             libc::fcntl(libc::STDOUT_FILENO, libc::F_GETPATH, bonjour);
 
             // Transfer it to master
-            libc::write(pipefd[1], bonjour, 50);
+            libc::write(pipefd[1], bonjour, 1024);
             libc::close(pipefd[1]);
 
             // Enter the shell exec
@@ -103,25 +106,30 @@ impl Shell {
             
             // Use pipe
             libc::close(pipefd[1]);
-            let mut get: Vec<u8> = Vec::with_capacity(2);
+            let mut get: Vec<u8> = Vec::with_capacity(1024);
             let mut buf = get.as_ptr() as *mut libc::c_void;
 
             // Receive the /dev/tty of the child
-            libc::read(pipefd[0], buf, 50);
-            get = Vec::from_raw_parts(buf as *mut u8, 50, get.capacity());
+            libc::read(pipefd[0], buf, 1024);
+            get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
+            let mut buf = get.as_ptr() as *const i8;
             
             // DEBUG : Ici 'get' contient le /dev/tty du child
-            // println!("MASTER::");
-            // for i in get
-            // { print!("{}", i as char); }
-            // println!("");
+             print!("MASTER::");
+             for i in get
+             { print!("{}", i as char); }
+             println!("");
             // DEBUG
 
-            // Need to try some manipulations
-            //let child_fd = libc::open(get);
-            //libc::fcntl(libc::STDOUT_FILENO, libc::F_GETPATH, bonjour);
+            // Collect the file desciptor of the child
+            let child_fd = libc::open(buf, libc::O_RDWR);
+            println!("FD::{}", child_fd);
+
+            // Gestion d'erreur
+            // child_fd.gt(&2).except("Can't get file desciptor of the child");
 
           Ok(Shell {
+            child_fd: child_fd,
             pid: pid,
             config: Termios::default(),
             mode: mode,
@@ -191,9 +199,13 @@ impl Iterator for Shell {
           let state: ShellState = self.state.clone();
           self.mode_pass(&state);
           if state.is_signal_resized().is_some() {
-              unsafe {
-                  libc::kill(self.pid, libc::SIGWINCH);
-              }
+              unsafe
+              { // Manually set size of child size
+                let winsz: Winszed = Winszed::default();
+                libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
+                libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &winsz);
+
+                libc::kill(self.pid, libc::SIGWINCH); }
           }
           Some(state)
       },
