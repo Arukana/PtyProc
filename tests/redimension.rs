@@ -13,6 +13,7 @@ const SIZE: Winszed = Winszed
 
 
 #[test]
+#[ignore] // For travis
 /// fn resize(&mut self) -> Result<()>
 fn test_redimension()
 { let mut display: Display = Display::from_winszed(SIZE);
