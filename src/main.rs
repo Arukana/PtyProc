@@ -1,9 +1,6 @@
 extern crate pty_proc;
 extern crate libc;
 
-extern crate baum;
-use baum::baum::{Baum};
-
 use pty_proc::prelude as shell;
 
 use std::str;
