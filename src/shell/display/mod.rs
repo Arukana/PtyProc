@@ -253,11 +253,11 @@ impl Display {
     { let col = self.size.get_col();
       let resize = self.region;
       if !self.newline.is_empty()
-      { match self.newline.iter().position(|&i| i.1.eq(&base).bitand(i.1.eq(&(self.size.get_row() - 1)).not()))
+      { match self.newline.iter().position(|&i| i.1.eq(&(resize.1 - 1)).bitand(i.1.eq(&(self.size.get_row() - 1)).not()))
         { Some(n) => { self.newline.remove(n); },
           None => {}, }
         self.newline.iter_mut().all(|mut a|
-        { if a.1.ge(&resize.0).bitand(a.1.lt(&(base)))
+        { if a.1.ge(&resize.0).bitand(a.1.lt(&(resize.1 - 1)))
           { a.1 += 1; }
           true }); }
       self.newline.push((self.size.get_col() - 1, resize.0));
@@ -265,8 +265,8 @@ impl Display {
       self.newline.dedup();
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      { (*coucou).insert(resize.0 * col, Control::new(&[b' '][..]));
-        (*coucou).remove((base + 1) * col);
+      { (*coucou).insert(base * col, Control::new(&[b' '][..]));
+        (*coucou).remove(resize.1 * col);
         true }); }
 
     /// The method `scroll_up` insert an empty line on top of the screen
@@ -325,7 +325,7 @@ impl Display {
       if !self.newline.is_empty()
       { match self.newline.iter().position(|&a| a.1.ge(&(pos/col)))
         { Some(n) => 
-            { self.screen.get_mut().into_iter().skip(pos).take(self.newline[n].0 + (self.newline[n].1 * col) - pos + 1).all(|mut term: &mut Control| { term.clear().is_ok() }); },
+            { self.screen.get_mut().into_iter().skip(pos).take(self.newline[n].0 + (self.newline[n].1 * col) + 1 - pos).all(|mut term: &mut Control| { term.clear().is_ok() }); },
           None => 
             { self.erase_down(); }, }}
       else
@@ -395,8 +395,6 @@ impl Display {
     { let wrap = self.line_wrap;
       let row = self.size.get_row();
       let col = self.size.get_col();
-     // if col.eq(&0).bitor(row.eq(&0))
-     // { Ok(0); }
       if self.oob.0 < col - 1
       { self.oob.0 += 1; }
       else if self.oob.1 < self.region.1 - 1
@@ -595,7 +593,7 @@ impl Write for Display {
 
             //------------- SCROLL ---------------
             &[b'\x1B', b'M', ref next..] =>
-              { let x = self.region.1 - 1;
+              { let x = self.region.0;
                 self.scroll_down(x);
                 self.write(next) },
             &[b'\x1B', b'D', ref next..] =>
@@ -646,22 +644,39 @@ impl Write for Display {
                       self.goto_coord(x, bonjour[0] - 1); }
                     self.write(next) },
 
-                //------------- INSERT ---------------
-                &[b'L', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
-                    { self.insert_empty_line(bonjour[0]); }
-                    self.write(next) },
-
                 //-------------- ERASE ----------------
                 &[b'P', ref next..] =>
                   { if bonjour.len() == 1
                     { self.erase_chars(bonjour[0]); }
                     self.write(next) },
+
+                //-------------- SCROLL ----------------
                 &[b'M', ref next..] =>
                   { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
                     { let x = self.oob.1;
                       {0..bonjour[0]}.all(|_|
                       { self.scroll_up(x);
+                        true }); }
+                    self.write(next) },
+                &[b'S', ref next..] =>
+                  { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
+                    { let x = self.region.0;
+                      {0..bonjour[0]}.all(|_|
+                      { self.scroll_up(x);
+                        true }); }
+                    self.write(next) },
+                &[b'L', ref next..] =>
+                  { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
+                    { let x = self.oob.1;
+                      {0..bonjour[0]}.all(|_|
+                      { self.scroll_down(x);
+                        true }); }
+                    self.write(next) },
+                &[b'T', ref next..] =>
+                  { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
+                    { let x = self.region.0;
+                      {0..bonjour[0]}.all(|_|
+                      { self.scroll_down(x);
                         true }); }
                     self.write(next) },
 

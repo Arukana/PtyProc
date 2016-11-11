@@ -98,8 +98,8 @@ impl Shell {
             libc::close(pipefd[1]);
 
             // Enter the shell exec
-            slave.exec(command.unwrap_or("/Users/jpepin/work42/minishell/21sh")) },
-            //slave.exec(command.unwrap_or("/bin/bash")) },
+            //slave.exec(command.unwrap_or("/Users/jpepin/work42/minishell/21sh")) },
+            slave.exec(command.unwrap_or("/bin/bash")) },
 
         pty::Fork::Parent(pid, master) => {
         mem::forget(fork);
