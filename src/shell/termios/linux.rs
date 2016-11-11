@@ -39,7 +39,7 @@ impl Termios {
         Err(TermiosError::TcgGet)
       } else {
         new_termios.c_lflag &= !(libc::ECHO | libc::ICANON | libc::ISIG);
-        new_termios.c_iflag &= !(libc::BRKINT)
+        new_termios.c_iflag &= !(libc::BRKINT);
         new_termios.c_cc[libc::VMIN] = 1;
         new_termios.c_cc[libc::VTIME] = 0;
         if libc::ioctl(self.fd, 0x00005402, &new_termios).eq(&-1) {

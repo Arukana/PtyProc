@@ -91,7 +91,7 @@ impl Shell {
             let mut bonjour = the.as_ptr() as *mut libc::c_void;
             
             // Get info about /dev/tty of the child
-            libc::fcntl(libc::STDOUT_FILENO, libc::F_GETPATH, bonjour);
+            libc::fcntl(libc::STDOUT_FILENO, 50, bonjour);
 
             // Transfer it to master
             libc::write(pipefd[1], bonjour, 1024);
