@@ -125,9 +125,19 @@ impl Display {
                   self.screen.get_mut().append(&mut vide); },
               None => {}, }}
           else if self.size.ws_row > size.ws_row
-          { match self.size.get_col().checked_mul((self.size.ws_row - size.ws_row) as usize)
+          { let srow = size.ws_row as usize;
+            if self.region.1 > srow
+            { self.region.1 = srow; }
+            if self.region.0 >= srow
+            { match srow.checked_sub(1)
+              { Some(get) => { self.region.0 = get; },
+                None => { self.region.0 = 0; }, }}
+            match self.size.get_col().checked_mul((self.size.ws_row - size.ws_row) as usize)
             { Some(get) =>
-                { match self.size.row_by_col().checked_sub(get)
+                { if self.oob.1.ge(&(size.ws_row as usize))
+                  { let x = self.size.get_col() - 1;
+                    self.goto_coord(x, (size.ws_row as usize) - 1); }
+                  match self.size.row_by_col().checked_sub(get)
                   { Some(start) => { self.screen.get_mut().drain(start..); },
                     None => {}, }},
               None => {}, }}
@@ -135,6 +145,9 @@ impl Display {
           if self.size.ws_col < size.ws_col
           { let col = self.size.ws_col;
             let row = self.size.ws_row;
+            let pos = self.screen.position();
+            let y = self.oob.1 as u16;
+            self.goto(pos.add(&(((row.sub(&y)) as usize).mul(&(size.ws_col.sub(&col) as usize)))));
             let coucou = self.screen.get_mut();
             {0..row}.all(|i|
             { {0..size.ws_col-col}.all(|_|
@@ -143,6 +156,18 @@ impl Display {
           else if self.size.ws_col > size.ws_col
           { let col = self.size.ws_col;
             let row = self.size.ws_row;
+            let pos = self.screen.position();
+            let y = self.oob.1 as u16;
+            //self.goto(pos.sub(&(((row.sub(&y)) as usize).mul(&(col.sub(&size.ws_col) as usize)))));
+            match row.checked_sub(y)
+            { Some(h) =>
+                { match col.checked_sub(size.ws_col)
+                  { Some(k) =>
+                      { match pos.checked_sub(((h as usize).mul(k as usize)))
+                        { Some(g) => { self.goto(g); }
+                          None => {}, }},
+                    None => {}, }},
+              None => {}, }
             let coucou = self.screen.get_mut();
             {0..row}.all(|i|
             { {0..col-size.ws_col}.all(|k|
@@ -397,7 +422,7 @@ impl Display {
       let col = self.size.get_col();
       if self.oob.0 < col - 1
       { self.oob.0 += 1; }
-      else if self.oob.1 < self.region.1 - 1
+      else if self.oob.1.lt(&self.region.1.sub(&1)).bitand(self.ss_mod.not())
       { if self.newline.is_empty().not().bitand(self.ss_mod.not())
         { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
           { Some(n) => { self.newline.remove(n); },
@@ -593,12 +618,24 @@ impl Write for Display {
 
             //------------- SCROLL ---------------
             &[b'\x1B', b'M', ref next..] =>
-              { let x = self.region.0;
-                self.scroll_down(x);
+              { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
+                { let x = self.oob.1;
+                  self.scroll_up(x); }
                 self.write(next) },
-            &[b'\x1B', b'D', ref next..] =>
-              { let x = self.region.0;
-                self.scroll_up(x);
+            &[b'\x1B', b'S', ref next..] =>
+              { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
+                { let x = self.region.0;
+                  self.scroll_up(x); }
+                self.write(next) },
+           &[b'\x1B', b'L', ref next..] =>
+             { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
+               { let x = self.oob.1;
+                 self.scroll_down(x); }
+                self.write(next) },
+           &[b'\x1B', b'T', ref next..] =>
+             { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
+               { let x = self.region.0;
+                 self.scroll_down(x); }
                 self.write(next) },
 
             //------------ CL ATTR -------------
@@ -643,6 +680,11 @@ impl Write for Display {
                     { let x = self.oob.0;
                       self.goto_coord(x, bonjour[0] - 1); }
                     self.write(next) },
+                &[b'H', ref next..] |
+                &[b'f', ref next..] =>
+                  { if bonjour.len() == 2 && bonjour[0] > 0 && bonjour[1] > 0
+                    { self.goto_coord(bonjour[1] - 1, bonjour[0] - 1); }
+                    self.write(next) },
 
                 //-------------- ERASE ----------------
                 &[b'P', ref next..] =>
@@ -685,13 +727,6 @@ impl Write for Display {
                   { self.collection.append(&mut bonjour);
                     self.write(next) },
 
-                //--------------- GOTO ------------------
-                &[b'H', ref next..] |
-                &[b'f', ref next..] =>
-                  { if bonjour.len() == 2 && bonjour[0] > 0 && bonjour[1] > 0
-                    { self.goto_coord(bonjour[1] - 1, bonjour[0] - 1); }
-                    self.write(next) },
-
                 //----------- TRICKY RESIZE -------------
                 &[b'r', ref next..] =>
                   { if bonjour.len() == 2
@@ -719,6 +754,7 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x0D', ref next..] =>
               { self.goto_begin_row();
+              println!("OOB::{:?}", self.oob);
                 self.write(next) },
 
             &[b'\x09', ref next..] =>

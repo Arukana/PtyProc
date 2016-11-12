@@ -48,7 +48,7 @@ fn test_scroll()
   assert_eq!(display.newlines(), &vec![(9, 7)]);
 
   // 1 time Scroll::Up
-  assert_eq!(display.write(b"\x1BD").ok(), Some(0usize));
+  assert_eq!(display.write(b"\x1BS").ok(), Some(0usize));
   assert_eq!(display.into_bytes(),
       vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
            b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm',
@@ -61,7 +61,7 @@ fn test_scroll()
   assert_eq!(display.newlines(), &vec![(9, 6), (9, 7)]);
 
   // 1 time Scroll::Down
-  assert_eq!(display.write(b"\x1BM").ok(), Some(0usize));
+  assert_eq!(display.write(b"\x1BT").ok(), Some(0usize));
   assert_eq!(display.into_bytes(),
       vec![b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
@@ -74,7 +74,7 @@ fn test_scroll()
   assert_eq!(display.newlines(), &vec![(9, 0), (9, 7)]);
 
   // 3 times Scroll::Down
-  assert_eq!(display.write(b"\x1BM\x1BM\x1BM").ok(), Some(0usize));
+  assert_eq!(display.write(b"\x1B3T").ok(), Some(0usize));
   assert_eq!(display.into_bytes(),
       vec![b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
@@ -87,7 +87,7 @@ fn test_scroll()
   assert_eq!(display.newlines(), &vec![(9, 0), (9, 1), (9, 2), (9, 3), (9, 7)]);
 
   // 5 times Scroll::Up
-  assert_eq!(display.write(b"\x1BD\x1BD\x1BD\x1BD\x1BD").ok(), Some(0usize));
+  assert_eq!(display.write(b"\x1B5S").ok(), Some(0usize));
   assert_eq!(display.into_bytes(),
       vec![b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm',
            b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o', b' ', b'l',

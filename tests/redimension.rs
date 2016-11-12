@@ -63,6 +63,20 @@ fn test_redimension()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
 
+  // Print " A"
+  assert_eq!(display.write(b" A").ok(), Some(2usize));
+  assert_eq!(display.into_bytes(),
+      vec![b'h', b'e', b'l', b'l', b'o', b' ', b'l', b'o', b'r', b'e',
+           b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
+           b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm',
+           b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o', b' ', b'l',
+           b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'm',
+           b' ', b'd', b'o', b'l', b'o', b'r', b' ', b's', b'i', b't',
+           b' ', b'a', b'm', b'e', b't', b' ', b'b', b'o', b'n', b'j',
+           b'o', b'u', b'r', b' ', b'A', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
+
   winsz = Winszed
   { ws_row: 5,
     ws_col: 10,
@@ -79,6 +93,16 @@ fn test_redimension()
            b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o', b' ', b'l',
            b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'm' ]);
 
+  // Print "A"
+  assert_eq!(display.write(b"A").ok(), Some(1usize));
+  assert_eq!(display.into_bytes(),
+      vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
+           b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm',
+           b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o', b' ', b'l',
+           b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'A',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
+
+
   winsz = Winszed
   { ws_row: 8,
     ws_col: 10,
@@ -89,11 +113,23 @@ fn test_redimension()
   unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
   display.resize();
   assert_eq!(display.into_bytes(),
-      vec![b'h', b'e', b'l', b'l', b'o', b' ', b'l', b'o', b'r', b'e',
-           b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
+      vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
            b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm',
            b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o', b' ', b'l',
-           b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'm',
+           b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'A',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
+
+  // Print "Q"
+  assert_eq!(display.write(b"Q").ok(), Some(1usize));
+  assert_eq!(display.into_bytes(),
+      vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
+           b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm',
+           b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o', b' ', b'l',
+           b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'A',
+           b'Q', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
@@ -108,11 +144,23 @@ fn test_redimension()
   unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
   display.resize();
   assert_eq!(display.into_bytes(),
-vec![b'h', b'e', b'l', b'l', b'o', b' ', b'l', b'o', b'r', b'e', b' ', b' ',
-     b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o', b' ', b' ',
+vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o', b' ', b' ',
      b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm', b' ', b' ',
      b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o', b' ', b'l', b' ', b' ',
-     b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b' ',
+     b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'A', b' ', b' ',
+     b'Q', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+     b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+     b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+     b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
+
+  // Print "B"
+  assert_eq!(display.write(b"\rB").ok(), Some(1usize));
+  assert_eq!(display.into_bytes(),
+vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o', b' ', b' ',
+     b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm', b' ', b' ',
+     b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o', b' ', b'l', b' ', b' ',
+     b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's', b'u', b'A', b' ', b' ',
+     b'B', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
      b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
      b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
      b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
@@ -127,15 +175,26 @@ vec![b'h', b'e', b'l', b'l', b'o', b' ', b'l', b'o', b'r', b'e', b' ', b' ',
   unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
   display.resize();
   assert_eq!(display.into_bytes(),
-      vec![b'h', b'e', b'l', b'l', b'o', b' ', b'l', b'o',
-           b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ',
+      vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ',
            b'l', b'o', b'r', b' ', b's', b'i', b't', b' ',
            b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o',
            b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's',
+           b'B', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
+
+  // Print "A"
+  assert_eq!(display.write(b"A").ok(), Some(1usize));
+  assert_eq!(display.into_bytes(),
+      vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ',
+           b'l', b'o', b'r', b' ', b's', b'i', b't', b' ',
+           b'e', b't', b' ', b'h', b'e', b'l', b'l', b'o',
+           b'o', b'r', b'e', b'm', b' ', b'i', b'p', b's',
+           b'B', b'A', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
 
   unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &stock); }
-  unsafe { libc::ioctl(0, 536900721); }
 }
