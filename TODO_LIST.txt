@@ -1,5 +1,8 @@
-!+ Redimensionnement
-   '-> fonction forkpty(3)
+
+!+ Intégrer la lib github.com/doy/vt100-rust
+
+/*
+√ Redimensionnement
 
 √ Faire des tests unitaires précis et poussés pour chacune des méthodes
   + Faire des tests unitaires sur la gestion d'erreurs
@@ -7,3 +10,4 @@
 
 + Caractère de l'Unicode
   /! Certaines pages de l'Unicode ne sont pas gérées !/
+*/

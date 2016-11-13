@@ -119,13 +119,21 @@ impl Display {
       Err(why) => Err(DisplayError::WinszedFail(why)),
       Ok(size) => 
         { if self.size.ws_row < size.ws_row
-          { match self.size.get_col().checked_mul((size.ws_row - self.size.ws_row) as usize)
+          { {self.size.ws_row..size.ws_row}.all(|i|
+            { self.newline.push((self.size.get_col() - 1, i as usize));
+              true });
+            match self.size.get_col().checked_mul((size.ws_row - self.size.ws_row) as usize)
             { Some(get) =>
                 { let mut vide = {0..get}.map(|_: usize| Control::new(&[b' '][..])).collect::<Vec<Control>>();
                   self.screen.get_mut().append(&mut vide); },
               None => {}, }}
           else if self.size.ws_row > size.ws_row
-          { let srow = size.ws_row as usize;
+          { {size.ws_row..self.size.ws_row}.all(|i|
+            { match self.newline.iter().position(|&a| a.1.eq(&(i as usize)))
+              { Some(n) => { self.newline.remove(n); },
+                None => {}, }
+              true });
+            let srow = size.ws_row as usize;
             if self.region.1 > srow
             { self.region.1 = srow; }
             if self.region.0 >= srow
@@ -147,7 +155,20 @@ impl Display {
             let row = self.size.ws_row;
             let pos = self.screen.position();
             let y = self.oob.1 as u16;
-            self.goto(pos.add(&(((row.sub(&y)) as usize).mul(&(size.ws_col.sub(&col) as usize)))));
+            match row.checked_sub(y)
+            { Some(h) =>
+                { match size.ws_col.checked_sub(col)
+                  { Some(k) =>
+                      { match pos.checked_add(((h as usize).mul(k as usize)))
+                        { Some(g) => { self.goto(g); }
+                          None => {}, }},
+                    None => {}, }},
+              None => {}, }
+          /*  {0..row}.all(|i|
+            { match self.newline.iter().position(|&a| a.1.eq(&(i as usize)))
+              { Some(n) => { self.newline[n].0 = (size.ws_col as usize) - 1; },
+                None => {}, }
+              true });*/
             let coucou = self.screen.get_mut();
             {0..row}.all(|i|
             { {0..size.ws_col-col}.all(|_|
@@ -158,7 +179,6 @@ impl Display {
             let row = self.size.ws_row;
             let pos = self.screen.position();
             let y = self.oob.1 as u16;
-            //self.goto(pos.sub(&(((row.sub(&y)) as usize).mul(&(col.sub(&size.ws_col) as usize)))));
             match row.checked_sub(y)
             { Some(h) =>
                 { match col.checked_sub(size.ws_col)
@@ -168,6 +188,11 @@ impl Display {
                           None => {}, }},
                     None => {}, }},
               None => {}, }
+           /* {0..row}.all(|i|
+            { match self.newline.iter().position(|&a| a.1.eq(&(i as usize)))
+              { Some(n) => { self.newline[n].0 = (size.ws_col as usize) - 1; },
+                None => {}, }
+              true });*/
             let coucou = self.screen.get_mut();
             {0..row}.all(|i|
             { {0..col-size.ws_col}.all(|k|
@@ -244,13 +269,14 @@ impl Display {
 
     /// The method `goto_begin_row` moves the cursor to the beginning of the row
     pub fn goto_begin_row(&mut self)
-    { let x = self.oob.0;
-      self.goto_left(x); }
+    { let y = self.oob.1;
+      self.goto_coord(0, y); }
 
     /// The method `goto_end_row` moves the cursor to the end of the row
     pub fn goto_end_row(&mut self)
-    { let x = self.size.get_col() - self.oob.0 - 1;
-      self.goto_right(x); }
+    { let x = self.size.get_col() - 1;
+      let y = self.oob.1;
+      self.goto_coord(x, y); }
 
     /// The method `goto_coord` moves the cursor to the given coordinates
     pub fn goto_coord(&mut self, x: libc::size_t, y: libc::size_t)
@@ -620,7 +646,10 @@ impl Write for Display {
             &[b'\x1B', b'M', ref next..] =>
               { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
                 { let x = self.oob.1;
-                  self.scroll_up(x); }
+                  if !self.ss_mod
+                  { self.scroll_up(x); }
+                  else
+                  { self.scroll_down(x); }}
                 self.write(next) },
             &[b'\x1B', b'S', ref next..] =>
               { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
@@ -697,7 +726,10 @@ impl Write for Display {
                   { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
                     { let x = self.oob.1;
                       {0..bonjour[0]}.all(|_|
-                      { self.scroll_up(x);
+                      { if !self.ss_mod
+                        { self.scroll_up(x); }
+                        else
+                        { self.scroll_down(x); }
                         true }); }
                     self.write(next) },
                 &[b'S', ref next..] =>
@@ -754,7 +786,6 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x0D', ref next..] =>
               { self.goto_begin_row();
-              println!("OOB::{:?}", self.oob);
                 self.write(next) },
 
             &[b'\x09', ref next..] =>
