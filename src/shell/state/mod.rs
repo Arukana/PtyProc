@@ -3,14 +3,12 @@ pub mod clone;
 pub const DEFAULT_REPEAT: libc::c_long = 1_000i64;
 pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 
-use std::io::Write;
 use std::ops::BitOr;
 use std::ops::{Add, Sub, BitAnd};
 
 use ::libc;
 use ::time;
 
-use super::Display;
 use super::device::control::Control;
 
 use self::clone::Clone;
@@ -38,7 +36,7 @@ pub struct ShellState {
   /// The output of last text printed.
   out_last: Option<(Out, libc::size_t)>,
   /// The output of matrix Screen interface.
-  out_screen: Display,
+  out_screen: String,
 }
 
 impl ShellState {
@@ -47,7 +45,6 @@ impl ShellState {
     pub fn new (
         repeat: Option<libc::c_long>,
         interval: Option<libc::c_long>,
-        fd: libc::c_int
     ) -> Self {
         ShellState {
             repeat: repeat.unwrap_or(DEFAULT_REPEAT),
@@ -59,7 +56,7 @@ impl ShellState {
             in_repeat: None,
             in_interval: None,
             out_last: None,
-            out_screen: Display::new(fd).unwrap(),
+            out_screen: String::new(),
         }
     }
 
@@ -84,13 +81,13 @@ impl ShellState {
         self.sig = signal;
         if let Some(()) = self.is_signal_resized() {
           println!("RESIZE");
-            self.out_screen.resize().unwrap();
+//            self.out_screen.resize().unwrap();
         }
     }
 
     /// The mutator method `set_input` update the `in_text`
     /// and save the old `in_text` to `in_text_past`.
-    pub fn set_input(&mut self, mut down: Option<Control>) {
+    pub fn set_input(&mut self, mut down: Option<Control>) {/*
 
           if self.out_screen.ss()
           { let ss: libc::c_uchar = match down
@@ -106,7 +103,7 @@ impl ShellState {
               _ => 0, };
             if ss > 0
             { down = Some(Control::new([b'\x1B', b'O', ss, 0, 0, 0, 0, 0, 0, 0, 0, 0], 3)); }}
-
+*/
         self.in_down = down;
         if let Some(after) = down {
             if let Some(before) = self.in_up {
@@ -138,11 +135,6 @@ impl ShellState {
     pub fn set_output(&mut self, entry: Option<(Out, libc::size_t)>) {
         if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
-            print!("SCREEN::");
-            for i in {0..len}
-            { print!(" {}, {} |", buf[i], if buf[i]>=32{buf[i] as char}else{'\0'}); }
-            println!("");
-            self.out_screen.write(&buf[..len]);
         } else {
             self.out_last = None;
         }
@@ -227,7 +219,7 @@ impl ShellState {
     }
 
     /// The accessor method `is_output_screen` returns the Output screen event.
-    pub fn is_output_screen(&self) -> Option<&Display> {
+    pub fn is_output_screen(&self) -> Option<&String> {
         if self.is_output_last().is_some().bitor(
             self.is_signal_resized().is_some()
         ) {

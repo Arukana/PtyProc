@@ -11,7 +11,7 @@ use ::pty::prelude as pty;
 pub use self::state::DeviceState;
 
 pub type In = [libc::c_uchar; 12];
-pub type Out = [libc::c_uchar; 4096];
+pub type Out = [libc::c_uchar; 75096];
 pub type Sig = libc::c_int;
 
 /// The struct `Device` is the input/output terminal interface.
@@ -51,7 +51,7 @@ impl Device {
       }
     });
     thread::spawn(move || {
-      let mut bytes: Out = [0u8; 4096];
+      let mut bytes: Out = [0u8; 75096];
 
       while let Some(read) = master.read(&mut bytes).ok() {
         tx_out.send((bytes, read));

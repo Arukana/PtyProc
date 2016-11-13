@@ -1,7 +1,6 @@
 #![feature(slice_patterns)]
 #![feature(advanced_slice_patterns)]
 #![feature(integer_atomics)]
-#![feature(range_contains)]
 
 #![crate_type= "lib"]
 #![cfg_attr(feature = "nightly", feature(plugin))]
@@ -19,8 +18,8 @@
 extern crate pty;
 extern crate libc;
 extern crate time;
+extern crate vt100;
 extern crate errno;
-extern crate sysinfo;
 
 #[macro_use]
 mod macros;

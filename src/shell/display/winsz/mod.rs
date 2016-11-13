@@ -22,6 +22,10 @@ pub struct Winszed {
 
 impl Winszed {
 
+    pub fn get_row_by_col(&self) -> (libc::c_int, libc::c_int) {
+        (self.ws_row as libc::c_int, self.ws_col as libc::c_int)
+}
+
   /// The constructor method `new` returns the window size.
   pub fn new(fd: libc::c_int) -> Result<Self> {
     unsafe {

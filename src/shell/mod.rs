@@ -32,6 +32,7 @@ pub struct Shell {
   speudo: pty::Master,
   device: Device,
   state: ShellState,
+  screen: Display,
 }
 
 #[repr(C)]
@@ -136,7 +137,8 @@ impl Shell {
             mode: mode,
             speudo: master,
             device: Device::from_speudo(master),
-            state: ShellState::new(repeat, interval, libc::STDOUT_FILENO),
+            state: ShellState::new(repeat, interval),
+            screen: Display::new(libc::STDOUT_FILENO).unwrap(),
           })
         },
       },
@@ -207,6 +209,13 @@ impl Iterator for Shell {
                 libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &winsz);
 
                 libc::kill(self.pid, libc::SIGWINCH); }
+          }
+          if state.is_signal_resized().is_some() {
+             self.screen.resize().unwrap();
+          }
+          if let Some(buf) = state.is_output_last() {
+             self.screen.write(buf);
+             print!("{}", self.screen);
           }
           Some(state)
       },
