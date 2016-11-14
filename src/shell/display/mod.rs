@@ -152,8 +152,7 @@ impl Display {
                   match self.size.row_by_col().checked_sub(get)
                   { Some(start) => { self.screen.get_mut().drain(start..); },
                     None => {}, }},
-              None => {}, }
-          }
+              None => {}, }}
 
           if self.size.ws_col < size.ws_col
           { let col = self.size.ws_col;

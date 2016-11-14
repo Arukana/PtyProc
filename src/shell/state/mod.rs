@@ -5,7 +5,7 @@ pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 
 use std::io::Write;
 use std::ops::BitOr;
-use std::ops::{Add, Sub, BitAnd};
+use std::ops::{Add, Sub, BitAnd, Not};
 
 use ::libc;
 use ::time;
@@ -17,6 +17,8 @@ use self::clone::Clone;
 pub use super::device::{Out, DeviceState};
 pub use super::device::control::operate::key::Key;
 pub use super::device::control::operate::mouse::Mouse;
+
+pub type Buf = [libc::c_uchar; 100];
 
 pub struct ShellState {
   /// The time limit required for a repetition.
@@ -39,6 +41,8 @@ pub struct ShellState {
   out_last: Option<(Out, libc::size_t)>,
   /// The output of matrix Screen interface.
   out_screen: Display,
+  /// The tmp buffer
+  buffer: Buf,
 }
 
 impl ShellState {
@@ -60,6 +64,7 @@ impl ShellState {
             in_interval: None,
             out_last: None,
             out_screen: Display::new(fd).unwrap(),
+            buffer: [0; 100],
         }
     }
 
@@ -137,10 +142,26 @@ impl ShellState {
     pub fn set_output(&mut self, entry: Option<(Out, libc::size_t)>) {
         if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
+
+            // --------- DEBUG ----------
             /*print!("SCREEN::");
             for i in {0..len}
             { print!(" {}, {} |", buf[i], if buf[i]>=32{buf[i] as char}else{'\0'}); }
             println!("");*/
+            // --------- DEBUG ----------
+
+            // ------ ESCAPE SAVE -------
+            let mut get = buf;
+            get.reverse();
+            match get.iter().find(|&&x| x == b'\x1B')
+            { Some(&n) =>
+                { let (checker, _) = get.split_at(n as usize);
+                  if checker.iter().find(|&&i| i.eq(&b';').not().bitand(i.eq(&b'\x1B').not()).bitand(i.lt(&b'0').bitor(i.gt(&b'9')))).is_none()
+                  { // Need concat with next buffer
+                    }},
+              None => {}, }
+            // ------ ESCAPE SAVE -------
+
             self.out_screen.write(&buf[..len]);
         } else {
             self.out_last = None;
@@ -252,6 +273,7 @@ impl Clone for ShellState {
             in_interval: self.in_interval,
             out_last: self.out_last,
             out_screen: self.out_screen.clone(),
+            buffer: [0; 100],
         }
     }
 
