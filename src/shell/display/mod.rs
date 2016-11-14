@@ -88,11 +88,13 @@ impl Display {
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
         let mut screen: Vec<libc::c_uchar> = Vec::with_capacity(self.len());
 
+        println!("BYTES");
         self.screen.get_ref().iter().all(|control: &Control| {
             let buf: &[u8] = control.get_ref();
             screen.extend_from_slice(buf);
             true
         });
+        println!("BYTES2");
         screen
     }
 
