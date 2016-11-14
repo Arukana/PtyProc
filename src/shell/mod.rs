@@ -124,7 +124,7 @@ impl Shell {
 
             // Collect the file desciptor of the child
             let child_fd = libc::open(buf, libc::O_RDWR);
-            println!("FD::{}", child_fd);
+    //        println!("FD::{}", child_fd);
 
             // Cas d'erreur si le fd est inférieur ou égal à 2
             // child_fd.gt(&2).except("Can't get file desciptor of the child");

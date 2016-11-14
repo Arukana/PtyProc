@@ -83,7 +83,6 @@ impl ShellState {
     pub fn set_signal(&mut self, signal: Option<libc::c_int>) {
         self.sig = signal;
         if let Some(()) = self.is_signal_resized() {
-          println!("RESIZE");
             self.out_screen.resize().unwrap();
         }
     }
@@ -138,10 +137,10 @@ impl ShellState {
     pub fn set_output(&mut self, entry: Option<(Out, libc::size_t)>) {
         if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
-            print!("SCREEN::");
+            /*print!("SCREEN::");
             for i in {0..len}
             { print!(" {}, {} |", buf[i], if buf[i]>=32{buf[i] as char}else{'\0'}); }
-            println!("");
+            println!("");*/
             self.out_screen.write(&buf[..len]);
         } else {
             self.out_last = None;
@@ -162,6 +161,7 @@ impl ShellState {
     /// the WINCH Signal event.
     pub fn is_signal_resized(&self) -> Option<()> {
         if let Some(libc::SIGWINCH) = self.sig {
+          //println!("RESIZE");
             Some(())
         } else {
             None

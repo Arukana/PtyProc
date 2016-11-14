@@ -16,7 +16,7 @@ fn main() {
     ).unwrap();
     while let Some(event) = shell.next() {
         if let Some(screen) = event.is_output_screen() {
-            print!("{}", screen);
+            print!("\x1B[H{}", screen);
         }
     }
 }
