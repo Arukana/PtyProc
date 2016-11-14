@@ -131,10 +131,8 @@ impl ShellState {
     /// and `out_screen` variable.
     pub fn set_output(&mut self, out_screen: &mut Display, entry: Option<(Out, libc::size_t)>) {
         if let Some((buf, len)) = entry {
-            println!("SS");
             self.out_last = Some((buf, len));
             out_screen.write(&buf[..len]);
-            println!("SS1");
         } else {
             self.out_last = None;
         }
