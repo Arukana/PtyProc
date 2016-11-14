@@ -15,8 +15,8 @@ fn main() {
         shell::Mode::Character
     ).unwrap();
     while let Some(event) = shell.next() {
-        if let Some(screen) = event.is_output_screen() {
-            print!("{}", screen);
+        if let Some(()) = event.is_output_screen() {
+//            print!("{}", shell);
         }
     }
 }

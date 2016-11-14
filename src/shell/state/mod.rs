@@ -1,5 +1,3 @@
-pub mod clone;
-
 pub const DEFAULT_REPEAT: libc::c_long = 1_000i64;
 pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 
@@ -13,11 +11,11 @@ use ::time;
 use super::Display;
 use super::device::control::Control;
 
-use self::clone::Clone;
 pub use super::device::{Out, DeviceState};
 pub use super::device::control::operate::key::Key;
 pub use super::device::control::operate::mouse::Mouse;
 
+#[derive(Copy, Clone)]
 pub struct ShellState {
   /// The time limit required for a repetition.
   repeat: libc::c_long,
@@ -37,8 +35,6 @@ pub struct ShellState {
   in_interval: Option<time::Tm>,
   /// The output of last text printed.
   out_last: Option<(Out, libc::size_t)>,
-  /// The output of matrix Screen interface.
-  out_screen: Display,
 }
 
 impl ShellState {
@@ -47,7 +43,6 @@ impl ShellState {
     pub fn new (
         repeat: Option<libc::c_long>,
         interval: Option<libc::c_long>,
-        fd: libc::c_int
     ) -> Self {
         ShellState {
             repeat: repeat.unwrap_or(DEFAULT_REPEAT),
@@ -59,7 +54,6 @@ impl ShellState {
             in_repeat: None,
             in_interval: None,
             out_last: None,
-            out_screen: Display::new(fd).unwrap(),
         }
     }
 
@@ -80,19 +74,19 @@ impl ShellState {
 
     /// The mutator method `set_signal` update the signal
     /// and can resize the Display interface.
-    pub fn set_signal(&mut self, signal: Option<libc::c_int>) {
+    pub fn set_signal(&mut self, out_screen: &mut Display, signal: Option<libc::c_int>) {
         self.sig = signal;
         if let Some(()) = self.is_signal_resized() {
           println!("RESIZE");
-            self.out_screen.resize().unwrap();
+            out_screen.resize().unwrap();
         }
     }
 
     /// The mutator method `set_input` update the `in_text`
     /// and save the old `in_text` to `in_text_past`.
-    pub fn set_input(&mut self, mut down: Option<Control>) {
+    pub fn set_input(&mut self, out_screen: &mut Display, mut down: Option<Control>) {
 
-          if self.out_screen.ss()
+          if out_screen.ss()
           { let ss: libc::c_uchar = match down
             { Some(after) =>
               { match after.as_slice()
@@ -135,14 +129,14 @@ impl ShellState {
 
     /// The mutator method `set_output` update the both `out_text`
     /// and `out_screen` variable.
-    pub fn set_output(&mut self, entry: Option<(Out, libc::size_t)>) {
+    pub fn set_output(&mut self, out_screen: &mut Display, entry: Option<(Out, libc::size_t)>) {
         if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
             print!("SCREEN::");
             for i in {0..len}
             { print!(" {}, {} |", buf[i], if buf[i]>=32{buf[i] as char}else{'\0'}); }
             println!("");
-            self.out_screen.write(&buf[..len]);
+            out_screen.write(&buf[..len]);
         } else {
             self.out_last = None;
         }
@@ -227,40 +221,22 @@ impl ShellState {
     }
 
     /// The accessor method `is_output_screen` returns the Output screen event.
-    pub fn is_output_screen(&self) -> Option<&Display> {
+    pub fn is_output_screen(&self) -> Option<()> {
         if self.is_output_last().is_some().bitor(
             self.is_signal_resized().is_some()
         ) {
-            Some(&self.out_screen)
+            Some(())
         } else {
             None
-        }
-    }
-}
-
-impl Clone for ShellState {
-    /// The method `clone` return a copy of the ShellState.
-    fn clone(&self) -> Self {
-        ShellState {
-            repeat: self.repeat,
-            interval: self.interval,
-            idle: self.idle,
-            sig: self.sig,
-            in_down: self.in_down,
-            in_up: self.in_up,
-            in_repeat: self.in_repeat,
-            in_interval: self.in_interval,
-            out_last: self.out_last,
-            out_screen: self.out_screen.clone(),
         }
     }
 
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
-    fn clone_from(&mut self, event: DeviceState) {
+    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_idle(event.is_idle());
-        self.set_signal(event.is_signal());
-        self.set_output(event.is_out_text());
-        self.set_input(event.is_input());
+        self.set_signal(out_screen, event.is_signal());
+        self.set_output(out_screen, event.is_out_text());
+        self.set_input(out_screen, event.is_input());
     }
 }

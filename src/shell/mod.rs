@@ -8,6 +8,7 @@ mod err;
 use std::os::unix::io::AsRawFd;
 use std::io::{self, Write};
 use std::mem;
+use std::fmt;
 
 use ::libc;
 use ::fork::Child;
@@ -16,10 +17,11 @@ use ::pty::prelude as pty;
 use self::mode::Mode;
 use self::device::Device;
 use self::termios::Termios;
-use self::state::clone::Clone;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 pub use self::display::Display;
+
+use self::display::winsz::Winszed;
 
 /// The struct `Shell` is the speudo terminal interface.
 
@@ -32,19 +34,7 @@ pub struct Shell {
   speudo: pty::Master,
   device: Device,
   state: ShellState,
-}
-
-#[repr(C)]
-#[derive(PartialEq, Clone, Copy, Debug, Default)]
-pub struct Winszed {
-  /// Rows, in characters.
-  pub ws_row: libc::c_ushort,
-  /// Columns, in characters.
-  pub ws_col: libc::c_ushort,
-  /// Horizontal size, pixels.
-  pub ws_xpixel: libc::c_ushort,
-  /// Vertical size, pixels.
-  pub ws_ypixel: libc::c_ushort,
+  screen: Display,
 }
 
 impl Shell {
@@ -136,7 +126,8 @@ impl Shell {
             mode: mode,
             speudo: master,
             device: Device::from_speudo(master),
-            state: ShellState::new(repeat, interval, libc::STDOUT_FILENO),
+            state: ShellState::new(repeat, interval),
+            screen: Display::new(libc::STDOUT_FILENO).unwrap(),
           })
         },
       },
@@ -179,6 +170,12 @@ impl Write for Shell {
   }
 }
 
+impl fmt::Display for Shell {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.screen)
+    }
+}
+
 impl Drop for Shell {
   fn drop(&mut self) {
     unsafe {
@@ -196,8 +193,8 @@ impl Iterator for Shell {
     match self.device.next() {
       None => None,
       Some(event) => {
-          self.state.clone_from(event);
-          let state: ShellState = self.state.clone();
+          self.state.clone_from(&mut self.screen, event);
+          let state: ShellState = self.state;
           self.mode_pass(&state);
           if state.is_signal_resized().is_some() {
               unsafe

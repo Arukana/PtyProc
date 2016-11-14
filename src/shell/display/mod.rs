@@ -1,5 +1,5 @@
 mod err;
-mod winsz;
+pub mod winsz;
 pub mod cursor;
 pub mod control;
 
