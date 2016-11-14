@@ -20,7 +20,7 @@ fn main() {
             shell.flush().unwrap();
         }
         if let Some(()) = event.is_output_screen() {
-            print!("{}", shell);
+            print!("\x1B[H{}", shell);
         }
     }
 }

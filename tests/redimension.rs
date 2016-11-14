@@ -197,4 +197,5 @@ vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
 
   unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &stock); }
+  unsafe { libc::ioctl(0, 536900721); }
 }

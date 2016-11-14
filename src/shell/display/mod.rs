@@ -122,6 +122,9 @@ impl Display {
           { {self.size.ws_row..size.ws_row}.all(|i|
             { self.newline.push((self.size.get_col() - 1, i as usize));
               true });
+            let srow = size.ws_row as usize;
+            if self.region.1 == self.size.ws_row as usize
+            { self.region.1 = srow; }
             match self.size.get_col().checked_mul((size.ws_row - self.size.ws_row) as usize)
             { Some(get) =>
                 { let mut vide = {0..get}.map(|_: usize| Control::new(&[b' '][..])).collect::<Vec<Control>>();
@@ -130,7 +133,8 @@ impl Display {
           else if self.size.ws_row > size.ws_row
           { {size.ws_row..self.size.ws_row}.all(|i|
             { match self.newline.iter().position(|&a| a.1.eq(&(i as usize)))
-              { Some(n) => { self.newline.remove(n); },
+              { Some(n) =>
+                  { self.newline.remove(n); },
                 None => {}, }
               true });
             let srow = size.ws_row as usize;
@@ -152,52 +156,39 @@ impl Display {
 
           if self.size.ws_col < size.ws_col
           { let col = self.size.ws_col;
-            let row = self.size.ws_row;
-            let pos = self.screen.position();
-            let y = self.oob.1 as u16;
-            match row.checked_sub(y)
-            { Some(h) =>
-                { match size.ws_col.checked_sub(col)
-                  { Some(k) =>
-                      { match pos.checked_add(((h as usize).mul(k as usize)))
-                        { Some(g) => { self.goto(g); }
-                          None => {}, }},
-                    None => {}, }},
-              None => {}, }
-          /*  {0..row}.all(|i|
+            let row = size.ws_row;
+            {0..row}.all(|i|
             { match self.newline.iter().position(|&a| a.1.eq(&(i as usize)))
               { Some(n) => { self.newline[n].0 = (size.ws_col as usize) - 1; },
                 None => {}, }
-              true });*/
-            let coucou = self.screen.get_mut();
-            {0..row}.all(|i|
-            { {0..size.ws_col-col}.all(|_|
-              { (*coucou).insert(((row - i) * col) as usize, Control::new(&[b' '][..]));
-                true }) }); }
+              true });
+            { let coucou = self.screen.get_mut();
+              {0..row}.all(|i|
+              { {0..size.ws_col-col}.all(|_|
+                { (*coucou).insert(((row - i) * col) as usize, Control::new(&[b' '][..]));
+                  true }) }); }
+            let x = self.oob.0;
+            let y = self.oob.1;
+            self.goto_coord(x, y); }
           else if self.size.ws_col > size.ws_col
           { let col = self.size.ws_col;
-            let row = self.size.ws_row;
-            let pos = self.screen.position();
-            let y = self.oob.1 as u16;
-            match row.checked_sub(y)
-            { Some(h) =>
-                { match col.checked_sub(size.ws_col)
-                  { Some(k) =>
-                      { match pos.checked_sub(((h as usize).mul(k as usize)))
-                        { Some(g) => { self.goto(g); }
-                          None => {}, }},
-                    None => {}, }},
-              None => {}, }
-           /* {0..row}.all(|i|
+            let row = size.ws_row;
+            {0..row}.all(|i|
             { match self.newline.iter().position(|&a| a.1.eq(&(i as usize)))
               { Some(n) => { self.newline[n].0 = (size.ws_col as usize) - 1; },
                 None => {}, }
-              true });*/
-            let coucou = self.screen.get_mut();
-            {0..row}.all(|i|
-            { {0..col-size.ws_col}.all(|k|
-              { (*coucou).remove((((row - i) * col) - (k + 1)) as usize);
-                true }) }); }
+              true });
+            { let coucou = self.screen.get_mut();
+              {0..row}.all(|i|
+              { {0..col-size.ws_col}.all(|k|
+                { (*coucou).remove((((row - i) * col) - (k + 1)) as usize);
+                  true }) }); }
+            let x = if self.oob.0 < size.ws_col as usize
+            { self.oob.0 }
+            else
+            { size.ws_col as usize - 1 };
+            let y = self.oob.1;
+            self.goto_coord(x, y); }
           Ok(self.size = size) },
       }
     }
@@ -376,7 +367,16 @@ impl Display {
       if !self.newline.is_empty()
       { match self.newline.iter().position(|&a| a.1.ge(&(pos/col)))
         { Some(n) => 
-            { self.screen.get_mut().into_iter().skip(pos).take(self.newline[n].0 + (self.newline[n].1 * col) + 1 - pos).all(|mut term: &mut Control| { term.clear().is_ok() }); },
+            { match self.newline[n].1.checked_mul(col)
+              { Some(r) =>
+                  { match r.checked_add(self.newline[n].0.add(&1))
+                    { Some(k) =>
+                        { match k.checked_sub(pos)
+                          { Some(j) => 
+                              { self.screen.get_mut().into_iter().skip(pos).take(j).all(|mut term: &mut Control| { term.clear().is_ok() }); },
+                            None => { self.erase_down(); }, }},
+                      None => { self.erase_down(); }, }},
+                None => { self.erase_down(); }, }},
           None => 
             { self.erase_down(); }, }}
       else
@@ -391,7 +391,16 @@ impl Display {
       { self.newline.reverse();
         match self.newline.iter().position(|&a| a.1.lt(&(pos/col)))
         { Some(n) => 
-            { self.screen.get_mut().into_iter().skip(self.newline[n].0 + (self.newline[n].1 * col)).take(pos - (self.newline[n].0 + (self.newline[n].1 * col)) + 1).all(|mut term: &mut Control| { term.clear().is_ok() }); },
+            { match self.newline[n].1.checked_mul(col)
+              { Some(r) =>
+                  { match r.checked_add(self.newline[n].0)
+                    { Some(k) =>
+                        { match pos.add(&1).checked_sub(k)
+                          { Some(j) => 
+                              { self.screen.get_mut().into_iter().skip(k).take(j).all(|mut term: &mut Control| { term.clear().is_ok() }); },
+                            None => { self.erase_up(); }, }},
+                      None => { self.erase_up(); }, }},
+                None => { self.erase_up(); }, }},
           None => 
             { self.erase_up(); }, }
         self.newline.reverse(); }
