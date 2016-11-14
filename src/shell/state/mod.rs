@@ -3,7 +3,7 @@ pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 
 use std::io::Write;
 use std::ops::BitOr;
-use std::ops::{Add, Sub, BitAnd};
+use std::ops::{Add, Sub, BitAnd, Not};
 
 use ::libc;
 use ::time;
@@ -14,6 +14,8 @@ use super::device::control::Control;
 pub use super::device::{Out, DeviceState};
 pub use super::device::control::operate::key::Key;
 pub use super::device::control::operate::mouse::Mouse;
+
+//pub type Buf = [libc::c_uchar; 100];
 
 #[derive(Copy, Clone)]
 pub struct ShellState {
@@ -35,6 +37,8 @@ pub struct ShellState {
   in_interval: Option<time::Tm>,
   /// The output of last text printed.
   out_last: Option<(Out, libc::size_t)>,
+// The tmp buffer
+//  buffer: Buf,
 }
 
 impl ShellState {
@@ -54,6 +58,7 @@ impl ShellState {
             in_repeat: None,
             in_interval: None,
             out_last: None,
+//            buffer: [0; 100],
         }
     }
 
@@ -77,7 +82,6 @@ impl ShellState {
     pub fn set_signal(&mut self, out_screen: &mut Display, signal: Option<libc::c_int>) {
         self.sig = signal;
         if let Some(()) = self.is_signal_resized() {
-          println!("RESIZE");
             out_screen.resize().unwrap();
         }
     }
@@ -132,7 +136,19 @@ impl ShellState {
     pub fn set_output(&mut self, out_screen: &mut Display, entry: Option<(Out, libc::size_t)>) {
         if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
+            // ------ ESCAPE SAVE -------
+            let mut get = buf;
+            get.reverse();
+            match get.iter().find(|&&x| x == b'\x1B')
+            { Some(&n) =>
+                { let (checker, _) = get.split_at(n as usize);
+                  if checker.iter().find(|&&i| i.eq(&b';').not().bitand(i.eq(&b'\x1B').not()).bitand(i.lt(&b'0').bitor(i.gt(&b'9')))).is_none()
+                  { // Need concat with next buffer
+                    }},
+              None => {}, }
+            // ------ ESCAPE SAVE -------
             out_screen.write(&buf[..len]);
+
         } else {
             self.out_last = None;
         }
@@ -152,6 +168,7 @@ impl ShellState {
     /// the WINCH Signal event.
     pub fn is_signal_resized(&self) -> Option<()> {
         if let Some(libc::SIGWINCH) = self.sig {
+          //println!("RESIZE");
             Some(())
         } else {
             None
