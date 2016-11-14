@@ -7,7 +7,7 @@
 git clone https://github.com/adjivas/pty-proc.git pty-proc && cd pty-proc
 cargo build
 ```
-With clippy:
+With clippy: (We are forbidding the word `bonjour` because it's pretty evil, just as `self`)
 ```shell
 cargo build --features clippy
 ```

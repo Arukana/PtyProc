@@ -1,2 +1,2 @@
-blacklisted-names = ["bonjour"]
+blacklisted-names = ["bonjour", "coucou", "self"]
 cyclomatic-complexity-threshold = 30
