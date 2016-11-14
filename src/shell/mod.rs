@@ -78,7 +78,7 @@ impl Shell {
             slave.exec(command.unwrap_or("/bin/bash")) },
 
         pty::Fork::Parent(pid, master) => {
-        mem::forget(fork);
+            mem::forget(fork);
             
             // Use pipe
             libc::close(pipefd[1]);
