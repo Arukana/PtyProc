@@ -11,7 +11,55 @@ use ::pty::prelude as pty;
 pub use self::state::DeviceState;
 
 pub type In = [libc::c_uchar; 12];
-pub type Out = [libc::c_uchar; 50096];
+pub struct Out([libc::c_uchar; 4096]);
+
+impl Default for Out {
+    fn default() -> Out {
+        Out([0u8; 4096])
+    }
+}
+
+use std::ops::{Deref, DerefMut};
+impl Deref for Out {
+   type Target = [libc::c_uchar];
+
+   fn deref<'a>(&'a self) -> &[libc::c_uchar] {
+       &self.0
+   }
+}
+
+impl DerefMut for Out {
+   fn deref_mut(&mut self) -> &mut [libc::c_uchar] {
+       &mut self.0
+   }
+}
+
+use std::ops::Index;
+impl Index<libc::size_t> for Out {
+    type Output = libc::c_uchar;
+
+    fn index(&self, count: libc::size_t) -> &libc::c_uchar {
+        &self.0[count]
+    }
+}
+
+use std::ops::RangeTo;
+impl Index<RangeTo<libc::size_t>> for Out {
+    type Output = [libc::c_uchar];
+
+    fn index(&self, range: RangeTo<libc::size_t>) -> &[libc::c_uchar] {
+        &self.0[range]
+    }
+}
+
+impl Copy for Out {}
+
+impl Clone for Out {
+    fn clone(&self) -> Self {
+        Out(self.0)
+    }
+}
+
 pub type Sig = libc::c_int;
 
 /// The struct `Device` is the input/output terminal interface.
@@ -51,7 +99,7 @@ impl Device {
       }
     });
     thread::spawn(move || {
-      let mut bytes: Out = [0u8; 50096];
+      let mut bytes: Out = Out::default();
 
       while let Some(read) = master.read(&mut bytes).ok() {
         tx_out.send((bytes, read));

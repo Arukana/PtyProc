@@ -1,50 +1,37 @@
 pub mod display;
 pub mod device;
 pub mod state;
-pub mod mode;
 pub mod termios;
 mod err;
 
 use std::os::unix::io::AsRawFd;
 use std::io::{self, Write};
 use std::mem;
+use std::fmt;
 
 use ::libc;
 use ::fork::Child;
 use ::pty::prelude as pty;
 
-use self::mode::Mode;
 use self::device::Device;
 use self::termios::Termios;
-use self::state::clone::Clone;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 pub use self::display::Display;
+
+use self::display::winsz::Winszed;
 
 /// The struct `Shell` is the speudo terminal interface.
 
 pub struct Shell {
   child_fd: libc::c_int,
   pid: libc::pid_t,
-  mode: Mode,
   #[allow(dead_code)]
   config: Termios,
   speudo: pty::Master,
   device: Device,
   state: ShellState,
-}
-
-#[repr(C)]
-#[derive(PartialEq, Clone, Copy, Debug, Default)]
-pub struct Winszed {
-  /// Rows, in characters.
-  pub ws_row: libc::c_ushort,
-  /// Columns, in characters.
-  pub ws_col: libc::c_ushort,
-  /// Horizontal size, pixels.
-  pub ws_xpixel: libc::c_ushort,
-  /// Vertical size, pixels.
-  pub ws_ypixel: libc::c_ushort,
+  screen: Display,
 }
 
 impl Shell {
@@ -56,17 +43,6 @@ impl Shell {
       interval: Option<i64>,
       command: Option<&'static str>,
   ) -> Result<Self> {
-    Shell::from_mode(repeat, interval, command, Mode::None)
-  }
-
-  /// The constructor method `from_mode` returns a shell interface according to
-  /// the command's option and the mode.
-    pub fn from_mode (
-      repeat: Option<i64>,
-      interval: Option<i64>,
-      command: Option<&'static str>,
-      mode: Mode,
-    ) -> Result<Self> {
     unsafe {
     let winsz: Winszed = Winszed::default();
     libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
@@ -102,7 +78,7 @@ impl Shell {
             slave.exec(command.unwrap_or("/bin/bash")) },
 
         pty::Fork::Parent(pid, master) => {
-        mem::forget(fork);
+            mem::forget(fork);
             
             // Use pipe
             libc::close(pipefd[1]);
@@ -133,10 +109,10 @@ impl Shell {
             child_fd: child_fd,
             pid: pid,
             config: Termios::default(),
-            mode: mode,
             speudo: master,
             device: Device::from_speudo(master),
-            state: ShellState::new(repeat, interval, libc::STDOUT_FILENO),
+            state: ShellState::new(repeat, interval),
+            screen: Display::new(libc::STDOUT_FILENO).unwrap(),
           })
         },
       },
@@ -147,26 +123,6 @@ impl Shell {
   pub fn get_pid(&self) -> &libc::pid_t {
     &self.pid
   }
-
-  /// The method `set_mode` changes the terminal mode.
-  pub fn set_mode(&mut self, mode: Mode) {
-    self.mode = mode;
-  }
-
-    /// The method `mode_pass` sends the input to the speudo terminal
-    /// if the mode was defined with a procedure.
-    fn mode_pass (
-        &mut self,
-        state: &ShellState,
-    ) {
-        if self.mode == Mode::Character {
-
-          if let Some(ref text) = state.is_input_slice() {
-             self.write(text).unwrap();
-             self.flush().unwrap();
-          }
-       }
-    }
 }
 
 impl Write for Shell {
@@ -177,6 +133,12 @@ impl Write for Shell {
   fn flush(&mut self) -> io::Result<()> {
     self.speudo.flush()
   }
+}
+
+impl fmt::Display for Shell {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.screen)
+    }
 }
 
 impl Drop for Shell {
@@ -196,10 +158,8 @@ impl Iterator for Shell {
     match self.device.next() {
       None => None,
       Some(event) => {
-          self.state.clone_from(event);
-          let state: ShellState = self.state.clone();
-          self.mode_pass(&state);
-          if state.is_signal_resized().is_some() {
+          self.state.clone_from(&mut self.screen, event);
+          if self.state.is_signal_resized().is_some() {
               unsafe
               { // Manually set child size
                 let winsz: Winszed = Winszed::default();
@@ -208,7 +168,7 @@ impl Iterator for Shell {
 
                 libc::kill(self.pid, libc::SIGWINCH); }
           }
-          Some(state)
+          Some(self.state)
       },
     }
   }

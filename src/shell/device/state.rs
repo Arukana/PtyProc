@@ -5,7 +5,7 @@ use super::Out;
 use super::Sig;
 use super::control::Control;
 
-#[derive(Copy)]
+#[derive(Copy, Clone)]
 pub enum DeviceState {
   /// Update.
   Idle,
@@ -70,11 +70,5 @@ impl DeviceState {
       DeviceState::Sig(sig) => Some(sig),
       _ => None,
     }
-  }
-}
-
-impl Clone for DeviceState {
-  fn clone(&self) -> DeviceState {
-    *self
   }
 }
