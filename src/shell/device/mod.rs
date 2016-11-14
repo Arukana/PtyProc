@@ -21,15 +21,15 @@ impl Default for Out {
 
 use std::ops::{Deref, DerefMut};
 impl Deref for Out {
-   type Target = [u8];
+   type Target = [libc::c_uchar];
 
-   fn deref<'a>(&'a self) -> &[u8] {
+   fn deref<'a>(&'a self) -> &[libc::c_uchar] {
        &self.0
    }
 }
 
 impl DerefMut for Out {
-   fn deref_mut(&mut self) -> &mut [u8] {
+   fn deref_mut(&mut self) -> &mut [libc::c_uchar] {
        &mut self.0
    }
 }
