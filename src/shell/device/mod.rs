@@ -11,11 +11,12 @@ use ::pty::prelude as pty;
 pub use self::state::DeviceState;
 
 pub type In = [libc::c_uchar; 12];
-pub struct Out([libc::c_uchar; 4096]);
+/// shell/state/mod.rs : line 169 => len ne dépasse jamais 1024
+pub struct Out([libc::c_uchar; 1024]);
 
 impl Default for Out {
     fn default() -> Out {
-        Out([0u8; 4096])
+        Out([0u8; 1024])
     }
 }
 

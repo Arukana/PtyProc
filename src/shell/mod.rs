@@ -67,14 +67,13 @@ impl Shell {
             let mut bonjour = the.as_ptr() as *mut libc::c_void;
             
             // Get info about /dev/tty of the child
-            libc::fcntl(libc::STDOUT_FILENO, 50, bonjour);
+            libc::fcntl(libc::STDOUT_FILENO, 1024, bonjour);
 
             // Transfer it to master
             libc::write(pipefd[1], bonjour, 1024);
             libc::close(pipefd[1]);
 
             // Enter the shell exec
-            //slave.exec(command.unwrap_or("/Users/jpepin/work42/minishell/21sh")) },
             slave.exec(command.unwrap_or("/bin/bash")) },
 
         pty::Fork::Parent(pid, master) => {
@@ -91,16 +90,8 @@ impl Shell {
             get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
             let mut buf = get.as_ptr() as *const i8;
             
-            // DEBUG : Ici 'get' contient le /dev/tty du child
-            // print!("MASTER::");
-            // for i in get
-            // { print!("{}", i as char); }
-            // println!("");
-            // DEBUG
-
             // Collect the file desciptor of the child
             let child_fd = libc::open(buf, libc::O_RDWR);
-    //        println!("FD::{}", child_fd);
 
             // Cas d'erreur si le fd est inférieur ou égal à 2
             // child_fd.gt(&2).except("Can't get file desciptor of the child");
@@ -166,6 +157,7 @@ impl Iterator for Shell {
                 libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
                 libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &winsz);
 
+                // Manually send signal to the shell (child's pid)
                 libc::kill(self.pid, libc::SIGWINCH); }
           }
           Some(self.state)

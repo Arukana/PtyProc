@@ -117,7 +117,7 @@ impl Display {
     pub fn resize(&mut self) -> Result<()> {
     match Winszed::new(0) {
       Err(why) => Err(DisplayError::WinszedFail(why)),
-      Ok(size) => 
+      Ok(size) =>
         { if self.size.ws_row < size.ws_row
           { {self.size.ws_row..size.ws_row}.all(|i|
             { self.newline.push((self.size.get_col() - 1, i as usize));
@@ -735,10 +735,7 @@ impl Write for Display {
                   { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
                     { let x = self.oob.1;
                       {0..bonjour[0]}.all(|_|
-                      { if !self.ss_mod
-                        { self.scroll_up(x); }
-                        else
-                        { self.scroll_down(x); }
+                      { self.scroll_up(x);
                         true }); }
                     self.write(next) },
                 &[b'S', ref next..] =>
