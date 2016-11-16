@@ -137,7 +137,7 @@ impl ShellState {
         if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
             // ------ ESCAPE SAVE -------
-            let mut get = buf;
+/*            let mut get = buf;
             get.reverse();
             match get.iter().find(|&&x| x == b'\x1B')
             { Some(&n) =>
@@ -146,7 +146,7 @@ impl ShellState {
                   { // Need concat with next buffer
                     }},
               None => {}, }
-            // ------ ESCAPE SAVE -------
+  */          // ------ ESCAPE SAVE -------
             out_screen.write(&buf[..len]);
 
         } else {

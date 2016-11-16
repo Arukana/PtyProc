@@ -24,14 +24,14 @@ use self::display::winsz::Winszed;
 /// The struct `Shell` is the speudo terminal interface.
 
 pub struct Shell {
-  child_fd: libc::c_int,
-  pid: libc::pid_t,
-  #[allow(dead_code)]
-  config: Termios,
-  speudo: pty::Master,
-  device: Device,
-  state: ShellState,
-  screen: Display,
+    child_fd: libc::c_int,
+    pid: libc::pid_t,
+    #[allow(dead_code)]
+    config: Termios,
+    speudo: pty::Master,
+    device: Device,
+    state: ShellState,
+    screen: Display,
 }
 
 impl Shell {
@@ -46,6 +46,7 @@ impl Shell {
     unsafe {
     let winsz: Winszed = Winszed::default();
     libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
+
     let mut pipefd: Vec<i32> = Vec::with_capacity(2);
     let mut coucou = pipefd.as_ptr() as *mut i32;
     libc::pipe(coucou);
@@ -56,22 +57,23 @@ impl Shell {
       Ok(fork) => match fork {
         pty::Fork::Child(ref slave) =>
          {
+            #[cfg(target_os = "macos")]
+            {   // Use pipe
+                libc::close(pipefd[0]);
+
+                // Max path length = 1024
+                let mut the: Vec<u8> = Vec::with_capacity(1024);
+                let mut bonjour = the.as_ptr() as *mut libc::c_void;
+
+                // Get info about /dev/tty of the child
+                libc::fcntl(libc::STDOUT_FILENO, 1024, bonjour);
+
+                // Transfer it to master
+                libc::write(pipefd[1], bonjour, 1024);
+                libc::close(pipefd[1]); }
+
             // Child window init
             libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
-            
-            // Use pipe
-            libc::close(pipefd[0]);
-
-            // Max path length = 1024
-            let mut the: Vec<u8> = Vec::with_capacity(1024);
-            let mut bonjour = the.as_ptr() as *mut libc::c_void;
-            
-            // Get info about /dev/tty of the child
-            libc::fcntl(libc::STDOUT_FILENO, 50, bonjour);
-
-            // Transfer it to master
-            libc::write(pipefd[1], bonjour, 1024);
-            libc::close(pipefd[1]);
 
             // Enter the shell exec
             //slave.exec(command.unwrap_or("/Users/jpepin/work42/minishell/21sh")) },
@@ -79,31 +81,35 @@ impl Shell {
 
         pty::Fork::Parent(pid, master) => {
             mem::forget(fork);
-            
-            // Use pipe
-            libc::close(pipefd[1]);
-            let mut get: Vec<u8> = Vec::with_capacity(1024);
-            let mut buf = get.as_ptr() as *mut libc::c_void;
 
-            // Receive the /dev/tty of the child
-            libc::read(pipefd[0], buf, 1024);
-            libc::close(pipefd[0]);
-            get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
-            let mut buf = get.as_ptr() as *const i8;
-            
-            // DEBUG : Ici 'get' contient le /dev/tty du child
-            // print!("MASTER::");
-            // for i in get
-            // { print!("{}", i as char); }
-            // println!("");
-            // DEBUG
+            let mut child_fd = if cfg!(target_os = "macos")
+            {   // Use pipe
+                libc::close(pipefd[1]);
+                let mut get: Vec<u8> = Vec::with_capacity(1024);
+                let mut buf = get.as_ptr() as *mut libc::c_void;
 
-            // Collect the file desciptor of the child
-            let child_fd = libc::open(buf, libc::O_RDWR);
-    //        println!("FD::{}", child_fd);
+                // Receive the /dev/tty of the child
+                libc::read(pipefd[0], buf, 1024);
+                libc::close(pipefd[0]);
+                get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
+                let mut buf = get.as_ptr() as *const i8;
+
+                // Collect the file desciptor of the child
+                libc::open(buf, libc::O_RDWR) }
+            else if cfg!(any(target_os = "linux", target_os = "android"))
+            {   let mut path: String = String::with_capacity(1024);
+                path.push_str("/proc/");
+                path.push_str(format!("{}", pid).as_str());
+                path.push_str("/fd/0");
+                println!("{}", path);
+                let buf = path.as_ptr() as *const i8;
+                libc::open(buf, libc::O_RDWR) }
+            else { 0 };
 
             // Cas d'erreur si le fd est inférieur ou égal à 2
-            // child_fd.gt(&2).except("Can't get file desciptor of the child");
+            //assert!(child_fd.gt(&2));
+            if child_fd.le(&2)
+            {   child_fd = 0; }
 
           Ok(Shell {
             child_fd: child_fd,
@@ -165,6 +171,8 @@ impl Iterator for Shell {
                 let winsz: Winszed = Winszed::default();
                 libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
                 libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &winsz);
+            //    println!("RESIZE::{:?}", winsz);
+            //    libc::sleep(10);
 
                 libc::kill(self.pid, libc::SIGWINCH); }
           }

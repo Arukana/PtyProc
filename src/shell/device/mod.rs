@@ -11,11 +11,11 @@ use ::pty::prelude as pty;
 pub use self::state::DeviceState;
 
 pub type In = [libc::c_uchar; 12];
-pub struct Out([libc::c_uchar; 4096]);
+pub struct Out([libc::c_uchar; 496]);
 
 impl Default for Out {
     fn default() -> Out {
-        Out([0u8; 4096])
+        Out([0u8; 496])
     }
 }
 
