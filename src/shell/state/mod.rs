@@ -15,7 +15,39 @@ pub use super::device::{Out, DeviceState};
 pub use super::device::control::operate::key::Key;
 pub use super::device::control::operate::mouse::Mouse;
 
-//pub type Buf = [libc::c_uchar; 100];
+pub struct Buf([libc::c_uchar; 100]);
+impl Default for Buf
+{ fn default() -> Buf
+  { Buf([0u8; 100]) }}
+
+use std::ops::{Deref, DerefMut};
+impl Deref for Buf
+{ type Target = [libc::c_uchar];
+  fn deref<'a>(&'a self) -> &[libc::c_uchar]
+  { &self.0 }}
+
+impl DerefMut for Buf
+{ fn deref_mut(&mut self) -> &mut [libc::c_uchar]
+  { &mut self.0 }}
+
+use std::ops::Index;
+impl Index<libc::size_t> for Buf
+{ type Output = libc::c_uchar;
+  fn index(&self, count: libc::size_t) -> &libc::c_uchar
+  { &self.0[count] }}
+
+use std::ops::RangeTo;
+impl Index<RangeTo<libc::size_t>> for Buf
+{ type Output = [libc::c_uchar];
+  fn index(&self, range: RangeTo<libc::size_t>) -> &[libc::c_uchar]
+  { &self.0[range] }}
+
+impl Clone for Buf
+{ fn clone(&self) -> Self
+  { Buf(self.0) }}
+impl Copy for Buf
+{}
+
 
 #[derive(Copy, Clone)]
 pub struct ShellState {
@@ -37,8 +69,8 @@ pub struct ShellState {
   in_interval: Option<time::Tm>,
   /// The output of last text printed.
   out_last: Option<(Out, libc::size_t)>,
-// The tmp buffer
-//  buffer: Buf,
+  /// The tmp buffer
+  buffer: Buf,
 }
 
 impl ShellState {
@@ -58,7 +90,7 @@ impl ShellState {
             in_repeat: None,
             in_interval: None,
             out_last: None,
-//            buffer: [0; 100],
+            buffer: Buf([0; 100]),
         }
     }
 
@@ -134,20 +166,48 @@ impl ShellState {
     /// The mutator method `set_output` update the both `out_text`
     /// and `out_screen` variable.
     pub fn set_output(&mut self, out_screen: &mut Display, entry: Option<(Out, libc::size_t)>) {
-        if let Some((buf, len)) = entry {
+        if let Some((mut buf, len)) = entry {
+          // Ici, `len` est toujours égal à 1024.
             self.out_last = Some((buf, len));
-            // ------ ESCAPE SAVE -------
-/*            let mut get = buf;
-            get.reverse();
-            match get.iter().find(|&&x| x == b'\x1B')
-            { Some(&n) =>
-                { let (checker, _) = get.split_at(n as usize);
-                  if checker.iter().find(|&&i| i.eq(&b';').not().bitand(i.eq(&b'\x1B').not()).bitand(i.lt(&b'0').bitor(i.gt(&b'9')))).is_none()
-                  { // Need concat with next buffer
-                    }},
-              None => {}, }
-  */          // ------ ESCAPE SAVE -------
+
+            /*
+              Ce bout de code reproduit l'erreur provoquée par le `for`.
+              J'ai l'impression que le fait de rendre mutable la slice
+              (ce que fait le for) provoque le Segv.
+              J'ai néanmoins besoin de la rendre mutable pour pouvoir:
+              - enlever la fin du buffer (stockée avec succès dans `checker`) pour ne pas la parser ni l'afficher;
+              - ajouter `checker` au début du buffer suivant;
+            */
+
+  /*          // ------ ESCAPE SAVE -------
+            { let get: &mut [u8] = buf.deref_mut();
+              let mut index = len;
+              get.reverse();
+
+            { let debug = (&get[..len]).clone();
+            print!("bonjour::");
+            debug.iter().all(|&i| { if i > b' ' { print!(" {}, {} |", i, i as char); true }
+            else if i > 0 {print!(" {} |", i); true} else {false} });
+            println!(""); }
+
+              match get.iter().position(|&x| x == b'\x1B')
+              { Some(n) =>
+                  { let (mut checker, _) = get.split_at_mut(n);
+                    checker.reverse();
+                    println!("CHECKER::{:?}, at N::{}", checker, n);
+                    if checker.iter().position(|&i| i.eq(&b';').not().bitand(i.eq(&b'\x1B').not()).bitand(i.eq(&b'[').not()).bitand(i.lt(&b'0').bitor(i.gt(&b'9')))).is_none()
+                    { println!("COUCOU");
+                      // On atteint ce point lorsque checker doit etre soustrait au buffer courant pour etre ajouté au buffer suivant.
+                      }
+                    checker.reverse();
+                      },
+                None => {}, }
+                get.reverse();
+                }
+*/            // ------ ESCAPE SAVE -------
+
             out_screen.write(&buf[..len]);
+            buf = Out::default();
 
         } else {
             self.out_last = None;
@@ -168,7 +228,6 @@ impl ShellState {
     /// the WINCH Signal event.
     pub fn is_signal_resized(&self) -> Option<()> {
         if let Some(libc::SIGWINCH) = self.sig {
-          //println!("RESIZE");
             Some(())
         } else {
             None

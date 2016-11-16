@@ -76,7 +76,6 @@ impl Shell {
             libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
 
             // Enter the shell exec
-            //slave.exec(command.unwrap_or("/Users/jpepin/work42/minishell/21sh")) },
             slave.exec(command.unwrap_or("/bin/bash")) },
 
         pty::Fork::Parent(pid, master) => {
@@ -174,6 +173,7 @@ impl Iterator for Shell {
             //    println!("RESIZE::{:?}", winsz);
             //    libc::sleep(10);
 
+                // Manually send signal to the shell (child's pid)
                 libc::kill(self.pid, libc::SIGWINCH); }
           }
           Some(self.state)
