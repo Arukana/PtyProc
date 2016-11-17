@@ -15,10 +15,10 @@ pub use super::device::{Out, DeviceState};
 pub use super::device::control::operate::key::Key;
 pub use super::device::control::operate::mouse::Mouse;
 
-pub struct Buf([libc::c_uchar; 100]);
+pub struct Buf([libc::c_uchar; 100], usize);
 impl Default for Buf
 { fn default() -> Buf
-  { Buf([0u8; 100]) }}
+  { Buf([0u8; 100], 0) }}
 
 use std::ops::{Deref, DerefMut};
 impl Deref for Buf
@@ -44,7 +44,7 @@ impl Index<RangeTo<libc::size_t>> for Buf
 
 impl Clone for Buf
 { fn clone(&self) -> Self
-  { Buf(self.0) }}
+  { Buf(self.0, self.1) }}
 impl Copy for Buf
 {}
 
@@ -67,7 +67,7 @@ pub struct ShellState {
   in_repeat: Option<libc::size_t>,
   /// The segment intervals.
   in_interval: Option<time::Tm>,
-  /// The output of last text printed.
+  /// The output of last text //printed.
   out_last: Option<(Out, libc::size_t)>,
   /// The tmp buffer
   buffer: Buf,
@@ -90,7 +90,7 @@ impl ShellState {
             in_repeat: None,
             in_interval: None,
             out_last: None,
-            buffer: Buf([0; 100]),
+            buffer: Buf([0; 100], 0),
         }
     }
 
@@ -130,9 +130,9 @@ impl ShellState {
                   &[b'\x1B', b'[', b'B', ref next..] => b'B',
                   &[b'\x1B', b'[', b'C', ref next..] => b'C',
                   &[b'\x1B', b'[', b'D', ref next..] => b'D',
-                  &[b'\x0D', ref next..] => b'M',
+               /*   &[b'\x0D', ref next..] |
                   &[b'\x0A', ref next..] => b'M',
-                  _ => 0, }},
+                 */ _ => 0, }},
               _ => 0, };
             if ss > 0
             { down = Some(Control::new([b'\x1B', b'O', ss, 0, 0, 0, 0, 0, 0, 0, 0, 0], 3)); }}
@@ -167,47 +167,43 @@ impl ShellState {
     /// and `out_screen` variable.
     pub fn set_output(&mut self, out_screen: &mut Display, entry: Option<(Out, libc::size_t)>) {
         if let Some((mut buf, len)) = entry {
-          // Ici, `len` est toujours égal à 1024.
             self.out_last = Some((buf, len));
 
-            /*
-              Ce bout de code reproduit l'erreur provoquée par le `for`.
-              J'ai l'impression que le fait de rendre mutable la slice
-              (ce que fait le for) provoque le Segv.
-              J'ai néanmoins besoin de la rendre mutable pour pouvoir:
-              - enlever la fin du buffer (stockée avec succès dans `checker`) pour ne pas la parser ni l'afficher;
-              - ajouter `checker` au début du buffer suivant;
-            */
+            let mut tmp = [0u8; 596];
+            { let seeker = self.buffer.1;
+              let hey: &mut [u8] = self.buffer.deref_mut();
+              if seeker > 0
+              { { let mut buffer: &mut [u8] = &mut tmp[..];
+                  buffer.write(&[b'\x1B']).unwrap(); }
+                { let mut buffer: &mut [u8] = &mut tmp[1..];
+                  buffer.write(&hey[..]).unwrap(); }
+                { let mut buffer: &mut [u8] = &mut tmp[seeker..];
+                  buffer.write(&buf[..len]).unwrap(); }}
+              else
+              { let mut buffer: &mut [u8] = &mut tmp[..];
+                buffer.write(&buf[..len]).unwrap(); }
+            { let buffer: &[u8] = &tmp[..]; }}
 
-  /*          // ------ ESCAPE SAVE -------
+            out_screen.write(&tmp[..len + self.buffer.1]);
+
+            { let hey: &mut [u8] = self.buffer.deref_mut();
+              { let mut buffer: &mut [u8] = &mut hey[..];
+                let ss = [0u8; 100];
+                buffer.write(&ss[..]).unwrap(); }}
+            self.buffer.1 = 0;
+
+            if (&buf[..len]).iter().position(|&i| i.eq(&0)).is_none()
+            { match (&buf[..len]).split(|&at| at == b'\x1B').take(len).last()
+              { Some(get) =>
+                  { if get.is_empty() || get.iter().position(|&i| i.eq(&b';').not().bitand(i.eq(&b'(').not()).bitand(i.eq(&b'[').not()).bitand(i.lt(&b'0').bitor(i.gt(&b'9')))).is_none()
+                    { self.buffer.1 = get.len() + 1;
+                      let mut coucou: &mut [u8] = self.buffer.deref_mut();
+                      coucou.write(&get[..]).unwrap(); }},
+                None => {}, }}
+
             { let get: &mut [u8] = buf.deref_mut();
-              let mut index = len;
-              get.reverse();
-
-            { let debug = (&get[..len]).clone();
-            print!("bonjour::");
-            debug.iter().all(|&i| { if i > b' ' { print!(" {}, {} |", i, i as char); true }
-            else if i > 0 {print!(" {} |", i); true} else {false} });
-            println!(""); }
-
-              match get.iter().position(|&x| x == b'\x1B')
-              { Some(n) =>
-                  { let (mut checker, _) = get.split_at_mut(n);
-                    checker.reverse();
-                    println!("CHECKER::{:?}, at N::{}", checker, n);
-                    if checker.iter().position(|&i| i.eq(&b';').not().bitand(i.eq(&b'\x1B').not()).bitand(i.eq(&b'[').not()).bitand(i.lt(&b'0').bitor(i.gt(&b'9')))).is_none()
-                    { println!("COUCOU");
-                      // On atteint ce point lorsque checker doit etre soustrait au buffer courant pour etre ajouté au buffer suivant.
-                      }
-                    checker.reverse();
-                      },
-                None => {}, }
-                get.reverse();
-                }
-*/            // ------ ESCAPE SAVE -------
-
-            out_screen.write(&buf[..len]);
-            buf = Out::default();
+              { let mut buffer: &mut [u8] = &mut get[..];
+                buffer.write(&[0; 496]).unwrap(); }}
 
         } else {
             self.out_last = None;

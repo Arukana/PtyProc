@@ -57,6 +57,9 @@ impl Shell {
       Ok(fork) => match fork {
         pty::Fork::Child(ref slave) =>
          {
+            // Child window init
+            libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
+
             #[cfg(target_os = "macos")]
             {   // Use pipe
                 libc::close(pipefd[0]);
@@ -66,14 +69,11 @@ impl Shell {
                 let mut bonjour = the.as_ptr() as *mut libc::c_void;
 
                 // Get info about /dev/tty of the child
-                libc::fcntl(libc::STDOUT_FILENO, 1024, bonjour);
+                libc::fcntl(libc::STDOUT_FILENO, 50, bonjour);
 
                 // Transfer it to master
                 libc::write(pipefd[1], bonjour, 1024);
                 libc::close(pipefd[1]); }
-
-            // Child window init
-            libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
 
             // Enter the shell exec
             slave.exec(command.unwrap_or("/bin/bash")) },
@@ -100,7 +100,6 @@ impl Shell {
                 path.push_str("/proc/");
                 path.push_str(format!("{}", pid).as_str());
                 path.push_str("/fd/0");
-                println!("{}", path);
                 let buf = path.as_ptr() as *const i8;
                 libc::open(buf, libc::O_RDWR) }
             else { 0 };
@@ -170,8 +169,6 @@ impl Iterator for Shell {
                 let winsz: Winszed = Winszed::default();
                 libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
                 libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &winsz);
-            //    println!("RESIZE::{:?}", winsz);
-            //    libc::sleep(10);
 
                 // Manually send signal to the shell (child's pid)
                 libc::kill(self.pid, libc::SIGWINCH); }
