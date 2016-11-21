@@ -77,7 +77,7 @@ impl Display {
             bell: 0,
             screen: Cursor::new(
               (0..size.row_by_col()).map(|_: usize|
-                                            Character::new(&[b' '][..])
+                                            Character::from(' ')
                                         ).collect::<Vec<Character>>()
             ),
         }

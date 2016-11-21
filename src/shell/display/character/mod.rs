@@ -2,6 +2,7 @@ pub mod operate;
 
 use std::io::{self, Write};
 use std::fmt;
+use std::mem;
 
 use ::libc;
 
@@ -59,11 +60,23 @@ impl Character {
     }
 }
 
+impl From<char> for Character {
+
+    fn from(glyph: char) -> Character {
+        unsafe {
+            Character {
+                buf: mem::transmute::<char, [libc::c_uchar; 4]>(glyph),
+                len: glyph.len_utf8(),
+                operate: Operate::default(),
+            }
+        }
+    }
+}
+
 impl Write for Character {
 
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
-
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.len = buf.len();
         (&mut self.buf[..]).write(buf)
