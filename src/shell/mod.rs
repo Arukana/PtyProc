@@ -17,7 +17,7 @@ use self::device::Device;
 use self::termios::Termios;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
-pub use self::display::Display;
+pub use self::display::{Control, Display};
 
 use self::display::winsz::Winszed;
 
@@ -43,100 +43,133 @@ impl Shell {
       interval: Option<i64>,
       command: Option<&'static str>,
   ) -> Result<Self> {
-    unsafe {
-    let winsz: Winszed = Winszed::default();
-    libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
+      unsafe {
+          let winsz: Winszed = Winszed::default();
+          libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
 
-    let mut pipefd: Vec<i32> = Vec::with_capacity(2);
-    let mut coucou = pipefd.as_ptr() as *mut i32;
-    libc::pipe(coucou);
-    pipefd = Vec::from_raw_parts(coucou, 2, pipefd.capacity());
+          let mut pipefd: Vec<i32> = Vec::with_capacity(2);
+          let mut coucou = pipefd.as_ptr() as *mut i32;
+          libc::pipe(coucou);
+          pipefd = Vec::from_raw_parts(coucou, 2, pipefd.capacity());
 
-    match pty::Fork::from_ptmx() {
-      Err(cause) => Err(ShellError::ForkFail(cause)),
-      Ok(fork) => match fork {
-        pty::Fork::Child(ref slave) =>
-         {
-            // Child window init
-            libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
+          match pty::Fork::from_ptmx() {
+              Err(cause) => Err(ShellError::ForkFail(cause)),
+              Ok(fork) => match fork {
+                  pty::Fork::Child(ref slave) =>
+                  {
+                      // Child window init
+                      libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
 
-            #[cfg(target_os = "macos")]
-            {   // Use pipe
-                libc::close(pipefd[0]);
+                      #[cfg(target_os = "macos")]
+                      {   // Use pipe
+                          libc::close(pipefd[0]);
 
-                // Max path length = 1024
-                let mut the: Vec<u8> = Vec::with_capacity(1024);
-                let mut bonjour = the.as_ptr() as *mut libc::c_void;
+                          // Max path length = 1024
+                          let mut the: Vec<u8> = Vec::with_capacity(1024);
+                          let mut bonjour = the.as_ptr() as *mut libc::c_void;
 
-                // Get info about /dev/tty of the child
-                libc::fcntl(libc::STDOUT_FILENO, 50, bonjour);
+                          // Get info about /dev/tty of the child
+                          libc::fcntl(libc::STDOUT_FILENO, 50, bonjour);
 
-                // Transfer it to master
-                libc::write(pipefd[1], bonjour, 1024);
-                libc::close(pipefd[1]); }
+                          // Transfer it to master
+                          libc::write(pipefd[1], bonjour, 1024);
+                          libc::close(pipefd[1]); }
 
-            // Enter the shell exec
-            slave.exec(command.unwrap_or("/bin/bash")) },
+                      // Enter the shell exec
+                      slave.exec(command.unwrap_or("/bin/bash")) },
 
-        pty::Fork::Parent(pid, master) => {
-            mem::forget(fork);
+                  pty::Fork::Parent(pid, master) => {
+                      mem::forget(fork);
 
-            let mut child_fd = if cfg!(target_os = "macos")
-            {   // Use pipe
-                libc::close(pipefd[1]);
-                let mut get: Vec<u8> = Vec::with_capacity(1024);
-                let mut buf = get.as_ptr() as *mut libc::c_void;
+                      let mut child_fd = if cfg!(target_os = "macos")
+                      {   // Use pipe
+                          libc::close(pipefd[1]);
+                          let mut get: Vec<u8> = Vec::with_capacity(1024);
+                          let mut buf = get.as_ptr() as *mut libc::c_void;
 
-                // Receive the /dev/tty of the child
-                libc::read(pipefd[0], buf, 1024);
-                libc::close(pipefd[0]);
-                get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
-                let mut buf = get.as_ptr() as *const i8;
+                          // Receive the /dev/tty of the child
+                          libc::read(pipefd[0], buf, 1024);
+                          libc::close(pipefd[0]);
+                          get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
+                          let mut buf = get.as_ptr() as *const i8;
 
-                // Collect the file desciptor of the child
-                libc::open(buf, libc::O_RDWR) }
-            else if cfg!(any(target_os = "linux", target_os = "android"))
-            {   let mut path: String = String::with_capacity(1024);
-                path.push_str("/proc/");
-                path.push_str(format!("{}", pid).as_str());
-                path.push_str("/fd/0");
-                let buf = path.as_ptr() as *const i8;
-                libc::open(buf, libc::O_RDWR) }
-            else { 0 };
+                          // Collect the file desciptor of the child
+                          libc::open(buf, libc::O_RDWR) }
+                      else if cfg!(any(target_os = "linux", target_os = "android"))
+                      {   let mut path: String = String::with_capacity(1024);
+                          path.push_str("/proc/");
+                          path.push_str(format!("{}", pid).as_str());
+                          path.push_str("/fd/0");
+                          let buf = path.as_ptr() as *const i8;
+                          libc::open(buf, libc::O_RDWR) }
+                      else { 0 };
 
-            // Cas d'erreur si le fd est inférieur ou égal à 2
-            //assert!(child_fd.gt(&2));
-            if child_fd.le(&2)
-            {   child_fd = 0; }
+                      // Cas d'erreur si le fd est inférieur ou égal à 2
+                      //assert!(child_fd.gt(&2));
+                      if child_fd.le(&2)
+                      {   child_fd = 0; }
 
-          Ok(Shell {
-            child_fd: child_fd,
-            pid: pid,
-            config: Termios::default(),
-            speudo: master,
-            device: Device::from_speudo(master),
-            state: ShellState::new(repeat, interval),
-            screen: Display::new(libc::STDOUT_FILENO).unwrap(),
-          })
-        },
-      },
+                      Ok(Shell {
+                          child_fd: child_fd,
+                          pid: pid,
+                          config: Termios::default(),
+                          speudo: master,
+                          device: Device::from_speudo(master),
+                          state: ShellState::new(repeat, interval),
+                          screen: Display::new(libc::STDOUT_FILENO).unwrap(),
+                      })
+                  },
+              },
+          }
+      }}
+
+    /// The accessor method `get_pid` returns the pid from the master.
+    pub fn get_pid(&self) -> &libc::pid_t {
+        &self.pid
     }
-  }}
+}
 
-  /// The accessor method `get_pid` returns the pid from the master.
-  pub fn get_pid(&self) -> &libc::pid_t {
-    &self.pid
-  }
+/*impl IntoIterator for Shell {
+    type Item = Control;
+    type IntoIter = ::std::vec::IntoIter<Control>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.screen.into_iter()
+    }
+}*/
+
+impl Iterator for Shell {
+    type Item = ShellState;
+
+    fn next(&mut self) -> Option<ShellState> {
+        match self.device.next() {
+            None => None,
+            Some(event) => {
+                self.state.clone_from(&mut self.screen, event);
+                if self.state.is_signal_resized().is_some() {
+                    unsafe
+                    { // Manually set child size
+                        let winsz: Winszed = Winszed::default();
+                        libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
+                        libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &winsz);
+
+                        // Manually send signal to the shell (child's pid)
+                        libc::kill(self.pid, libc::SIGWINCH); }
+                }
+                Some(self.state)
+            },
+        }
+    }
 }
 
 impl Write for Shell {
-  fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-    self.speudo.write(buf)
-  }
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.speudo.write(buf)
+    }
 
-  fn flush(&mut self) -> io::Result<()> {
-    self.speudo.flush()
-  }
+    fn flush(&mut self) -> io::Result<()> {
+        self.speudo.flush()
+    }
 }
 
 impl fmt::Display for Shell {
@@ -146,35 +179,11 @@ impl fmt::Display for Shell {
 }
 
 impl Drop for Shell {
-  fn drop(&mut self) {
-    unsafe {
-      if libc::close(self.speudo.as_raw_fd()).eq(&-1) {
-        unimplemented!()
-      }
+    fn drop(&mut self) {
+        unsafe {
+            if libc::close(self.speudo.as_raw_fd()).eq(&-1) {
+                unimplemented!()
+            }
+        }
     }
-  }
-}
-
-impl Iterator for Shell {
-  type Item = ShellState;
-
-  fn next(&mut self) -> Option<ShellState> {
-    match self.device.next() {
-      None => None,
-      Some(event) => {
-          self.state.clone_from(&mut self.screen, event);
-          if self.state.is_signal_resized().is_some() {
-              unsafe
-              { // Manually set child size
-                let winsz: Winszed = Winszed::default();
-                libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
-                libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &winsz);
-
-                // Manually send signal to the shell (child's pid)
-                libc::kill(self.pid, libc::SIGWINCH); }
-          }
-          Some(self.state)
-      },
-    }
-  }
 }

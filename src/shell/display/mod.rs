@@ -14,7 +14,7 @@ use ::libc;
 pub use self::winsz::Winszed;
 pub use self::err::{DisplayError, Result};
 use self::cursor::Cursor;
-use self::control::Control;
+pub use self::control::Control;
 
 pub type In = [libc::c_uchar; 4];
 
