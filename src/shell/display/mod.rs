@@ -21,10 +21,24 @@ pub type In = [libc::c_uchar; 4];
 #[derive(Debug, Clone)]
 pub struct Display {
     save_position: (libc::size_t, libc::size_t),
-    save_terminal: Option<Box<Display>>,
+    save_terminal: Option<SaveTerminal>,
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
+    region: (libc::size_t, libc::size_t),
+    collection: Vec<libc::size_t>,
+    oob: (libc::size_t, libc::size_t),
+    line_wrap: bool,
+    size: Winszed,
+    screen: Cursor<Vec<Control>>,
+    bell: libc::size_t,
+}
+
+#[derive(Debug, Clone)]
+pub struct SaveTerminal {
+    position: (libc::size_t, libc::size_t),
+    ss_mod: bool,
+    newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
     collection: Vec<libc::size_t>,
     oob: (libc::size_t, libc::size_t),
@@ -494,7 +508,17 @@ impl Display {
 
     /// The method `save_terminal` saves the terminal Display configuration.
     pub fn save_terminal(&mut self)
-    { self.save_terminal = Some(Box::new(self.clone())); }
+    { self.save_terminal = Some(SaveTerminal
+      { save_position: self.save_position;
+        ss_mod: self.ss_mod;
+        newline: self.newline.clone();
+        region: self.region;
+        collection: self.collection.clone();
+        oob: self.oob;
+        line_wrap: self.line_wrap;
+        size: self.size;
+        screen: self.screen.clone();
+        bell: self.bell; }}
 
     /// The method `restore_terminal` restore the terminal Display configuration
     /// kept in the 'save_terminal' variable.
