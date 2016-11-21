@@ -523,7 +523,7 @@ impl Display {
     /// The method `restore_terminal` restore the terminal Display configuration
     /// kept in the 'save_terminal' variable.
     pub fn restore_terminal(&mut self)
-    { let save_terminal: SaveTerminal = self.save_terminal.clone().unwrap();
+    { if let Some(ref save_terminal) = self.save_terminal {
       self.save_position = save_terminal.save_position;
       self.ss_mod = save_terminal.ss_mod;
       self.newline = save_terminal.newline.clone();
@@ -531,10 +531,11 @@ impl Display {
       self.collection = save_terminal.collection.clone();
       self.oob = save_terminal.oob;
       self.line_wrap = save_terminal.line_wrap;
-      self.size = save_terminal.size;
       self.screen = save_terminal.screen.clone();
-      self.bell = save_terminal.bell;
-      self.save_terminal = None; }
+      self.bell = save_terminal.bell; }
+      self.save_terminal = None;
+      let (x, y) = self.oob;
+      self.goto_coord(x, y); }
 
     /// The method `erase_chars` erases couple of chars in the current line from the cursor.
     pub fn erase_chars(&mut self, mv: libc::size_t)
