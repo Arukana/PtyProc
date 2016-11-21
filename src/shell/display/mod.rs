@@ -36,7 +36,7 @@ pub struct Display {
 
 #[derive(Debug, Clone)]
 pub struct SaveTerminal {
-    position: (libc::size_t, libc::size_t),
+    save_position: (libc::size_t, libc::size_t),
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
@@ -509,22 +509,32 @@ impl Display {
     /// The method `save_terminal` saves the terminal Display configuration.
     pub fn save_terminal(&mut self)
     { self.save_terminal = Some(SaveTerminal
-      { save_position: self.save_position;
-        ss_mod: self.ss_mod;
-        newline: self.newline.clone();
-        region: self.region;
-        collection: self.collection.clone();
-        oob: self.oob;
-        line_wrap: self.line_wrap;
-        size: self.size;
-        screen: self.screen.clone();
-        bell: self.bell; }}
+      { save_position: self.save_position,
+        ss_mod: self.ss_mod,
+        newline: self.newline.clone(),
+        region: self.region,
+        collection: self.collection.clone(),
+        oob: self.oob,
+        line_wrap: self.line_wrap,
+        size: self.size,
+        screen: self.screen.clone(),
+        bell: self.bell, }); }
 
     /// The method `restore_terminal` restore the terminal Display configuration
     /// kept in the 'save_terminal' variable.
     pub fn restore_terminal(&mut self)
-    { if let Some(save) = self.save_terminal.take()
-      { *self = *save; }}
+    { let save_terminal: SaveTerminal = self.save_terminal.clone().unwrap();
+      self.save_position = save_terminal.save_position;
+      self.ss_mod = save_terminal.ss_mod;
+      self.newline = save_terminal.newline.clone();
+      self.region = save_terminal.region;
+      self.collection = save_terminal.collection.clone();
+      self.oob = save_terminal.oob;
+      self.line_wrap = save_terminal.line_wrap;
+      self.size = save_terminal.size;
+      self.screen = save_terminal.screen.clone();
+      self.bell = save_terminal.bell;
+      self.save_terminal = None; }
 
     /// The method `erase_chars` erases couple of chars in the current line from the cursor.
     pub fn erase_chars(&mut self, mv: libc::size_t)
