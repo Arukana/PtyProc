@@ -1,7 +1,7 @@
 mod err;
 pub mod winsz;
 pub mod cursor;
-pub mod control;
+pub mod character;
 
 use std::ops::{BitOr, BitAnd, Add, Sub, Mul, Not};
 use std::io::{self, Write};
@@ -14,7 +14,7 @@ use ::libc;
 pub use self::winsz::Winszed;
 pub use self::err::{DisplayError, Result};
 use self::cursor::Cursor;
-pub use self::control::Control;
+pub use self::character::Character;
 
 #[derive(Debug, Clone)]
 pub struct Display {
@@ -28,7 +28,7 @@ pub struct Display {
     oob: (libc::size_t, libc::size_t),
     line_wrap: bool,
     size: Winszed,
-    screen: Cursor<Vec<Control>>,
+    screen: Cursor<Vec<Character>>,
     bell: libc::size_t,
 }
 
@@ -42,7 +42,7 @@ pub struct SaveTerminal {
     oob: (libc::size_t, libc::size_t),
     line_wrap: bool,
     size: Winszed,
-    screen: Cursor<Vec<Control>>,
+    screen: Cursor<Vec<Character>>,
     bell: libc::size_t,
 }
 
@@ -77,8 +77,8 @@ impl Display {
             bell: 0,
             screen: Cursor::new(
               (0..size.row_by_col()).map(|_: usize|
-                                            Control::new(&[b' '][..])
-                                        ).collect::<Vec<Control>>()
+                                            Character::new(&[b' '][..])
+                                        ).collect::<Vec<Character>>()
             ),
         }
     }
@@ -96,11 +96,11 @@ impl Display {
     pub fn newlines(&self) -> &Vec<(libc::size_t, libc::size_t)>
     { &self.newline }
 
-    /// Converts a Vector of Control into a byte vector.
+    /// Converts a Vector of Character into a byte vector.
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
         let mut screen: Vec<libc::c_uchar> = Vec::new();
 
-        self.screen.get_ref().iter().all(|control: &Control| {
+        self.screen.get_ref().iter().all(|control: &Character| {
             let buf: &[u8] = control.get_ref();
             screen.extend_from_slice(buf);
             true
@@ -110,7 +110,7 @@ impl Display {
 
     /// The method `clear` purges the screen vector.
     pub fn clear(&mut self) -> io::Result<libc::size_t> {
-        self.screen.get_mut().iter_mut().all(|mut term: &mut Control|
+        self.screen.get_mut().iter_mut().all(|mut term: &mut Character|
                                              term.clear().is_ok()
         );
         self.newline.clear();
@@ -134,7 +134,7 @@ impl Display {
             { self.region.1 = srow; }
             match self.size.get_col().checked_mul((size.ws_row - self.size.ws_row) as usize)
             { Some(get) =>
-                { let mut vide = {0..get}.map(|_: usize| Control::new(&[b' '][..])).collect::<Vec<Control>>();
+                { let mut vide = {0..get}.map(|_: usize| Character::new(&[b' '][..])).collect::<Vec<Character>>();
                   self.screen.get_mut().append(&mut vide); },
               None => {}, }}
           else if self.size.ws_row > size.ws_row
@@ -172,7 +172,7 @@ impl Display {
             { let coucou = self.screen.get_mut();
               {0..row}.all(|i|
               { {0..size.ws_col-col}.all(|_|
-                { (*coucou).insert(((row - i) * col) as usize, Control::new(&[b' '][..]));
+                { (*coucou).insert(((row - i) * col) as usize, Character::new(&[b' '][..]));
                   true }) }); }
            // self.size = size;
             let x = self.oob.0;
@@ -316,7 +316,7 @@ impl Display {
       self.newline.dedup();
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      { (*coucou).insert(base * col, Control::new(&[b' '][..]));
+      { (*coucou).insert(base * col, Character::new(&[b' '][..]));
         (*coucou).remove(resize.1 * col);
         true }); }
 
@@ -338,7 +338,7 @@ impl Display {
       self.newline.dedup();
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      { (*coucou).insert(resize.1 * col, Control::new(&[b' '][..]));
+      { (*coucou).insert(resize.1 * col, Character::new(&[b' '][..]));
         (*coucou).remove(base * col);
         true }); }
 
@@ -364,7 +364,7 @@ impl Display {
       let oob = self.oob;
       let coucou = self.screen.get_mut();
       {0..(col * mv)}.all(|_|
-      { (*coucou).insert(pos, Control::new(&[b' '][..]));
+      { (*coucou).insert(pos, Character::new(&[b' '][..]));
         { (*coucou).remove(region.1 * col); }
         true }); }
 
@@ -382,7 +382,7 @@ impl Display {
                     { Some(k) =>
                         { match k.checked_sub(pos)
                           { Some(j) => 
-                              { self.screen.get_mut().into_iter().skip(pos).take(j).all(|mut term: &mut Control| { term.clear().is_ok() }); },
+                              { self.screen.get_mut().into_iter().skip(pos).take(j).all(|mut term: &mut Character| { term.clear().is_ok() }); },
                             None => { self.erase_down(); }, }},
                       None => { self.erase_down(); }, }},
                 None => { self.erase_down(); }, }},
@@ -406,7 +406,7 @@ impl Display {
                     { Some(k) =>
                         { match pos.add(&1).checked_sub(k)
                           { Some(j) => 
-                              { self.screen.get_mut().into_iter().skip(k).take(j).all(|mut term: &mut Control| { term.clear().is_ok() }); },
+                              { self.screen.get_mut().into_iter().skip(k).take(j).all(|mut term: &mut Character| { term.clear().is_ok() }); },
                             None => { self.erase_up(); }, }},
                       None => { self.erase_up(); }, }},
                 None => { self.erase_up(); }, }},
@@ -437,7 +437,7 @@ impl Display {
     /// (char under the cursor included)
     pub fn erase_up(&mut self)
     { let pos = self.screen.position();
-      self.screen.get_mut().into_iter().take(pos + 1).all(|mut term: &mut Control|
+      self.screen.get_mut().into_iter().take(pos + 1).all(|mut term: &mut Character|
       { term.clear().is_ok() }); }
 
     /// The method `erase_down` erase all lines from the current line down to
@@ -447,7 +447,7 @@ impl Display {
     pub fn erase_down(&mut self)
     { let pos = self.screen.position();
       let len = self.size.row_by_col();
-      self.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Control|
+      self.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Character|
       { term.clear().is_ok() }); }
 
     /// The method `print_enter` reproduce the behavior of a '\n'
@@ -538,14 +538,14 @@ impl Display {
         None => self.size.row_by_col() - 1, };
       let coucou = self.screen.get_mut();
       {0..mv}.all(|i|
-      { (*coucou).insert(border, Control::new(&[b' '][..]));
+      { (*coucou).insert(border, Character::new(&[b' '][..]));
         (*coucou).remove(pos);
         true }); }
 }
 
 impl IntoIterator for Display {
-    type Item = Control;
-    type IntoIter = ::std::vec::IntoIter<Control>;
+    type Item = Character;
+    type IntoIter = ::std::vec::IntoIter<Character>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.screen.into_iter()
@@ -556,7 +556,7 @@ impl fmt::Display for Display {
      fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
           write!(f, "{}", self.screen.get_ref()
                                      .iter()
-                                     .map(|control: &Control|
+                                     .map(|control: &Character|
                                           format!("{}", control))
                                      .collect::<String>())
      }
@@ -836,7 +836,7 @@ impl Write for Display {
               let pos = self.screen.position();
               { let coucou = self.screen.get_mut();
                 {0..tab_width}.all(|_|
-                { (*coucou).insert(pos, Control::new(&[b' '][..]));
+                { (*coucou).insert(pos, Character::new(&[b' '][..]));
                   (*coucou).remove(resize.1 * col);
                   true }); }
               self.goto_right(tab_width);

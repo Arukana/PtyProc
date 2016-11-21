@@ -8,7 +8,7 @@ use ::libc;
 use self::operate::Operate;
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct Control {
+pub struct Character {
    /// Term's buffer.
    buf: [libc::c_uchar; 4],
    /// Term's Length.
@@ -17,29 +17,29 @@ pub struct Control {
    operate: Operate,
 }
 
-impl Control {
+impl Character {
     /// The constructor method `new` returns a term character.
     pub fn new(buf: &[libc::c_uchar]) -> Self {
-      let mut control: Control = Control::default();
+        let mut control: Character = Character::default();
 
-      control.write(buf);
-      control
+        control.write(buf);
+        control
     }
 
     pub fn is_enter(&self) -> Option<()> {
-      if self.buf.first().eq(&Some(&b'\n')) {
-        Some(())
-      } else {
-        None
-      }
+        if self.buf.first().eq(&Some(&b'\n')) {
+            Some(())
+        } else {
+            None
+        }
     }
 
     pub fn is_space(&self) -> Option<()> {
-      if self.buf.first().eq(&Some(&b' ')) {
-        Some(())
-      } else {
-        None
-      }
+        if self.buf.first().eq(&Some(&b' ')) {
+            Some(())
+        } else {
+            None
+        }
     }
 
     /// The accessor method `get_ref` returns a reference on term character buffer.
@@ -49,7 +49,7 @@ impl Control {
 
     /// The accessor method `get_ref` returns a reference on term character buffer.
     pub fn get_ref(&self) -> &[libc::c_uchar] {
-      &self.buf[..self.len]
+        &self.buf[..self.len]
     }
 
     /// The method `clear` resets the term character.
@@ -59,7 +59,7 @@ impl Control {
     }
 }
 
-impl Write for Control {
+impl Write for Character {
 
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
@@ -74,8 +74,8 @@ impl Write for Control {
     }
 }
 
-impl fmt::Display for Control {
-     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-          write!(f, "{}", self.buf[0] as char)
-     }
+impl fmt::Display for Character {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.buf[0] as char)
+    }
 }

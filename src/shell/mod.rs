@@ -17,7 +17,7 @@ use self::device::Device;
 use self::termios::Termios;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
-pub use self::display::{Control, Display};
+use self::display::Display;
 
 use self::display::winsz::Winszed;
 

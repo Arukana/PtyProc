@@ -8,7 +8,7 @@ use std::ops::{Add, Sub, BitAnd, Not};
 use ::libc;
 use ::time;
 
-use super::Display;
+use super::display::Display;
 use super::device::control::Control;
 
 pub use super::device::{Out, DeviceState};
