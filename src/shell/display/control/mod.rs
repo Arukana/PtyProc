@@ -1,16 +1,16 @@
 pub mod operate;
 
 use std::io::{self, Write};
+use std::fmt;
 
 use ::libc;
 
-pub use super::In;
 use self::operate::Operate;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Control {
    /// Term's buffer.
-   buf: In,
+   buf: [libc::c_uchar; 4],
    /// Term's Length.
    len: libc::size_t,
    /// Operation.
@@ -42,15 +42,20 @@ impl Control {
       }
     }
 
-    /// The method `clear` resets the term character.
-    pub fn clear(&mut self) -> io::Result<usize> {
-      *self = Default::default();
-      self.write(&[b' '][..])
+    /// The accessor method `get_ref` returns a reference on term character buffer.
+    pub fn get_unicode(&self) -> char {
+        self.buf[0] as char
     }
 
     /// The accessor method `get_ref` returns a reference on term character buffer.
     pub fn get_ref(&self) -> &[libc::c_uchar] {
       &self.buf[..self.len]
+    }
+
+    /// The method `clear` resets the term character.
+    pub fn clear(&mut self) -> io::Result<usize> {
+        *self = Default::default();
+        self.write(&[b' '][..])
     }
 }
 
@@ -67,4 +72,10 @@ impl Write for Control {
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
+}
+
+impl fmt::Display for Control {
+     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+          write!(f, "{}", self.buf[0] as char)
+     }
 }

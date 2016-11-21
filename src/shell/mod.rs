@@ -124,19 +124,15 @@ impl Shell {
       }}
 
     /// The accessor method `get_pid` returns the pid from the master.
-    pub fn get_pid(&self) -> &libc::pid_t {
-        &self.pid
+    pub fn get_pid(&self) -> libc::pid_t {
+        self.pid
+    }
+
+    /// The accessor method `get_screen` returns a reference on the Display interface.
+    pub fn get_screen(&self) -> &Display {
+        &self.screen
     }
 }
-
-/*impl IntoIterator for Shell {
-    type Item = Control;
-    type IntoIter = ::std::vec::IntoIter<Control>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.screen.into_iter()
-    }
-}*/
 
 impl Iterator for Shell {
     type Item = ShellState;

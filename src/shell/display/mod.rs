@@ -16,8 +16,6 @@ pub use self::err::{DisplayError, Result};
 use self::cursor::Cursor;
 pub use self::control::Control;
 
-pub type In = [libc::c_uchar; 4];
-
 #[derive(Debug, Clone)]
 pub struct Display {
     save_position: (libc::size_t, libc::size_t),
@@ -100,7 +98,7 @@ impl Display {
 
     /// Converts a Vector of Control into a byte vector.
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
-        let mut screen: Vec<libc::c_uchar> = Vec::with_capacity(self.len());
+        let mut screen: Vec<libc::c_uchar> = Vec::new();
 
         self.screen.get_ref().iter().all(|control: &Control| {
             let buf: &[u8] = control.get_ref();
@@ -108,11 +106,6 @@ impl Display {
             true
         });
         screen
-    }
-
-    /// The method `len` returns number of characters.
-    pub fn len(&self) -> libc::size_t {
-        mem::size_of::<In>().mul(&self.size.row_by_col())
     }
 
     /// The method `clear` purges the screen vector.
@@ -560,11 +553,13 @@ impl IntoIterator for Display {
 }
 
 impl fmt::Display for Display {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        unsafe {
-            write!(f, "{}", String::from_utf8_unchecked(self.into_bytes()))
-        }
-    }
+     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+          write!(f, "{}", self.screen.get_ref()
+                                     .iter()
+                                     .map(|control: &Control|
+                                          format!("{}", control))
+                                     .collect::<String>())
+     }
 }
 
 impl Write for Display {
