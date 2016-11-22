@@ -558,11 +558,11 @@ impl<'a> IntoIterator for &'a Display {
 
 impl fmt::Display for Display {
      fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-          write!(f, "{}", self.into_iter()
-                              .map(|c| c.get_unicode())
-                              .collect::<String>()
-                              .chars().take(self.size.row_by_col())
-                              .collect::<String>())
+         unsafe {
+              write!(f, "{}", String::from_utf8_unchecked(self.into_bytes())
+                                     .chars().take(self.size.row_by_col())
+                                     .collect::<String>())
+         }
      }
 }
 
