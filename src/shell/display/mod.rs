@@ -174,7 +174,7 @@ impl Display {
               { {0..size.ws_col-col}.all(|_|
                 { (*coucou).insert(((row - i) * col) as usize, Character::new(&[b' '][..]));
                   true }) }); }
-           // self.size = size;
+            self.size = size;
             let x = self.oob.0;
             let y = self.oob.1;
             self.goto_coord(x, y); }
@@ -191,7 +191,7 @@ impl Display {
               { {0..col-size.ws_col}.all(|k|
                 { (*coucou).remove((((row - i) * col) - (k + 1)) as usize);
                   true }) }); }
-      //      self.size = size;
+            self.size = size;
             let x = if self.oob.0 < size.ws_col as usize
             { self.oob.0 }
             else
