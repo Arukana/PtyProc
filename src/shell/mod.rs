@@ -59,12 +59,11 @@ impl Shell {
                   {
                       // Child window init
                       libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
+                      // Use pipe
+                      libc::close(pipefd[0]);
 
-                      #[cfg(target_os = "macos")]
-                      {   // Use pipe
-                          libc::close(pipefd[0]);
-
-                          // Max path length = 1024
+                      if cfg!(target_os = "macos")
+                      {   // Max path length = 1024
                           let mut the: Vec<u8> = Vec::with_capacity(1024);
                           let mut bonjour = the.as_ptr() as *mut libc::c_void;
 
@@ -72,37 +71,58 @@ impl Shell {
                           libc::fcntl(libc::STDOUT_FILENO, 50, bonjour);
 
                           // Transfer it to master
-                          libc::write(pipefd[1], bonjour, 1024);
-                          libc::close(pipefd[1]); }
+                          libc::write(pipefd[1], bonjour, 1024); }
+                      else if cfg!(any(target_os = "linux", target_os = "android"))
+                      {   let mut path: String = String::with_capacity(1024);
+                          path.push_str("/proc/");
+                          path.push_str(format!("{}", libc::getpid()).as_str());
+                          path.push_str("/fd/0");
+                          let mut get: Vec<u8> = Vec::with_capacity(1024);
+                          let mut buf = get.as_ptr() as *mut i8;
+                          let hey = path.as_ptr() as *const i8;
+                          libc::readlink(hey, buf, 1024);
+                          get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity()); 
+                          let mut bonjour = get.as_ptr() as *mut libc::c_void;
+                          println!("BUF::{:?}", get);
+                          libc::write(pipefd[1], bonjour, 1024); }
+                      libc::close(pipefd[1]);
+
+let mut coucou: Vec<u8> = Vec::with_capacity(1024);
+coucou = Vec::from_raw_parts(libc::ttyname(0)as *mut u8, 1024, coucou.capacity());
+println!("TTY::{:?}", coucou);
 
                       // Enter the shell exec
                       slave.exec(command.unwrap_or("/bin/bash")) },
 
                   pty::Fork::Parent(pid, master) => {
                       mem::forget(fork);
+                      // Use pipe
+                      libc::close(pipefd[1]);
 
                       let mut child_fd = if cfg!(target_os = "macos")
-                      {   // Use pipe
-                          libc::close(pipefd[1]);
-                          let mut get: Vec<u8> = Vec::with_capacity(1024);
+                      {   let mut get: Vec<u8> = Vec::with_capacity(1024);
                           let mut buf = get.as_ptr() as *mut libc::c_void;
 
                           // Receive the /dev/tty of the child
                           libc::read(pipefd[0], buf, 1024);
-                          libc::close(pipefd[0]);
                           get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
                           let mut buf = get.as_ptr() as *const i8;
 
                           // Collect the file desciptor of the child
                           libc::open(buf, libc::O_RDWR) }
                       else if cfg!(any(target_os = "linux", target_os = "android"))
-                      {   let mut path: String = String::with_capacity(1024);
-                          path.push_str("/proc/");
-                          path.push_str(format!("{}", pid).as_str());
-                          path.push_str("/fd/0");
-                          let buf = path.as_ptr() as *const i8;
+                      {   let mut get: Vec<u8> = Vec::with_capacity(1024);
+                          let mut buf = get.as_ptr() as *mut libc::c_void;
+
+                          // Receive the /dev/tty of the child
+                          libc::read(pipefd[0], buf, 1024);
+                          get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
+                          let mut buf = get.as_ptr() as *const i8;
                           libc::open(buf, libc::O_RDWR) }
                       else { 0 };
+                      libc::close(pipefd[0]);
+
+//println!("FD::{}", child_fd);
 
                       // Cas d'erreur si le fd est inférieur ou égal à 2
                       //assert!(child_fd.gt(&2));
