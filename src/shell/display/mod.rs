@@ -558,7 +558,11 @@ impl<'a> IntoIterator for &'a Display {
 
 impl fmt::Display for Display {
      fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-          write!(f, "{}", String::from_utf8(self.into_bytes()).unwrap_or(String::new()))
+          write!(f, "{}", self.into_iter()
+                              .map(|c| c.get_unicode())
+                              .collect::<String>()
+                              .chars().take(self.size.row_by_col())
+                              .collect::<String>())
      }
 }
 
@@ -723,9 +727,6 @@ impl Write for Display {
             &[b'\x1B', ref next..] =>
             { let (mut bonjour, coucou) =
               { self.catch_numbers(Vec::new(), next) };
-              println!("BONJOUR::{:?}, LEN::{}", bonjour, bonjour.len());
-              if coucou.is_empty().not()
-              { println!("COUCOU::{}", coucou[0]); }
               match coucou
               { //------------- n GOTO ------------------
                 &[b'A', ref next..] =>
