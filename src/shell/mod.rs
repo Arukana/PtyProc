@@ -83,13 +83,8 @@ impl Shell {
                           libc::readlink(hey, buf, 1024);
                           get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity()); 
                           let mut bonjour = get.as_ptr() as *mut libc::c_void;
-                          println!("BUF::{:?}", get);
                           libc::write(pipefd[1], bonjour, 1024); }
                       libc::close(pipefd[1]);
-
-let mut coucou: Vec<u8> = Vec::with_capacity(1024);
-coucou = Vec::from_raw_parts(libc::ttyname(0)as *mut u8, 1024, coucou.capacity());
-println!("TTY::{:?}", coucou);
 
                       // Enter the shell exec
                       slave.exec(command.unwrap_or("/bin/bash")) },
