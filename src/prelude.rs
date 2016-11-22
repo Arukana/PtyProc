@@ -6,5 +6,6 @@ pub use ::shell::device::control::Control;
 pub use ::shell::device::{In, Out};
 pub use ::shell::display::Display;
 pub use ::shell::display::winsz::Winszed;
+pub use ::shell::display::character::Character;
 pub use ::shell::state::DEFAULT_REPEAT as REPEAT;
 pub use ::shell::state::DEFAULT_INTERVAL as INTERVAL;
