@@ -60,6 +60,13 @@ impl Clone for Out {
     }
 }
 
+use std::fmt;
+impl fmt::Debug for Out {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", String::from_utf8_lossy(&self.0) )
+    }
+}
+
 pub type Sig = libc::c_int;
 
 /// The struct `Device` is the input/output terminal interface.

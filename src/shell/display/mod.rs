@@ -558,11 +558,7 @@ impl<'a> IntoIterator for &'a Display {
 
 impl fmt::Display for Display {
      fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-          write!(f, "{}", self.screen.get_ref()
-                                     .iter()
-                                     .map(|control: &Character|
-                                          format!("{}", control))
-                                     .collect::<String>())
+          write!(f, "{}", String::from_utf8(self.into_bytes()).unwrap_or(String::new()))
      }
 }
 
@@ -570,6 +566,7 @@ impl Write for Display {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+//        print!("\"{}\"{{\n\r{:?}\n\r}}\n\r", String::from_utf8_lossy(buf), self.into_bytes().iter().take(30).collect::<Vec<&u8>>() );
         match buf {
             &[] => Ok(0),
 
