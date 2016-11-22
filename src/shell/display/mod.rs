@@ -87,6 +87,10 @@ impl Display {
     pub fn ss(&self) -> bool
     { self.ss_mod }
 
+    pub fn get_window_size(&self) -> &Winszed {
+        &self.size
+    }
+
     /// The accessor `get_cursor_coords` returns the value of 'oob', that is the coordinates of the cursor.
     pub fn get_cursor_coords(&self) -> (libc::size_t, libc::size_t)
     { self.oob }
@@ -543,12 +547,12 @@ impl Display {
         true }); }
 }
 
-impl IntoIterator for Display {
-    type Item = Character;
-    type IntoIter = ::std::vec::IntoIter<Character>;
+impl<'a> IntoIterator for &'a Display {
+    type Item = &'a Character;
+    type IntoIter = ::std::slice::Iter<'a, Character>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.screen.into_iter()
+        self.screen.get_ref().into_iter()
     }
 }
 
