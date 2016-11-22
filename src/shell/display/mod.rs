@@ -543,12 +543,12 @@ impl Display {
         true }); }
 }
 
-impl IntoIterator for Display {
-    type Item = Character;
-    type IntoIter = ::std::vec::IntoIter<Character>;
+impl<'a> IntoIterator for &'a Display {
+    type Item = &'a Character;
+    type IntoIter = ::std::slice::Iter<'a, Character>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.screen.into_iter()
+        self.screen.get_ref().into_iter()
     }
 }
 
