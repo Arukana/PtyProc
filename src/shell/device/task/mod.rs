@@ -7,7 +7,7 @@ mod macos;
 #[cfg(target_os = "macos")]
 mod ffi;
 
-#[cfg(any(target_os = "linux", target_os = "android"))]
+#[cfg(feature = "task")]
 use std::io::Write;
 use std::ops::{Not, BitAnd};
 
