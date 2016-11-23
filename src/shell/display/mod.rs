@@ -520,16 +520,22 @@ impl Display {
     /// The method `restore_terminal` restore the terminal Display configuration
     /// kept in the 'save_terminal' variable.
     pub fn restore_terminal(&mut self)
-    { if let Some(ref save_terminal) = self.save_terminal {
-      self.save_position = save_terminal.save_position;
-      self.ss_mod = save_terminal.ss_mod;
-      self.newline = save_terminal.newline.clone();
-      self.region = save_terminal.region;
-      self.collection = save_terminal.collection.clone();
-      self.oob = save_terminal.oob;
-      self.line_wrap = save_terminal.line_wrap;
-      self.screen = save_terminal.screen.clone();
-      self.bell = save_terminal.bell; }
+    { let mut flag_resize: bool = false;
+      if let Some(ref save_terminal) = self.save_terminal
+      { self.save_position = save_terminal.save_position;
+        self.ss_mod = save_terminal.ss_mod;
+        self.newline = save_terminal.newline.clone();
+        self.region = save_terminal.region;
+        self.collection = save_terminal.collection.clone();
+        self.oob = save_terminal.oob;
+        self.line_wrap = save_terminal.line_wrap;
+        self.screen = save_terminal.screen.clone();
+        self.bell = save_terminal.bell;
+        if self.size != save_terminal.size
+        { self.size = save_terminal.size;
+          flag_resize = true; }}
+      if flag_resize
+      { self.resize(); }
       self.save_terminal = None;
       let (x, y) = self.oob;
       self.goto_coord(x, y); }
