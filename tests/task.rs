@@ -35,7 +35,7 @@ fn test_proc_new() {
 #[cfg(feature = "task")]
 fn test_proc_next() {
     env::set_var("HOME", "/tmp");
-    {/*
+    {
         let mut shell: Shell = Shell::new(None, None, Some("/bin/bash")).unwrap();
         let pid: libc::pid_t = shell.get_pid();
         let process: Proc = Proc::new(pid).unwrap();
@@ -46,7 +46,7 @@ fn test_proc_next() {
             CStr::from_bytes_with_nul(&event[..5]).eq(
                 &CStr::from_bytes_with_nul(b"bash\0")
             )
-        ).is_some());*/
+        ).is_some());
     }
     {
         let mut shell: Shell = Shell::new(
@@ -58,12 +58,12 @@ fn test_proc_next() {
         shell.set_window_size_with(&SIZE);
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
-        assert!(shell.take(50).find(|event|
-            event.is_task().and_then(|&(_, ref task)| Some(
+        assert!(shell.take(50).find(|event| {
+            event.is_task().and_then(|&(_, ref task)| Some({
                 CStr::from_bytes_with_nul(&task[..5]).eq(
                     &CStr::from_bytes_with_nul(b"bash\0")
                 )
-            )).unwrap_or_default()
-        ).is_some());
+            })).unwrap_or_default()
+        }).is_some());
     }
 }
