@@ -127,7 +127,7 @@ impl Shell {
                           pid: pid,
                           config: Termios::default(),
                           speudo: master,
-                          device: Device::from_speudo(master),
+                          device: Device::from_speudo(master, pid),
                           state: ShellState::new(repeat, interval),
                           screen: Display::new(libc::STDOUT_FILENO).unwrap(),
                       })
@@ -192,6 +192,8 @@ impl Drop for Shell {
         unsafe {
             if libc::close(self.speudo.as_raw_fd()).eq(&-1) {
                 unimplemented!()
+            } else {
+                libc::kill(self.pid, libc::SIGKILL);
             }
         }
     }

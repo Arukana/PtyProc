@@ -1,3 +1,5 @@
+#[cfg(feature = "task")]
+pub use ::shell::device::task::{Proc, ProcError, BufProc};
 pub use ::shell::{Shell, ShellError, ShellState};
 pub use ::shell::device::control::operate::key::Key;
 pub use ::shell::device::control::operate::mouse::Mouse;

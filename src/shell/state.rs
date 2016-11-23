@@ -1,6 +1,7 @@
 pub const DEFAULT_REPEAT: libc::c_long = 1_000i64;
 pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 
+use std::fmt;
 use std::io::Write;
 use std::ops::BitOr;
 use std::ops::{Add, Sub, BitAnd, Not};
@@ -11,6 +12,8 @@ use ::time;
 use super::display::Display;
 use super::device::control::Control;
 
+#[cfg(feature = "task")]
+pub use super::device::BufProc;
 pub use super::device::{Out, DeviceState};
 pub use super::device::control::operate::key::Key;
 pub use super::device::control::operate::mouse::Mouse;
@@ -61,31 +64,54 @@ fn catch_numbers<'a>(mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::si
 
 #[derive(Copy, Clone)]
 pub struct ShellState {
-  /// The time limit required for a repetition.
-  repeat: libc::c_long,
-  /// The time limit required for a repetition.
-  interval: libc::c_long,
-  /// Update.
-  idle: Option<()>,
-  /// Signal.
-  sig: Option<libc::c_int>,
-  /// The pressed character.
-  in_down: Option<Control>,
-  /// The released character.
-  in_up: Option<Control>,
-  /// The number of the repetition.
-  in_repeat: Option<libc::size_t>,
-  /// The segment intervals.
-  in_interval: Option<time::Tm>,
-  /// The output of last text //printed.
-  out_last: Option<(Out, libc::size_t)>,
-  /// The tmp buffer
-  buffer: Buf,
+    /// The time limit required for a repetition.
+    repeat: libc::c_long,
+    /// The time limit required for a repetition.
+    interval: libc::c_long,
+    /// Update.
+    idle: Option<()>,
+    /// Signal.
+    sig: Option<libc::c_int>,
+    /// The pressed character.
+    in_down: Option<Control>,
+    /// The released character.
+    in_up: Option<Control>,
+    /// The number of the repetition.
+    in_repeat: Option<libc::size_t>,
+    /// The segment intervals.
+    in_interval: Option<time::Tm>,
+    /// The output of last text //printed.
+    out_last: Option<(Out, libc::size_t)>,
+    #[cfg(feature = "task")] task: Option<BufProc>,
+    /// The tmp buffer
+    buffer: Buf,
 }
 
 impl ShellState {
 
     /// The constructor method `new` returns a empty ShellState.
+    #[cfg(feature = "task")]
+    pub fn new (
+        repeat: Option<libc::c_long>,
+        interval: Option<libc::c_long>,
+    ) -> Self {
+        ShellState {
+            repeat: repeat.unwrap_or(DEFAULT_REPEAT),
+            interval: interval.unwrap_or(DEFAULT_INTERVAL),
+            idle: None,
+            sig: None,
+            in_down: None,
+            in_up: None,
+            in_repeat: None,
+            in_interval: None,
+            out_last: None,
+            buffer: Buf([0; 100], 0),
+            task: None,
+        }
+    }
+
+    /// The constructor method `new` returns a empty ShellState.
+    #[cfg(not(feature = "task"))]
     pub fn new (
         repeat: Option<libc::c_long>,
         interval: Option<libc::c_long>,
@@ -232,6 +258,12 @@ impl ShellState {
         }
     }
 
+    /// The mutator method `set_task` updates the task event.
+    #[cfg(feature = "task")]
+    pub fn set_task(&mut self, task: Option<BufProc>) {
+        self.task = task;
+    }
+
     /// The accessor method `is_idle` returns the Idle event.
     pub fn is_idle(&self) -> Option<()> {
         self.idle
@@ -321,12 +353,53 @@ impl ShellState {
         }
     }
 
+    /// The mutator method `set_task` updates the task event.
+    #[cfg(feature = "task")]
+    pub fn is_task(&self) -> Option<&BufProc> {
+        if let Some(ref task) = self.task {
+            Some(task)
+        } else {
+            None
+        }
+    }
+
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
+    #[cfg(feature = "task")]
+    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
+        self.set_task(event.is_task());
+        self.set_idle(event.is_idle());
+        self.set_signal(out_screen, event.is_signal());
+        self.set_output(out_screen, event.is_out_text());
+        self.set_input(out_screen, event.is_input());
+    }
+
+    /// The method `with_device` updates the state from
+    /// the event DeviceState interface.
+    #[cfg(not(feature = "task"))]
     pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_idle(event.is_idle());
         self.set_signal(out_screen, event.is_signal());
         self.set_output(out_screen, event.is_out_text());
         self.set_input(out_screen, event.is_input());
+    }
+}
+
+impl fmt::Debug for ShellState {
+
+    #[cfg(feature = "task")]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+            "ShellState {{ task: {:?}, idle: {:?}, signal: {:?}, input: {:?}, output: {:?} }}",
+               self.task, self.idle, self.sig, self.in_down, self.out_last.is_some()
+        )
+    }
+
+    #[cfg(not(feature = "task"))]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f,
+          "ShellState {{ idle: {:?}, signal: {:?}, input: {:?}, output: {:?}}}",
+               self.idle, self.sig, self.in_down, self.out_last.is_some()
+        )
     }
 }
