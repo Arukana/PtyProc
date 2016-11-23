@@ -1,13 +1,14 @@
 use ::libc;
 
-use super::In;
-use super::Out;
-use super::Sig;
+#[cfg(feature = "task")]
+use super::task::BufProc;
+use super::{In, Out, Sig};
 use super::control::Control;
 
+#[derive(Copy, Clone)]
 pub enum DeviceState {
     /// The current task.
-    #[cfg(feature = "task")] Proc(String),
+    #[cfg(feature = "task")] Proc(BufProc),
     /// Update.
     Idle,
     /// As catched a signal.
@@ -22,8 +23,7 @@ impl DeviceState {
 
     #[cfg(feature = "task")]
     /// The constructor method `from_task` returns a Process' event.
-    pub fn from_task(name: String) -> Self {
-        println!("ssss{}", name);
+    pub fn from_task(name: BufProc) -> Self {
         DeviceState::Proc(name)
     }
 
@@ -49,7 +49,7 @@ impl DeviceState {
 
     #[cfg(feature = "task")]
     /// The accessor method `is_task` returns a Process' event.
-    pub fn is_task(self) -> Option<String> {
+    pub fn is_task(self) -> Option<BufProc> {
         match self {
             DeviceState::Proc(name) => Some(name),
             _ => None,
@@ -86,18 +86,6 @@ impl DeviceState {
         match *self {
             DeviceState::Sig(sig) => Some(sig),
             _ => None,
-        }
-    }
-}
-
-impl Clone for DeviceState {
-    fn clone(&self) -> DeviceState {
-        match *self {
-            #[cfg(feature = "task")] DeviceState::Proc(ref name) => DeviceState::Proc(name.clone()),
-            DeviceState::Idle => DeviceState::Idle,
-            DeviceState::Sig(sig) => DeviceState::Sig(sig),
-            DeviceState::OutText(out, len) => DeviceState::OutText(out, len),
-            DeviceState::InText(control) => DeviceState::InText(control),
         }
     }
 }

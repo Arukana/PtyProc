@@ -1,8 +1,5 @@
-!+ Redimensionnement
 
-√ Faire des tests unitaires précis et poussés pour chacune des méthodes
-  + Faire des tests unitaires sur la gestion d'erreurs
-+ Rédiger un peu de documentation
+!+ Gérer les échappements entre deux buffers
 
 + Caractère de l'Unicode
   /! Certaines pages de l'Unicode ne sont pas gérées !/

@@ -5,11 +5,16 @@
 
 #![crate_type= "lib"]
 #![cfg_attr(feature = "nightly", feature(plugin))]
+
+#![feature(plugin)]
+#![cfg_attr(feature = "clippy", plugin(clippy(conf_file="clippy.toml")))]
+
 #![cfg_attr(feature = "lints", plugin(clippy))]
 #![cfg_attr(feature = "lints", deny(warnings))]
 #![cfg_attr(not(any(feature = "lints", feature = "nightly")), deny())]
 #![deny(
     unused_import_braces,
+    blacklisted_name,
     unused_qualifications
 )]
 

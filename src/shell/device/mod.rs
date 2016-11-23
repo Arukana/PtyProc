@@ -1,8 +1,8 @@
 #[cfg(feature = "task")]
 pub mod task;
 pub mod control;
-
 mod state;
+mod output;
 mod spawn;
 
 use ::chan;
@@ -12,15 +12,20 @@ use std::thread;
 
 pub use self::state::DeviceState;
 
+pub use self::output::Out;
+
+#[cfg(feature = "task")]
+pub use self::task::BufProc;
+
 pub type In = [libc::c_uchar; 12];
-pub type Out = [libc::c_uchar; 4096];
+
 pub type Sig = libc::c_int;
 
 /// The struct `Device` is the input/output terminal interface.
 
 #[derive(Clone)]
 pub struct Device {
-    #[cfg(feature = "task")] task: chan::Receiver<String>,
+    #[cfg(feature = "task")] task: chan::Receiver<BufProc>,
     input: chan::Receiver<(In, libc::size_t)>,
     output: chan::Receiver<(Out, libc::size_t)>,
     signal: chan::Receiver<libc::c_int>,
@@ -31,7 +36,7 @@ impl Device {
 
     /// The constructor method `new` returns a Device interface iterable.
     fn new (
-        task: chan::Receiver<String>,
+        task: chan::Receiver<BufProc>,
         input: chan::Receiver<(In, libc::size_t)>,
         output: chan::Receiver<(Out, libc::size_t)>,
         signal: chan::Receiver<libc::c_int>,
@@ -91,7 +96,7 @@ impl Iterator for Device {
 
     #[cfg(feature = "task")]
     fn next(&mut self) -> Option<DeviceState> {
-        let ref task: chan::Receiver<String> = self.task;
+        let ref task: chan::Receiver<BufProc> = self.task;
         let ref signal: chan::Receiver<Sig> = self.signal;
         let ref input: chan::Receiver<(In, libc::size_t)> = self.input;
         let ref output: chan::Receiver<(Out, libc::size_t)> = self.output;

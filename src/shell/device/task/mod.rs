@@ -7,8 +7,9 @@ mod macos;
 #[cfg(target_os = "macos")]
 mod ffi;
 
-use std::ops::Not;
-use std::ops::BitAnd;
+#[cfg(any(target_os = "linux", target_os = "android"))]
+use std::io::Write;
+use std::ops::{Not, BitAnd};
 
 pub use self::err::{ProcError, Result};
 
@@ -16,6 +17,8 @@ pub use self::err::{ProcError, Result};
 pub use self::linux::*;
 #[cfg(target_os = "macos")]
 pub use self::macos::*;
+
+pub type BufProc = (libc::pid_t, [libc::c_uchar; 32]);
 
 use ::libc;
 
@@ -27,7 +30,7 @@ const SPEC_PROC: &'static str = "/proc";
 #[cfg(any(target_os = "linux", target_os = "android"))]
 const SPEC_SUBD_STATUS: &'static str = "status";
 
-/// The default capacity of texel dictionary.
+/// The default capacity of proc dictionary.
 const SPEC_CAPACITY_PROC: usize = 512;
 
 impl Proc {
@@ -44,12 +47,18 @@ impl Proc {
 
     /// The accessor method `get_name` returns the name of
     /// the process according to the pid.
-    pub fn get_name(&self, pid: libc::pid_t)-> Option<String> {
+    pub fn get_name(&self, pid: libc::pid_t)-> Option<BufProc> {
         self.list.iter().find(
             |&&(ref cpid, _, _, _)| pid.eq(cpid)
-        ).and_then(|&(_, _, _, ref name)|
-                Some(name.clone())
-        )
+        ).and_then(|&(_, _, _, ref name): &(_, _, _, String)| {
+            let mut source: [libc::c_uchar; 32] = [b'\0'; 32];
+            {
+                let mut buffer: &mut [libc::c_uchar] = &mut source[..];
+
+                buffer.write(name.as_bytes());
+            }
+            Some((pid, source))
+        })
     }
 
     /// The method `from_pid` returns the last active child process
@@ -67,13 +76,13 @@ impl Proc {
 }
 
 impl Iterator for Proc {
-    type Item = String;
+    type Item = BufProc;
 
-    fn next(&mut self) -> Option<String> {
+    fn next(&mut self) -> Option<BufProc> {
         self.list.clear();
         self.with_list_process().unwrap();
 
-        self.from_pid(None).and_then(|cfpid| {
+        self.from_pid(None).and_then(|cfpid|
             if cfpid.eq(&self.fpid).not().bitand(
                self.lpid.eq(&self.fpid).not()
             ) {
@@ -82,7 +91,7 @@ impl Iterator for Proc {
             } else {
                 None
             }
-        })
+        )
     }
 }
 

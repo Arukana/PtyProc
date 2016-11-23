@@ -38,13 +38,8 @@ impl Termios {
       if libc::ioctl(self.fd, 0x00005401, &new_termios).eq(&-1) {
         Err(TermiosError::TcgGet)
       } else {
-        new_termios.c_lflag &= !(libc::ECHO | libc::ICANON | libc::IEXTEN
-                                              | libc::ISIG);
-        new_termios.c_iflag &= !(libc::BRKINT | libc::ICRNL | libc::INPCK
-                                              | libc::ISTRIP | libc::IXON);
-        new_termios.c_cflag &= !(libc::CSIZE | libc::PARENB);
-        new_termios.c_cflag |= libc::CS8;
-        new_termios.c_oflag &= !(libc::OPOST);
+        new_termios.c_lflag &= !(libc::ECHO | libc::ICANON | libc::ISIG);
+        new_termios.c_iflag &= !(libc::BRKINT);
         new_termios.c_cc[libc::VMIN] = 1;
         new_termios.c_cc[libc::VTIME] = 0;
         if libc::ioctl(self.fd, 0x00005402, &new_termios).eq(&-1) {

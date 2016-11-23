@@ -2,11 +2,16 @@
 
 [![Build Status](https://travis-ci.org/adjivas/pty-proc.svg?style=flat-square&branch=master)](https://travis-ci.org/adjivas/pty-proc)
 
-#### How to use
+#### How to build
 ```shell
 git clone https://github.com/adjivas/pty-proc.git pty-proc && cd pty-proc
-cargo run
+cargo build
 ```
+With clippy: (We are forbidding the word `bonjour` because it's pretty evil, just as `self`)
+```shell
+cargo build --features clippy
+```
+
 
 #### Knowledge
 * [modes](https://en.wikipedia.org/wiki/Computer_terminal#Modes)

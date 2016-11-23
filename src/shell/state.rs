@@ -1,46 +1,80 @@
-pub mod clone;
-
 pub const DEFAULT_REPEAT: libc::c_long = 1_000i64;
 pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 
 use std::fmt;
 use std::io::Write;
 use std::ops::BitOr;
-use std::ops::{Add, Sub, BitAnd};
+use std::ops::{Add, Sub, BitAnd, Not};
 
 use ::libc;
 use ::time;
 
-use super::Display;
+use super::display::Display;
 use super::device::control::Control;
 
-use self::clone::Clone;
+#[cfg(feature = "task")]
+pub use super::device::BufProc;
 pub use super::device::{Out, DeviceState};
 pub use super::device::control::operate::key::Key;
 pub use super::device::control::operate::mouse::Mouse;
 
+pub struct Buf([libc::c_uchar; 100], usize);
+impl Default for Buf
+{ fn default() -> Buf
+  { Buf([0u8; 100], 0) }}
+
+use std::ops::{Deref, DerefMut};
+impl Deref for Buf
+{ type Target = [libc::c_uchar];
+  fn deref<'a>(&'a self) -> &[libc::c_uchar]
+  { &self.0 }}
+
+impl DerefMut for Buf
+{ fn deref_mut(&mut self) -> &mut [libc::c_uchar]
+  { &mut self.0 }}
+
+use std::ops::Index;
+impl Index<libc::size_t> for Buf
+{ type Output = libc::c_uchar;
+  fn index(&self, count: libc::size_t) -> &libc::c_uchar
+  { &self.0[count] }}
+
+use std::ops::RangeTo;
+impl Index<RangeTo<libc::size_t>> for Buf
+{ type Output = [libc::c_uchar];
+  fn index(&self, range: RangeTo<libc::size_t>) -> &[libc::c_uchar]
+  { &self.0[range] }}
+
+impl Clone for Buf
+{ fn clone(&self) -> Self
+  { Buf(self.0, self.1) }}
+impl Copy for Buf
+{}
+
+
+#[derive(Copy, Clone)]
 pub struct ShellState {
-  /// The time limit required for a repetition.
-  repeat: libc::c_long,
-  /// The time limit required for a repetition.
-  interval: libc::c_long,
-  /// Update.
-  idle: Option<()>,
-  /// Signal.
-  sig: Option<libc::c_int>,
-  /// The pressed character.
-  in_down: Option<Control>,
-  /// The released character.
-  in_up: Option<Control>,
-  /// The number of the repetition.
-  in_repeat: Option<libc::size_t>,
-  /// The segment intervals.
-  in_interval: Option<time::Tm>,
-  /// The output of last text printed.
-  out_last: Option<(Out, libc::size_t)>,
-  /// The output of matrix Screen interface.
-  out_screen: Display,
-  #[cfg(feature = "task")] task: Option<String>,
+    /// The time limit required for a repetition.
+    repeat: libc::c_long,
+    /// The time limit required for a repetition.
+    interval: libc::c_long,
+    /// Update.
+    idle: Option<()>,
+    /// Signal.
+    sig: Option<libc::c_int>,
+    /// The pressed character.
+    in_down: Option<Control>,
+    /// The released character.
+    in_up: Option<Control>,
+    /// The number of the repetition.
+    in_repeat: Option<libc::size_t>,
+    /// The segment intervals.
+    in_interval: Option<time::Tm>,
+    /// The output of last text //printed.
+    out_last: Option<(Out, libc::size_t)>,
+    #[cfg(feature = "task")] task: Option<BufProc>,
+    /// The tmp buffer
+    buffer: Buf,
 }
 
 impl ShellState {
@@ -50,7 +84,6 @@ impl ShellState {
     pub fn new (
         repeat: Option<libc::c_long>,
         interval: Option<libc::c_long>,
-        fd: libc::c_int
     ) -> Self {
         ShellState {
             repeat: repeat.unwrap_or(DEFAULT_REPEAT),
@@ -62,7 +95,7 @@ impl ShellState {
             in_repeat: None,
             in_interval: None,
             out_last: None,
-            out_screen: Display::new(fd).unwrap(),
+            buffer: Buf([0; 100], 0),
             task: None,
         }
     }
@@ -72,7 +105,6 @@ impl ShellState {
     pub fn new (
         repeat: Option<libc::c_long>,
         interval: Option<libc::c_long>,
-        fd: libc::c_int
     ) -> Self {
         ShellState {
             repeat: repeat.unwrap_or(DEFAULT_REPEAT),
@@ -84,7 +116,7 @@ impl ShellState {
             in_repeat: None,
             in_interval: None,
             out_last: None,
-            out_screen: Display::new(fd).unwrap(),
+            buffer: Buf([0; 100], 0),
         }
     }
 
@@ -105,18 +137,18 @@ impl ShellState {
 
     /// The mutator method `set_signal` update the signal
     /// and can resize the Display interface.
-    pub fn set_signal(&mut self, signal: Option<libc::c_int>) {
+    pub fn set_signal(&mut self, out_screen: &mut Display, signal: Option<libc::c_int>) {
         self.sig = signal;
         if let Some(()) = self.is_signal_resized() {
-            self.out_screen.resize().unwrap();
+            out_screen.resize().unwrap();
         }
     }
 
     /// The mutator method `set_input` update the `in_text`
     /// and save the old `in_text` to `in_text_past`.
-    pub fn set_input(&mut self, mut down: Option<Control>) {
+    pub fn set_input(&mut self, out_screen: &mut Display, mut down: Option<Control>) {
 
-          if self.out_screen.ss()
+          if out_screen.ss()
           { let ss: libc::c_uchar = match down
             { Some(after) =>
               { match after.as_slice()
@@ -124,7 +156,9 @@ impl ShellState {
                   &[b'\x1B', b'[', b'B', ref next..] => b'B',
                   &[b'\x1B', b'[', b'C', ref next..] => b'C',
                   &[b'\x1B', b'[', b'D', ref next..] => b'D',
-                  _ => 0, }},
+               /*   &[b'\x0D', ref next..] |
+                  &[b'\x0A', ref next..] => b'M',
+                 */ _ => 0, }},
               _ => 0, };
             if ss > 0
             { down = Some(Control::new([b'\x1B', b'O', ss, 0, 0, 0, 0, 0, 0, 0, 0, 0], 3)); }}
@@ -157,10 +191,46 @@ impl ShellState {
 
     /// The mutator method `set_output` update the both `out_text`
     /// and `out_screen` variable.
-    pub fn set_output(&mut self, entry: Option<(Out, libc::size_t)>) {
-        if let Some((buf, len)) = entry {
+    pub fn set_output(&mut self, out_screen: &mut Display, entry: Option<(Out, libc::size_t)>) {
+        if let Some((mut buf, len)) = entry {
             self.out_last = Some((buf, len));
-            self.out_screen.write(&buf[..len]).unwrap();
+
+            let mut tmp = [0u8; 596];
+            { let seeker = self.buffer.1;
+              let hey: &mut [u8] = self.buffer.deref_mut();
+              if seeker > 0
+              { { let mut buffer: &mut [u8] = &mut tmp[..];
+                  buffer.write(&[b'\x1B']).unwrap(); }
+                { let mut buffer: &mut [u8] = &mut tmp[1..];
+                  buffer.write(&hey[..]).unwrap(); }
+                { let mut buffer: &mut [u8] = &mut tmp[seeker..];
+                  buffer.write(&buf[..len]).unwrap(); }}
+              else
+              { let mut buffer: &mut [u8] = &mut tmp[..];
+                buffer.write(&buf[..len]).unwrap(); }
+            { let buffer: &[u8] = &tmp[..]; }}
+
+            out_screen.write(&tmp[..len + self.buffer.1]);
+
+            { let hey: &mut [u8] = self.buffer.deref_mut();
+              { let mut buffer: &mut [u8] = &mut hey[..];
+                let ss = [0u8; 100];
+                buffer.write(&ss[..]).unwrap(); }}
+            self.buffer.1 = 0;
+
+            if (&buf[..len]).iter().position(|&i| i.eq(&0)).is_none()
+            { match (&buf[..len]).split(|&at| at == b'\x1B').take(len).last()
+              { Some(get) =>
+                  { if get.is_empty() || get.iter().position(|&i| i.eq(&b';').not().bitand(i.eq(&b'(').not()).bitand(i.eq(&b'[').not()).bitand(i.lt(&b'0').bitor(i.gt(&b'9')))).is_none()
+                    { self.buffer.1 = get.len() + 1;
+                      let mut coucou: &mut [u8] = self.buffer.deref_mut();
+                      coucou.write(&get[..]).unwrap(); }},
+                None => {}, }}
+
+            { let get: &mut [u8] = buf.deref_mut();
+              { let mut buffer: &mut [u8] = &mut get[..];
+                buffer.write(&[0; 496]).unwrap(); }}
+
         } else {
             self.out_last = None;
         }
@@ -168,7 +238,7 @@ impl ShellState {
 
     /// The mutator method `set_task` updates the task event.
     #[cfg(feature = "task")]
-    pub fn set_task(&mut self, task: Option<String>) {
+    pub fn set_task(&mut self, task: Option<BufProc>) {
         self.task = task;
     }
 
@@ -251,11 +321,11 @@ impl ShellState {
     }
 
     /// The accessor method `is_output_screen` returns the Output screen event.
-    pub fn is_output_screen(&self) -> Option<&Display> {
+    pub fn is_output_screen(&self) -> Option<()> {
         if self.is_output_last().is_some().bitor(
             self.is_signal_resized().is_some()
         ) {
-            Some(&self.out_screen)
+            Some(())
         } else {
             None
         }
@@ -263,70 +333,33 @@ impl ShellState {
 
     /// The mutator method `set_task` updates the task event.
     #[cfg(feature = "task")]
-    pub fn is_task(&self) -> Option<&String> {
+    pub fn is_task(&self) -> Option<&BufProc> {
         if let Some(ref task) = self.task {
             Some(task)
         } else {
             None
         }
     }
-}
-
-impl Clone for ShellState {
-    /// The method `clone` return a copy of the ShellState.
-    #[cfg(feature = "task")]
-    fn clone(&self) -> Self {
-        ShellState {
-            repeat: self.repeat,
-            interval: self.interval,
-            idle: self.idle,
-            sig: self.sig,
-            in_down: self.in_down,
-            in_up: self.in_up,
-            in_repeat: self.in_repeat,
-            in_interval: self.in_interval,
-            out_last: self.out_last,
-            out_screen: self.out_screen.clone(),
-            task: self.task.clone(),
-        }
-    }
-
-    /// The method `clone` return a copy of the ShellState.
-    #[cfg(not(feature = "task"))]
-    fn clone(&self) -> Self {
-        ShellState {
-            repeat: self.repeat,
-            interval: self.interval,
-            idle: self.idle,
-            sig: self.sig,
-            in_down: self.in_down,
-            in_up: self.in_up,
-            in_repeat: self.in_repeat,
-            in_interval: self.in_interval,
-            out_last: self.out_last,
-            out_screen: self.out_screen.clone(),
-        }
-    }
 
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
     #[cfg(feature = "task")]
-    fn clone_from(&mut self, event: DeviceState) {
-        self.set_idle(event.is_idle());
-        self.set_signal(event.is_signal());
-        self.set_output(event.is_out_text());
-        self.set_input(event.is_input());
+    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_task(event.is_task());
+        self.set_idle(event.is_idle());
+        self.set_signal(out_screen, event.is_signal());
+        self.set_output(out_screen, event.is_out_text());
+        self.set_input(out_screen, event.is_input());
     }
 
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
     #[cfg(not(feature = "task"))]
-    fn clone_from(&mut self, event: DeviceState) {
+    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_idle(event.is_idle());
-        self.set_signal(event.is_signal());
-        self.set_output(event.is_out_text());
-        self.set_input(event.is_input());
+        self.set_signal(out_screen, event.is_signal());
+        self.set_output(out_screen, event.is_out_text());
+        self.set_input(out_screen, event.is_input());
     }
 }
 

@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use super::control::Control;
+use super::character::Character;
 
 #[derive(Debug, Clone)]
 pub struct Cursor<T> {
@@ -55,12 +55,12 @@ impl <T> IntoIterator for Cursor<Vec<T>> {
     }
 }
 
-impl Write for Cursor<Vec<Control>> {
+impl Write for Cursor<Vec<Character>> {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         unsafe {
-            *self.inner.get_unchecked_mut(self.pos) = Control::new(buf);
+            *self.inner.get_unchecked_mut(self.pos) = Character::new(buf);
             self.pos += 1;
         }
         Ok(buf.len())
