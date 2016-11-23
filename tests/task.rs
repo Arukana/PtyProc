@@ -29,14 +29,14 @@ fn test_proc_new() {
 fn test_proc_next() {
     {
         let mut shell: Shell = Shell::new(None, None, Some("/bin/bash")).unwrap();
-        let pid: libc::pid_t = *shell.get_pid();
+        let pid: libc::pid_t = shell.get_pid();
         let process: Proc = Proc::new(pid).unwrap();
 
         env::set_var("HOME", "/tmp");
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
-        assert!(process.take(50).find(|event| {
-             event.eq(&"bash".to_string())
+        assert!(process.take(50).find(|&(_, ref event)| {
+             String::from_utf8_lossy(event).eq(&"bash".to_string())
         }).is_some());
     }
     {
@@ -50,7 +50,9 @@ fn test_proc_next() {
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
         assert!(shell.take(50).find(|event| {
-             event.is_task().eq(&Some(&"bash".to_string())).not()
+            event.is_task().and_then(|&(_, ref task)|
+               Some(String::from_utf8_lossy(task).eq(&"bash".to_string()).not())
+            ).unwrap_or(false)
         }).is_some());
     }
 }
