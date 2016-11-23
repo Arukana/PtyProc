@@ -145,6 +145,19 @@ impl Shell {
     pub fn get_screen(&self) -> &Display {
         &self.screen
     }
+
+    /// The mutator method `set_window_size` redimentionnes the window.
+    pub fn set_window_size_with(&mut self, size: &Winszed) {
+        self.screen.set_window_size(size);
+        unsafe {
+            libc::kill(self.pid, libc::SIGWINCH);
+        }
+    }
+
+    /// The mutator method `set_window_size` redimentionnes the window.
+    pub fn set_window_size(&mut self) {
+        self.set_window_size_with(&Winszed::default());
+    }
 }
 
 impl Iterator for Shell {
@@ -156,14 +169,7 @@ impl Iterator for Shell {
             Some(event) => {
                 self.state.clone_from(&mut self.screen, event);
                 if self.state.is_signal_resized().is_some() {
-                    unsafe
-                    { // Manually set child size
-                        let winsz: Winszed = Winszed::default();
-                        libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
-                        libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &winsz);
-
-                        // Manually send signal to the shell (child's pid)
-                        libc::kill(self.pid, libc::SIGWINCH); }
+                    self.set_window_size();
                 }
                 Some(self.state)
             },

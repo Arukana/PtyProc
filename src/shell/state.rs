@@ -147,11 +147,8 @@ impl ShellState {
 
     /// The mutator method `set_signal` update the signal
     /// and can resize the Display interface.
-    pub fn set_signal(&mut self, out_screen: &mut Display, signal: Option<libc::c_int>) {
+    pub fn set_signal(&mut self, signal: Option<libc::c_int>) {
         self.sig = signal;
-        if let Some(()) = self.is_signal_resized() {
-            out_screen.resize().unwrap();
-        }
     }
 
     /// The mutator method `set_input` update the `in_text`
@@ -369,7 +366,7 @@ impl ShellState {
     pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_task(event.is_task());
         self.set_idle(event.is_idle());
-        self.set_signal(out_screen, event.is_signal());
+        self.set_signal(event.is_signal());
         self.set_output(out_screen, event.is_out_text());
         self.set_input(out_screen, event.is_input());
     }
@@ -379,7 +376,7 @@ impl ShellState {
     #[cfg(not(feature = "task"))]
     pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_idle(event.is_idle());
-        self.set_signal(out_screen, event.is_signal());
+        self.set_signal(event.is_signal());
         self.set_output(out_screen, event.is_out_text());
         self.set_input(out_screen, event.is_input());
     }

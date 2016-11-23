@@ -82,16 +82,19 @@ impl Iterator for Proc {
         self.list.clear();
         self.with_list_process().unwrap();
 
-        self.from_pid(None).and_then(|cfpid|
+        self.from_pid(None).and_then(|cfpid| {
+//            print!("(current pid: {}) != (first top pid: {}) && (last saved pid: {})<>(first top pid: {}) -> ", cfpid, self.fpid, self.lpid, self.fpid);
             if cfpid.eq(&self.fpid).not().bitand(
                self.lpid.eq(&self.fpid).not()
             ) {
-               self.lpid = cfpid;
-               self.get_name(cfpid)
+                self.fpid = cfpid;
+//                println!("{:?}", self.get_name(cfpid));
+                self.get_name(cfpid)
             } else {
+//                println!("None");
                 None
             }
-        )
+        })
     }
 }
 

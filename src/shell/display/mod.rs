@@ -87,8 +87,15 @@ impl Display {
     pub fn ss(&self) -> bool
     { self.ss_mod }
 
+    /// The accessor `get_window_size` returns the window size interface.
     pub fn get_window_size(&self) -> &Winszed {
         &self.size
+    }
+
+    /// The mutator `set_window_size` replaces the window size.
+    pub fn set_window_size(&mut self, size: &Winszed) {
+        self.size = *size;
+        self.resize_with(size);
     }
 
     /// The accessor `get_cursor_coords` returns the value of 'oob', that is the coordinates of the cursor.
@@ -126,10 +133,14 @@ impl Display {
 
     /// The method `resize` updates the size of the output screen.
     pub fn resize(&mut self) -> Result<()> {
-    match Winszed::new(0) {
-      Err(why) => Err(DisplayError::WinszedFail(why)),
-      Ok(size) =>
-        { if self.size.ws_row < size.ws_row
+        match Winszed::new(0) {
+            Err(why) => Err(DisplayError::WinszedFail(why)),
+            Ok(ref size) => Ok(self.resize_with(size)),
+        }
+    }
+
+    pub fn resize_with(&mut self, size: &Winszed) {
+        if self.size.ws_row < size.ws_row
           { {self.size.ws_row..size.ws_row}.all(|i|
             { self.newline.push((self.size.get_col() - 1, i as usize));
               true });
@@ -178,7 +189,7 @@ impl Display {
               { {0..size.ws_col-col}.all(|_|
                 { (*coucou).insert(((row - i) * col) as usize, Character::new(&[b' '][..]));
                   true }) }); }
-            self.size = size;
+            self.size = *size;
             let x = self.oob.0;
             let y = self.oob.1;
             self.goto_coord(x, y); }
@@ -195,15 +206,15 @@ impl Display {
               { {0..col-size.ws_col}.all(|k|
                 { (*coucou).remove((((row - i) * col) - (k + 1)) as usize);
                   true }) }); }
-            self.size = size;
+            self.size = *size;
             let x = if self.oob.0 < size.ws_col as usize
             { self.oob.0 }
             else
             { size.ws_col as usize - 1 };
             let y = self.oob.1;
             self.goto_coord(x, y); }
-          Ok(self.size = size) },
-      }
+          self.size = *size;
+      
     }
 
     /// The method `tricky_resize` updates the size of the output screen.

@@ -4,15 +4,22 @@ extern crate libc;
 #[cfg(feature = "task")]
 use pty_proc::prelude::*;
 
-
+#[cfg(feature = "task")]
+use std::ffi::CStr;
 #[cfg(feature = "task")]
 use self::std::env;
-#[cfg(feature = "task")]
-use std::ops::Not;
 #[cfg(feature = "task")]
 use self::std::io::Write;
 #[cfg(feature = "task")]
 use self::std::{thread, time};
+
+#[cfg(feature = "task")]
+const SIZE: Winszed = Winszed {
+    ws_row: 8,
+    ws_col: 10,
+    ws_xpixel: 0,
+    ws_ypixel: 0,
+};
 
 #[test]
 #[cfg(feature = "task")]
@@ -27,17 +34,19 @@ fn test_proc_new() {
 #[test]
 #[cfg(feature = "task")]
 fn test_proc_next() {
-    {
+    env::set_var("HOME", "/tmp");
+    {/*
         let mut shell: Shell = Shell::new(None, None, Some("/bin/bash")).unwrap();
         let pid: libc::pid_t = shell.get_pid();
         let process: Proc = Proc::new(pid).unwrap();
 
-        env::set_var("HOME", "/tmp");
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
-        assert!(process.take(50).find(|&(_, ref event)| {
-             String::from_utf8_lossy(event).eq(&"bash".to_string())
-        }).is_some());
+        assert!(process.take(50).find(|&(_, ref event)|
+            CStr::from_bytes_with_nul(&event[..5]).eq(
+                &CStr::from_bytes_with_nul(b"bash\0")
+            )
+        ).is_some());*/
     }
     {
         let mut shell: Shell = Shell::new(
@@ -46,13 +55,15 @@ fn test_proc_next() {
             Some("/bin/bash"),
         ).unwrap();
 
-        env::set_var("HOME", "/tmp");
+        shell.set_window_size_with(&SIZE);
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
-        assert!(shell.take(50).find(|event| {
-            event.is_task().and_then(|&(_, ref task)|
-               Some(String::from_utf8_lossy(task).eq(&"bash".to_string()).not())
-            ).unwrap_or(false)
-        }).is_some());
+        assert!(shell.take(50).find(|event|
+            event.is_task().and_then(|&(_, ref task)| Some(
+                CStr::from_bytes_with_nul(&task[..5]).eq(
+                    &CStr::from_bytes_with_nul(b"bash\0")
+                )
+            )).unwrap_or_default()
+        ).is_some());
     }
 }
