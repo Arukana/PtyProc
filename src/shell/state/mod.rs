@@ -48,6 +48,16 @@ impl Clone for Buf
 impl Copy for Buf
 {}
 
+fn catch_numbers<'a>(mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
+{ match parse_number!(buf)
+  { Some((number, &[b';', ref next..])) =>
+      { acc.push(number);
+        catch_numbers(acc, next) },
+    Some((number, &[ref next..])) =>
+      { acc.push(number);
+        (acc, next) },
+    _ =>
+      { (acc, buf) }, }}
 
 #[derive(Copy, Clone)]
 pub struct ShellState {
@@ -121,7 +131,19 @@ impl ShellState {
     /// The mutator method `set_input` update the `in_text`
     /// and save the old `in_text` to `in_text_past`.
     pub fn set_input(&mut self, out_screen: &mut Display, mut down: Option<Control>) {
-
+        match down
+        { Some(is_mouse) =>
+            { match is_mouse.as_slice()
+              { &[b'\x1B', b'[', b'<', ref next..] =>
+                  { let (bonjour, coucou) =
+                    { catch_numbers(Vec::new(), next) };
+                    match coucou
+                    { &[b'm', ref next..] |
+                      &[b'M', ref next..] =>
+                        { down = None; },
+                      _ => {}, }},
+               _ => {}, }},
+          _ => {}, };
           if out_screen.ss()
           { let ss: libc::c_uchar = match down
             { Some(after) =>

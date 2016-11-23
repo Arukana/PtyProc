@@ -117,8 +117,6 @@ impl Shell {
                       else { 0 };
                       libc::close(pipefd[0]);
 
-//println!("FD::{}", child_fd);
-
                       // Cas d'erreur si le fd est inférieur ou égal à 2
                       //assert!(child_fd.gt(&2));
                       if child_fd.le(&2)
