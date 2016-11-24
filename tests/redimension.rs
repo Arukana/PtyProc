@@ -13,7 +13,6 @@ const SIZE: Winszed = Winszed
 
 
 #[test]
-#[ignore] // For travis
 /// fn resize(&mut self) -> Result<()>
 fn test_redimension()
 { let mut display: Display = Display::from_winszed(SIZE);
@@ -26,9 +25,6 @@ fn test_redimension()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-
-  // Stock Terminal size for the reset
-  let stock : Winszed = Winszed::default();
 
   // Print "hello lorem ipsum dolor sit amet hello lorem ipsum dolor sit amet bonjour"
   assert_eq!(display.write(b"hello lorem ipsum dolor sit amet hello lorem ipsum dolor sit amet bonjour").ok(), Some(73usize));
@@ -49,8 +45,7 @@ fn test_redimension()
     ws_ypixel: 0, };
 
   // Add 2 lines to the display
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
-  display.resize();
+  display.resize_with(&winsz);
   assert_eq!(display.into_bytes(),
       vec![b'h', b'e', b'l', b'l', b'o', b' ', b'l', b'o', b'r', b'e',
            b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
@@ -84,8 +79,7 @@ fn test_redimension()
     ws_ypixel: 0, };
 
   // Remove 5 lines to the display
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
-  display.resize();
+  display.resize_with(&winsz);
   assert_eq!(display.into_bytes(),
       vec![b'h', b'e', b'l', b'l', b'o', b' ', b'l', b'o', b'r', b'e',
            b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
@@ -110,8 +104,7 @@ fn test_redimension()
     ws_ypixel: 0, };
 
   // Add 3 lines to the display
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
-  display.resize();
+  display.resize_with(&winsz);
   assert_eq!(display.into_bytes(),
       vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o',
            b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm',
@@ -141,8 +134,7 @@ fn test_redimension()
     ws_ypixel: 0, };
 
   // Add 2 columns to the display
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
-  display.resize();
+  display.resize_with(&winsz);
   assert_eq!(display.into_bytes(),
 vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o', b' ', b' ',
      b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b'a', b'm', b' ', b' ',
@@ -172,8 +164,7 @@ vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o', b' ', b' ',
     ws_ypixel: 0, };
 
   // Remove 4 columns to the display
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
-  display.resize();
+  display.resize_with(&winsz);
   assert_eq!(display.into_bytes(),
       vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ',
            b'l', b'o', b'r', b' ', b's', b'i', b't', b' ',
@@ -194,12 +185,9 @@ vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o', b' ', b' ',
            b'Q', b'B', b'A', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
-           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &stock); }}
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]); }
 
 #[test]
-//#[ignore] // For travis
 /// fn resize(&mut self) -> Result<()>
 fn hard_redimension()
 { let mut display: Display = Display::from_winszed(SIZE);
@@ -212,9 +200,6 @@ fn hard_redimension()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-
-  // Stock Terminal size for the reset
-  let stock : Winszed = Winszed::default();
 
   // Print "hello lorem ipsum dolor sit amet hello lorem ipsum dolor sit amet bonjour"
   assert_eq!(display.write(b"hello lorem ipsum dolor sit amet hello lorem ipsum dolor sit amet bonjour").ok(), Some(73usize));
@@ -235,8 +220,7 @@ fn hard_redimension()
     ws_ypixel: 0, };
 
   // Remove 3 lines and 3 columns to the display
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
-  display.resize();
+  display.resize_with(&winsz);
   assert_eq!(display.into_bytes(),
       vec![b'h', b'e', b'l', b'l', b'o', b' ', b'l',
            b'm', b' ', b'i', b'p', b's', b'u', b'm',
@@ -260,8 +244,7 @@ fn hard_redimension()
     ws_ypixel: 0, };
 
   // Add 5 lines and 5 columns to the display
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
-  display.resize();
+  display.resize_with(&winsz);
   assert_eq!(display.into_bytes(),
 vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b' ', b' ', b' ', b' ',
      b'l', b'o', b'r', b' ', b's', b'i', b't', b' ', b' ', b' ', b' ', b' ',
@@ -295,8 +278,7 @@ vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b' ', b' ', b' ', b' ',
     ws_ypixel: 0, };
 
   // Add 2 lines and remove 7 columns to the display
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
-  display.resize();
+  display.resize_with(&winsz);
   assert_eq!(display.into_bytes(),
 vec![b'm', b' ', b'i', b'p', b's',
      b'l', b'o', b'r', b' ', b's',
@@ -334,8 +316,7 @@ vec![b'm', b' ', b'i', b'p', b's',
     ws_ypixel: 0, };
 
   // Remove 9 lines and add 5 columns to the display
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &winsz); }
-  display.resize();
+  display.resize_with(&winsz);
   assert_eq!(display.into_bytes(),
       vec![b'm', b' ', b'i', b'p', b's', b' ', b' ', b' ', b' ', b' ',
            b'l', b'o', b'r', b' ', b's', b' ', b' ', b' ', b' ', b' ',
@@ -346,6 +327,5 @@ vec![b'm', b' ', b'i', b'p', b's',
   assert_eq!(display.into_bytes(),
       vec![b'm', b' ', b'i', b'p', b's', b' ', b' ', b' ', b' ', b' ',
            b'l', b'o', b'r', b' ', b's', b' ', b' ', b' ', b' ', b' ',
-           b'e', b't', b' ', b'h', b'S', b' ', b' ', b' ', b' ', b' ' ]);
+           b'e', b't', b' ', b'h', b'S', b' ', b' ', b' ', b' ', b' ' ]); }
 
-  unsafe { libc::ioctl(0, libc::TIOCSWINSZ, &stock); }}
