@@ -159,7 +159,7 @@ impl Shell {
     /// The mutator method `set_window_size` redimentionnes the window
     /// with a default size.
     pub fn set_window_size(&mut self) {
-        if let Ok(size) = Winszed::new(libc::STDIN_FILENO) {
+        if let Ok(size) = Winszed::new(libc::STDOUT_FILENO) {
             self.set_window_size_with(&size);
         }
     }
