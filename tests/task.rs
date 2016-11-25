@@ -58,6 +58,7 @@ fn test_proc_next() {
         shell.set_window_size_with(&SIZE);
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
+        println!("here beqch");
         assert!(shell.take(50).find(|event| {
             event.is_task().and_then(|&(_, ref task)| Some({
                 CStr::from_bytes_with_nul(&task[..5]).eq(

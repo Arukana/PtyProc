@@ -146,7 +146,8 @@ impl Shell {
         &self.screen
     }
 
-    /// The mutator method `set_window_size` redimentionnes the window.
+    /// The mutator method `set_window_size` redimentionnes the window
+    /// with a argument size.
     pub fn set_window_size_with(&mut self, size: &Winszed) {
         self.screen.set_window_size(size);
         unsafe {
@@ -155,10 +156,11 @@ impl Shell {
         }
     }
 
-    /// The mutator method `set_window_size` redimentionnes the window.
+    /// The mutator method `set_window_size` redimentionnes the window
+    /// with a default size.
     pub fn set_window_size(&mut self) {
         if let Ok(size) = Winszed::new(libc::STDOUT_FILENO) {
-            self.screen.set_window_size(&size);
+            self.set_window_size_with(&size);
         }
     }
 }

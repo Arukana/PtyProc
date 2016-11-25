@@ -94,8 +94,8 @@ impl Display {
 
     /// The mutator `set_window_size` replaces the window size.
     pub fn set_window_size(&mut self, size: &Winszed) {
-        self.size = *size;
         self.resize_with(size);
+        self.size = *size;
     }
 
     /// The accessor `get_cursor_coords` returns the value of 'oob', that is the coordinates of the cursor.
