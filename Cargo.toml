@@ -10,6 +10,7 @@ keywords = ["pty", "shell", "mode", "proc"]
 [[bin]]
 name = "pty-proc"
 test = false
+doc = false
 
 [lib]
 test = false
