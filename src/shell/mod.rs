@@ -150,13 +150,16 @@ impl Shell {
     pub fn set_window_size_with(&mut self, size: &Winszed) {
         self.screen.set_window_size(size);
         unsafe {
+            libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &size);
             libc::kill(self.pid, libc::SIGWINCH);
         }
     }
 
     /// The mutator method `set_window_size` redimentionnes the window.
     pub fn set_window_size(&mut self) {
-        self.set_window_size_with(&Winszed::default());
+        if let Ok(size) = Winszed::new(libc::STDOUT_FILENO) {
+            self.screen.set_window_size(&size);
+        }
     }
 }
 
