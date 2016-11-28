@@ -147,7 +147,7 @@ impl Shell {
     }
 
     /// The accessor method `get_mut_screen` returns a mutable reference on the Display interface.
-    pub fn get_mut_screen(&self) -> &Display {
+    pub fn get_mut_screen(&mut self) -> &Display {
         &mut self.screen
     }
 
