@@ -146,6 +146,11 @@ impl Shell {
         &self.screen
     }
 
+    /// The accessor method `get_mut_screen` returns a mutable reference on the Display interface.
+    pub fn get_mut_screen(&self) -> &Display {
+        &mut self.screen
+    }
+
     /// The mutator method `set_window_size` redimentionnes the window
     /// with a argument size.
     pub fn set_window_size_with(&mut self, size: &Winszed) {
