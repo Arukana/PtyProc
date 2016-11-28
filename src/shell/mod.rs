@@ -156,7 +156,7 @@ impl Shell {
     pub fn set_window_size_with(&mut self, size: &Winszed) {
         self.screen.set_window_size(size);
         unsafe {
-            libc::ioctl(self.child_fd, libc::TIOCSWINSZ, &size);
+            libc::ioctl(self.child_fd, libc::TIOCSWINSZ, size);
             libc::kill(self.pid, libc::SIGWINCH);
         }
     }
