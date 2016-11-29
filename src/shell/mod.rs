@@ -146,11 +146,6 @@ impl Shell {
         &self.screen
     }
 
-    /// The accessor method `get_mut_screen` returns a mutable reference on the Display interface.
-    pub fn get_mut_screen(&mut self) -> &mut Display {
-        &mut self.screen
-    }
-
     /// The mutator method `set_window_size` redimentionnes the window
     /// with a argument size.
     pub fn set_window_size_with(&mut self, size: &Winszed) {
@@ -167,6 +162,12 @@ impl Shell {
         if let Ok(size) = Winszed::new(libc::STDOUT_FILENO) {
             self.set_window_size_with(&size);
         }
+    }
+
+    /// The mutator method `write_screen` set a buffer to the display
+    /// without needing to print it
+    fn write_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.screen.write(buf)
     }
 }
 
