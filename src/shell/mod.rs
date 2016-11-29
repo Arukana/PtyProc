@@ -166,7 +166,7 @@ impl Shell {
 
     /// The mutator method `write_screen` set a buffer to the display
     /// without needing to print it
-    fn write_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
+    pub fn write_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.screen.write(buf)
     }
 }
