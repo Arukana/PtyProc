@@ -869,6 +869,9 @@ impl Write for Display {
             { self.print_char(&[u1, u2], next) },
             &[u1, ref next..] =>
             { self.print_char(&[u1], next) },
+
+            &[u1 @ b'\x00' ... b'\xFF', b'\xE0', 0, 0, ref next..] =>
+            { self.print_char(&[u1, b'\xE0', 0, 0], next) },
         }
     }
 
