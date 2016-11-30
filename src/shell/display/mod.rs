@@ -861,7 +861,7 @@ impl Write for Display {
               self.goto_right(tab_width);
               self.write(next) },
 
-            &[u1 @ b'\x00' ... b'\xFF', b'\xE0', 0, 0, ref next..] =>
+            &[u1 @ b'\xE0' ... b'\xF8', u2 @ b'\x00' ... b'\xFF', ref next..] =>
             { self.print_char(&[u1, b'\xE0', 0, 0], next) },
             &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] =>
             { self.print_char(&[u1, u2, u3, u4], next) },
