@@ -862,7 +862,8 @@ impl Write for Display {
               self.write(next) },
 
             &[u1 @ b'\xE0' ... b'\xF8', u2 @ b'\x00' ... b'\xFF', ref next..] =>
-            { self.print_char(&[u1, u2], next) },
+            { println!("THE::[{}, {}]", u1, u2);
+              self.print_char(&[0, 0, u1, u2], next) },
 //            &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] =>
 //            { self.print_char(&[u1, u2, u3, u4], next) },
 //            &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0', u3 @ b'\x80' ... b'\xBF', ref next..] =>
