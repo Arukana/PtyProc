@@ -69,8 +69,6 @@ extern "C" {
         buffer: *mut libc::c_void,
         buffersize: libc::c_int
     ) -> libc::c_int;
-    pub fn proc_listallpids(
-        buffer: *mut libc::c_void,
-        buffersize: libc::c_int
-    ) -> libc::c_int;
+
+    pub fn proc_listchildpids(_ppid: libc::pid_t, _buff: *mut libc::c_void, _size: libc::c_int) -> libc::c_int;
 }
