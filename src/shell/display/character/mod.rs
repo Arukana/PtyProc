@@ -19,8 +19,20 @@ pub struct Character {
 }
 
 impl Character {
+    pub fn new(c: char) -> Self {
+        unsafe {
+            Character::from_slice (
+                &mem::transmute::<char, [libc::c_uchar; 4]>(c)
+            )
+        }
+    }
+
+    pub fn space() -> Self {
+        Character::new(' ')
+    }
+
     /// The constructor method `new` returns a term character.
-    pub fn new(buf: &[libc::c_uchar]) -> Self {
+    pub fn from_slice(buf: &[libc::c_uchar]) -> Self {
         let mut control: Character = Character::default();
 
         control.write(buf);
@@ -45,7 +57,9 @@ impl Character {
 
     /// The accessor method `get_ref` returns a reference on term character buffer.
     pub fn get_unicode(&self) -> char {
-        self.buf[0] as char
+        unsafe {
+            mem::transmute::<[libc::c_uchar; 4], char>(self.buf)
+        }
     }
 
     /// The accessor method `get_ref` returns a reference on term character buffer.

@@ -60,7 +60,7 @@ impl Write for Cursor<Vec<Character>> {
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         unsafe {
-            *self.inner.get_unchecked_mut(self.pos) = Character::new(buf);
+            *self.inner.get_unchecked_mut(self.pos) = Character::from_slice(buf);
             self.pos += 1;
         }
         Ok(buf.len())

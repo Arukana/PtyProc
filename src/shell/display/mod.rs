@@ -149,7 +149,7 @@ impl Display {
             { self.region.1 = srow; }
             match self.size.get_col().checked_mul((size.ws_row - self.size.ws_row) as usize)
             { Some(get) =>
-                { let mut vide = {0..get}.map(|_: usize| Character::new(&[b' '][..])).collect::<Vec<Character>>();
+                { let mut vide = {0..get}.map(|_: usize| Character::space()).collect::<Vec<Character>>();
                   self.screen.get_mut().append(&mut vide); },
               None => {}, }}
           else if self.size.ws_row > size.ws_row
@@ -187,7 +187,7 @@ impl Display {
             { let coucou = self.screen.get_mut();
               {0..row}.all(|i|
               { {0..size.ws_col-col}.all(|_|
-                { (*coucou).insert(((row - i) * col) as usize, Character::new(&[b' '][..]));
+                { (*coucou).insert(((row - i) * col) as usize, Character::space());
                   true }) }); }
             self.size = *size;
             let x = self.oob.0;
@@ -331,7 +331,7 @@ impl Display {
       self.newline.dedup();
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      { (*coucou).insert(base * col, Character::new(&[b' '][..]));
+      { (*coucou).insert(base * col, Character::space());
         (*coucou).remove(resize.1 * col);
         true }); }
 
@@ -353,7 +353,7 @@ impl Display {
       self.newline.dedup();
       let coucou = self.screen.get_mut();
       {0..col}.all(|_|
-      { (*coucou).insert(resize.1 * col, Character::new(&[b' '][..]));
+      { (*coucou).insert(resize.1 * col, Character::space());
         (*coucou).remove(base * col);
         true }); }
 
@@ -379,7 +379,7 @@ impl Display {
       let oob = self.oob;
       let coucou = self.screen.get_mut();
       {0..(col * mv)}.all(|_|
-      { (*coucou).insert(pos, Character::new(&[b' '][..]));
+      { (*coucou).insert(pos, Character::space());
         { (*coucou).remove(region.1 * col); }
         true }); }
 
@@ -559,7 +559,7 @@ impl Display {
         None => self.size.row_by_col() - 1, };
       let coucou = self.screen.get_mut();
       {0..mv}.all(|i|
-      { (*coucou).insert(border, Character::new(&[b' '][..]));
+      { (*coucou).insert(border, Character::space());
         (*coucou).remove(pos);
         true }); }
 }
@@ -855,7 +855,7 @@ impl Write for Display {
               let pos = self.screen.position();
               { let coucou = self.screen.get_mut();
                 {0..tab_width}.all(|_|
-                { (*coucou).insert(pos, Character::new(&[b' '][..]));
+                { (*coucou).insert(pos, Character::space());
                   (*coucou).remove(resize.1 * col);
                   true }); }
               self.goto_right(tab_width);
