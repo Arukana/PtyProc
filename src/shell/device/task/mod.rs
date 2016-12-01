@@ -18,12 +18,7 @@ pub use self::linux::*;
 #[cfg(target_os = "macos")]
 pub use self::macos::*;
 
-pub enum BufProc {
-  /// Update(created_pids, removed_pids)
-  Update(Vec<libc::pid_t>, Vec<libc::pid_t>),
-  /// CurrentPid(new_current_pid, [its_path_name])
-  CurrentPid(libc::pid_t, [libc::c_uchar; 32]),
-}
+pub type BufProc = (libc::pid_t, [libc::c_uchar; 32]);
 
 use ::libc;
 
@@ -39,19 +34,6 @@ const SPEC_SUBD_STATUS: &'static str = "status";
 const SPEC_CAPACITY_PROC: usize = 512;
 
 impl Proc {
-  /// The constructor method `new` returns a tree of processes from `pid`
-  pub fn new(pid: libc::pid_t, ppid: libc::pid_t, status: libc::c_uchar, name: String) -> Self
-  { let pids = proc_get_pids(pid);
-    let mut childs = Vec::new();
-    match pids
-    { Some(mut vec) =>
-        { vec.sort_by(|(a, _, _, _), (b, _, _, _)| a.cmp(b));
-          vec.iter().all(|i|
-          { childs.push(Proc::new(i.info));
-            true });
-        Proc { info: (pid, ppid, status, name), childs: childs, }},
-      None => Proc { pid: pid, childs: childs, }, }}
-
     /// The constructor method `new` returns the list of process.
     pub fn new(fpid: libc::pid_t) -> Result<Self> {
         let mut status: Proc = Proc::default();
@@ -91,34 +73,39 @@ impl Proc {
             fpid.or(Some(self.fpid))
         }
     }
-
-    fn cmp(&self, baum: Baum) -> (Vec<libc::pid_t>, Vec<libc::pid_t>)
-    { fn checker(get: &Baum, baum: &Baum, pids: &mut Vec<libc::pid_t>)
-      { if !pid_in_baum(baum.pid, get)
-        { pids.push(baum.pid); }
-          if !baum.childs.is_empty()
-          { baum.childs.iter().map(|x| checker(get, x, pids)); }}
-      let mut in_pids: Vec<libc::pid_t> = Vec::new();
-      let mut out_pids: Vec<libc::pid_t> = Vec::new();
-      checker(self, &baum, &mut out_pids);
-      checker(&baum, self, &mut in_pids);
-      (in_pids, out_pids) }
 }
 
 impl Iterator for Proc {
     type Item = BufProc;
 
-    fn next(&mut self) -> Option<BufProc>
-    { self.list.clear();
-      self.with_list_process().unwrap();
-      self.from_pid(None).and_then(|cfpid|
-      { if cfpid.eq(&self.fpid).not().bitand(self.lpid.eq(&self.fpid).not())
-        { self.fpid = cfpid;
-          self.get_name(cfpid) }
-        else
-        { None }}) }
+    fn next(&mut self) -> Option<BufProc> {
+        self.list.clear();
+        self.with_list_process().unwrap();
+
+        self.from_pid(None).and_then(|cfpid| {
+//            print!("(current pid: {}) != (first top pid: {}) && (last saved pid: {})<>(first top pid: {}) -> ", cfpid, self.fpid, self.lpid, self.fpid);
+            if cfpid.eq(&self.fpid).not().bitand(
+               self.lpid.eq(&self.fpid).not()
+            ) {
+                self.fpid = cfpid;
+//                println!("{:?}", self.get_name(cfpid));
+                self.get_name(cfpid)
+            } else {
+//                println!("None");
+                None
+            }
+        })
+    }
 }
 
-impl Default for Proc
-{ fn default() -> Proc
-  { Proc { info:(0, 0, 0, "kernel".to_string()), childs: vec![Proc::new(0)], }}}
+impl Default for Proc {
+
+    /// The constructor method `default` returns a empty list of process.
+    fn default() -> Proc {
+        Proc {
+            fpid: 0,
+            lpid: 0,
+            list: Vec::with_capacity(SPEC_CAPACITY_PROC),
+        }
+    }
+}
