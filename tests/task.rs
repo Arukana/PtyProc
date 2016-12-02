@@ -47,6 +47,15 @@ fn test_proc_next() {
                 &CStr::from_bytes_with_nul(b"bash\0")
             )
         ).is_some());
+/*
+        assert!(shell.write(b"/bin/bash\n").is_ok());
+        thread::sleep(time::Duration::from_millis(200));
+        assert!(process.clone().take(50).find(|&(_, ref event)|
+            CStr::from_bytes_with_nul(&event[..5]).eq(
+                &CStr::from_bytes_with_nul(b"bash\0")
+            )
+        ).is_some());
+*/
     }
     {
         let mut shell: Shell = Shell::new(
@@ -58,7 +67,7 @@ fn test_proc_next() {
         shell.set_window_size_with(&SIZE);
         assert!(shell.write(b"/bin/bash\n").is_ok());
         thread::sleep(time::Duration::from_millis(200));
-        println!("here beqch");
+        assert!(shell.write(b"exit\n").is_ok());
         assert!(shell.take(50).find(|event| {
             event.is_task().and_then(|&(_, ref task)| Some({
                 CStr::from_bytes_with_nul(&task[..5]).eq(
@@ -68,3 +77,5 @@ fn test_proc_next() {
         }).is_some());
     }
 }
+
+

@@ -9,9 +9,10 @@ use ::libc;
 
 #[derive(Debug)]
 pub struct Proc {
-    /// The first pid for tree.
-    pub fpid: libc::pid_t,
-    pub lpid: libc::pid_t,
+    /// The first pid of the tree.
+    pub first_pid: libc::pid_t,
+    /// The last pid of the tree.
+    pub last_pid: libc::pid_t,
     /// List by pid, ppid. status and unsized-name.
     pub list: Vec<(libc::pid_t, libc::pid_t, libc::c_uchar, String)>,
 }

@@ -15,9 +15,10 @@ unsafe fn get_unchecked_str(cp: *mut u8, start: *mut u8) -> String {
 
 #[derive(Debug)]
 pub struct Proc {
-    /// The first pid for tree.
-    pub fpid: libc::pid_t,
-    pub lpid: libc::pid_t,
+    /// The first pid of the tree.
+    pub first_pid: libc::pid_t,
+    /// The current pid.
+    pub running_pid: libc::pid_t,
     /// List by pid, ppid. status and unsized-name.
     pub list: Vec<(libc::pid_t, libc::pid_t, libc::c_uchar, String)>,
 }
@@ -97,7 +98,7 @@ impl Proc {
                         name = l.to_owned();
                     }
                 }
-                self.list.push((pid, task_info.pbsd.ppbi_pid as i32, b'_', name));
+                self.list.push((pid, task_info.pbsd.ppbi_pid as i32, (task_info.pbsd.pbi_nice as u32 ^ task_info.pbsd.pbi_status) as u8, name));
             }
         }
     }

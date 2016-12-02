@@ -35,10 +35,10 @@ const SPEC_CAPACITY_PROC: usize = 512;
 
 impl Proc {
     /// The constructor method `new` returns the list of process.
-    pub fn new(fpid: libc::pid_t) -> Result<Self> {
+    pub fn new(first_pid: libc::pid_t) -> Result<Self> {
         let mut status: Proc = Proc::default();
 
-        status.fpid = fpid;
+        status.first_pid = first_pid;
         status.with_list_process().and_then(|_| {
             Ok(status)
         })
@@ -49,7 +49,7 @@ impl Proc {
     /// the process according to the pid.
     pub fn get_name(&self, pid: libc::pid_t)-> Option<BufProc> {
         self.list.iter().find(
-            |&&(ref cpid, _, _, _)| pid.eq(cpid)
+            |&&(ref current_pid, _, _, _)| pid.eq(current_pid)
         ).and_then(|&(_, _, _, ref name): &(_, _, _, String)| {
             let mut source: [libc::c_uchar; 32] = [b'\0'; 32];
             {
@@ -61,50 +61,51 @@ impl Proc {
         })
     }
 
-    /// The method `from_pid` returns the last active child process
-    /// from the fpid process argument.
-    fn from_pid(&self, fpid: Option<libc::pid_t>) -> Option<libc::pid_t> {
-        if let Some(&(cpid, _, _, _)) = self.list.iter().find(
-            |&&(_, ref ppid, _, _)| fpid.unwrap_or(self.fpid).eq(ppid)
-        ) {
-            self.from_pid(Some(cpid))
-        }
-        else {
-            fpid.or(Some(self.fpid))
-        }
-    }
+  /// The method `current_pid` returns the pid which the process is on
+  pub fn current_pid(&self) -> libc::pid_t
+  { fn currpid(list: &Vec<(libc::pid_t, libc::pid_t, libc::c_uchar, String)>, from_pid: libc::pid_t, cur_pid: &mut libc::pid_t)
+    { let mut childs: Vec<(libc::pid_t, libc::pid_t, libc::c_uchar, String)> = Vec::with_capacity(list.len());
+      list.into_iter().filter_map(|&(a, parent_pid, b, ref c)|
+      { if from_pid.eq(&parent_pid)
+        { Some((a, parent_pid, b, c.to_string())) }
+        else
+        { None }}).all(|k|
+        { childs.push(k);
+          true });
+      if childs.is_empty().not()
+      { childs.into_iter().all(|x|
+        { match x
+          { (current, _, 2, _) => { *cur_pid = current; },
+            (new_pid, _, _, _) => { currpid(list, new_pid, cur_pid); }, }
+          true }); }}
+    let mut pid: libc::pid_t = 0;
+    currpid(&self.list, self.first_pid, &mut pid);
+    pid }
 }
 
-impl Iterator for Proc {
-    type Item = BufProc;
+impl Iterator for Proc
+{ type Item = BufProc;
 
-    fn next(&mut self) -> Option<BufProc> {
-        self.list.clear();
-        self.with_list_process().unwrap();
+  fn next(&mut self) -> Option<BufProc>
+  { self.list.clear();
+    self.with_list_process().unwrap();
+    if list.is_empty()
+    if self.running_pid != self.current_pid()
+    { self.running_pid = self.current_pid();
+      println!("RUNNING::{}", self.running_pid);
+      self.get_name(self.running_pid) }
+    else
+    { None }}}
+    
 
-        self.from_pid(None).and_then(|cfpid| {
-//            print!("(current pid: {}) != (first top pid: {}) && (last saved pid: {})<>(first top pid: {}) -> ", cfpid, self.fpid, self.lpid, self.fpid);
-            if cfpid.eq(&self.fpid).not().bitand(
-               self.lpid.eq(&self.fpid).not()
-            ) {
-                self.fpid = cfpid;
-//                println!("{:?}", self.get_name(cfpid));
-                self.get_name(cfpid)
-            } else {
-//                println!("None");
-                None
-            }
-        })
-    }
-}
 
 impl Default for Proc {
 
     /// The constructor method `default` returns a empty list of process.
     fn default() -> Proc {
         Proc {
-            fpid: 0,
-            lpid: 0,
+            first_pid: 0,
+            running_pid: 0,
             list: Vec::with_capacity(SPEC_CAPACITY_PROC),
         }
     }
