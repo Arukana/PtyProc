@@ -89,7 +89,6 @@ impl Iterator for Proc
   fn next(&mut self) -> Option<BufProc>
   { self.list.clear();
     self.with_list_process().unwrap();
-    if list.is_empty()
     if self.running_pid != self.current_pid()
     { self.running_pid = self.current_pid();
       println!("RUNNING::{}", self.running_pid);

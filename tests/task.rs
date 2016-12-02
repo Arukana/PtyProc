@@ -47,15 +47,6 @@ fn test_proc_next() {
                 &CStr::from_bytes_with_nul(b"bash\0")
             )
         ).is_some());
-/*
-        assert!(shell.write(b"/bin/bash\n").is_ok());
-        thread::sleep(time::Duration::from_millis(200));
-        assert!(process.clone().take(50).find(|&(_, ref event)|
-            CStr::from_bytes_with_nul(&event[..5]).eq(
-                &CStr::from_bytes_with_nul(b"bash\0")
-            )
-        ).is_some());
-*/
     }
     {
         let mut shell: Shell = Shell::new(
@@ -75,6 +66,60 @@ fn test_proc_next() {
                 )
             })).unwrap_or_default()
         }).is_some());
+    }
+    {
+        let mut shell: Shell = Shell::new(
+            None,
+            None,
+            Some("/bin/bash"),
+        ).unwrap();
+
+        shell.set_window_size_with(&SIZE);
+
+        assert!(shell.write(b"/bin/bash\n").is_ok());
+        thread::sleep(time::Duration::from_millis(800));
+
+        assert!(
+          (0..1000).filter_map(|_|
+                     shell.next())
+                 .find(|event|
+                   event.is_task().is_some())
+                 .is_some()
+        );
+
+        assert!(shell.write(b"/bin/bash\n").is_ok());
+        thread::sleep(time::Duration::from_millis(800));
+
+        assert!(
+          (0..1000).filter_map(|_|
+                     shell.next())
+                 .find(|event|
+                   event.is_task().is_some())
+                 .is_some()
+        );
+        assert!(shell.write(b"/bin/bash\n").is_ok());
+        thread::sleep(time::Duration::from_millis(400));
+
+        assert!(
+          (0..200).filter_map(|_|
+                     shell.next())
+                 .find(|event|
+                   event.is_task().is_some())
+                 .is_some()
+        );
+
+        assert!(
+          (0..200).filter_map(|_|
+                     shell.next())
+                 .find(|event|
+                   event.is_task().is_some())
+                 .is_none()
+        );
+        assert!(shell.write(b"exit\n").is_ok());
+        assert!(shell.write(b"exit\n").is_ok());
+        assert!(shell.write(b"exit\n").is_ok());
+        assert!(shell.write(b"exit\n").is_ok());
+
     }
 }
 

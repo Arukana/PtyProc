@@ -60,6 +60,7 @@ impl Proc {
                 self.push(pid, taskallinfo_size as i32, &mut proc_args, mib, argmax as libc::size_t);
                 true
             });
+            self.list.sort();
             Ok(())
         }
     }
