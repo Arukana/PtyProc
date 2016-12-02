@@ -92,7 +92,6 @@ impl Write for Character {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-      println!("BUF::{:?}", buf);
         self.len = buf.len();
         (&mut self.buf[..]).write(buf)
     }

@@ -91,7 +91,6 @@ impl Iterator for Proc
     self.with_list_process().unwrap();
     if self.running_pid != self.current_pid()
     { self.running_pid = self.current_pid();
-      println!("RUNNING::{}", self.running_pid);
       self.get_name(self.running_pid) }
     else
     { None }}}
