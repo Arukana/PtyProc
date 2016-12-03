@@ -5,7 +5,7 @@ use super::task::BufProc;
 use super::{In, Out, Sig};
 use super::control::Control;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum DeviceState {
     /// The current task.
     #[cfg(feature = "task")] Proc(BufProc),

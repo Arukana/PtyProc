@@ -354,6 +354,7 @@ impl ShellState {
     #[cfg(feature = "task")]
     pub fn is_task(&self) -> Option<&BufProc> {
         if let Some(ref task) = self.task {
+      println!("Task::{:?}", task);
             Some(task)
         } else {
             None
@@ -364,6 +365,7 @@ impl ShellState {
     /// the event DeviceState interface.
     #[cfg(feature = "task")]
     pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
+//      println!("Event::{:?}", event);
         self.set_task(event.is_task());
         self.set_idle(event.is_idle());
         self.set_signal(event.is_signal());

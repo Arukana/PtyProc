@@ -38,7 +38,10 @@ impl Proc {
     pub fn new(first_pid: libc::pid_t) -> Result<Self> {
         let mut status: Proc = Proc::default();
 
+println!("FIRST_PID::{}", first_pid);
+
         status.first_pid = first_pid;
+        status.running_pid = first_pid;
         status.with_list_process().and_then(|_| {
             Ok(status)
         })
@@ -75,7 +78,11 @@ impl Proc {
       if childs.is_empty().not()
       { childs.into_iter().all(|x|
         { match x
-          { (current, _, 2, _) => { *cur_pid = current; },
+          { (current, _, 2, _) =>
+              { if list.into_iter().find(|&&(_, x, _, _)| x == current).is_some()
+                { currpid(list, current, cur_pid); }
+                else
+                { *cur_pid = current; }},
             (new_pid, _, _, _) => { currpid(list, new_pid, cur_pid); }, }
           true }); }}
     let mut pid: libc::pid_t = 0;
@@ -87,13 +94,18 @@ impl Iterator for Proc
 { type Item = BufProc;
 
   fn next(&mut self) -> Option<BufProc>
-  { self.list.clear();
+  { let test = self.list.clone();
+    self.list.clear();
     self.with_list_process().unwrap();
-    if self.running_pid != self.current_pid()
-    { self.running_pid = self.current_pid();
+    let new_pid = self.current_pid();
+    if self.running_pid != new_pid && new_pid > 1
+    { self.running_pid = new_pid;
       println!("RUNNING::{}", self.running_pid);
       self.get_name(self.running_pid) }
-    else
+/*    else if test != self.list
+    { println!("MMMMMMMMMMMMMMMMMMMMMMMMM\nTEST::{:?}\nNNNNNNNNNNNNNNNNNNNNNNNNNN\nLIST::{:?}", test, self.list);
+      Some((666, [b'J'; 32])) }
+ */   else
     { None }}}
     
 

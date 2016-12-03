@@ -31,10 +31,6 @@ pub enum Key {
     F(libc::c_uchar),
     /// Character used with Alt.
     Alt(libc::c_uchar),
-    /// Character used with Ctrl
-    /// Note that certain keys may not be modifiable with `ctrl`,
-    /// due to limitations of terminals.
-    Ctrl(libc::c_uchar),
     /// Esc key.
     Esc,
     /// Left arrow.

@@ -22,6 +22,7 @@ const SIZE: Winszed = Winszed {
 };
 
 #[test]
+#[ignore]
 #[cfg(feature = "task")]
 fn test_proc_new() {
     assert!(
@@ -33,94 +34,52 @@ fn test_proc_new() {
 
 #[test]
 #[cfg(feature = "task")]
-fn test_proc_next() {
-    env::set_var("HOME", "/tmp");
-    {
-        let mut shell: Shell = Shell::new(None, None, Some("/bin/bash")).unwrap();
-        let pid: libc::pid_t = shell.get_pid();
-        let process: Proc = Proc::new(pid).unwrap();
+fn test_proc_next()
+{ env::set_var("HOME", "/tmp");
+  { let mut shell: Shell = Shell::new(
+        None,
+        None,
+        Some("/bin/bash"),
+    ).unwrap();
 
-        assert!(shell.write(b"/bin/bash\n").is_ok());
-        thread::sleep(time::Duration::from_millis(200));
-        assert!(process.take(50).find(|&(_, ref event)|
-            CStr::from_bytes_with_nul(&event[..5]).eq(
-                &CStr::from_bytes_with_nul(b"bash\0")
-            )
-        ).is_some());
-    }
-    {
-        let mut shell: Shell = Shell::new(
-            None,
-            None,
-            Some("/bin/bash"),
-        ).unwrap();
+    shell.set_window_size_with(&SIZE);
 
-        shell.set_window_size_with(&SIZE);
-        assert!(shell.write(b"/bin/bash\n").is_ok());
-        thread::sleep(time::Duration::from_millis(200));
-        assert!(shell.write(b"exit\n").is_ok());
-        assert!(shell.take(50).find(|event| {
-            event.is_task().and_then(|&(_, ref task)| Some({
-                CStr::from_bytes_with_nul(&task[..5]).eq(
-                    &CStr::from_bytes_with_nul(b"bash\0")
-                )
-            })).unwrap_or_default()
-        }).is_some());
-    }
-    {
-        let mut shell: Shell = Shell::new(
-            None,
-            None,
-            Some("/bin/bash"),
-        ).unwrap();
+    assert!(shell.write(b"/bin/bash\n").is_ok());
+    {0..100000000}.all(|_|
+    { shell.next().unwrap().is_task().is_none() });
 
-        shell.set_window_size_with(&SIZE);
+    println!("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
 
-        assert!(shell.write(b"/bin/bash\n").is_ok());
-        thread::sleep(time::Duration::from_millis(800));
+    assert!(shell.write(b"/bin/bash\n").is_ok());
+    {0..100000000}.all(|_|
+    { shell.next().unwrap().is_task().is_none() });
 
-        assert!(
-          (0..1000).filter_map(|_|
-                     shell.next())
-                 .find(|event|
-                   event.is_task().is_some())
-                 .is_some()
-        );
+    println!("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
 
-        assert!(shell.write(b"/bin/bash\n").is_ok());
-        thread::sleep(time::Duration::from_millis(800));
+    assert!(shell.write(b"/bin/bash\n").is_ok());
+    {0..100000000}.all(|_|
+    { shell.next().unwrap().is_task().is_none() });
 
-        assert!(
-          (0..1000).filter_map(|_|
-                     shell.next())
-                 .find(|event|
-                   event.is_task().is_some())
-                 .is_some()
-        );
-        assert!(shell.write(b"/bin/bash\n").is_ok());
-        thread::sleep(time::Duration::from_millis(400));
+    println!("ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ");
 
-        assert!(
-          (0..200).filter_map(|_|
-                     shell.next())
-                 .find(|event|
-                   event.is_task().is_some())
-                 .is_some()
-        );
+    assert!(shell.write(b"exit\n").is_ok());
+    {0..100000000}.all(|_|
+    { shell.next().unwrap().is_task().is_none() });
 
-        assert!(
-          (0..200).filter_map(|_|
-                     shell.next())
-                 .find(|event|
-                   event.is_task().is_some())
-                 .is_none()
-        );
-        assert!(shell.write(b"exit\n").is_ok());
-        assert!(shell.write(b"exit\n").is_ok());
-        assert!(shell.write(b"exit\n").is_ok());
-        assert!(shell.write(b"exit\n").is_ok());
+    println!("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
 
-    }
-}
+    assert!(shell.write(b"exit\n").is_ok());
+    {0..100000000}.all(|_|
+    { shell.next().unwrap().is_task().is_none() });
 
+    println!("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
 
+    assert!(shell.write(b"exit\n").is_ok());
+  //      {0..100000000}.all(|_|
+  //      { shell.next().unwrap().is_task().is_none() });
+
+    println!("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
+
+    assert!(shell.write(b"exit\n").is_ok()); }}
+
+  // cargo test --no-fail-fast --features task -- --nocapture
