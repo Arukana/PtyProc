@@ -92,8 +92,7 @@ impl Iterator for Proc
 { type Item = BufProc;
 
   fn next(&mut self) -> Option<BufProc>
-  { let test = self.list.clone();
-    self.list.clear();
+  { self.list.clear();
     self.with_list_process().unwrap();
     let new_pid = self.current_pid();
     if self.running_pid != new_pid && new_pid > 1
