@@ -22,7 +22,6 @@ const SIZE: Winszed = Winszed {
 };
 
 #[test]
-#[ignore]
 #[cfg(feature = "task")]
 fn test_proc_new() {
     assert!(
