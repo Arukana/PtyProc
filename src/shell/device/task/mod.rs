@@ -75,13 +75,24 @@ impl Proc {
           true });
       if childs.is_empty().not()
       { childs.into_iter().all(|x|
-        { match x
-          { (current, _, 2, _) =>
-              { if list.into_iter().find(|&&(_, x, _, _)| x == current).is_some()
-                { currpid(list, current, cur_pid); }
-                else
-                { *cur_pid = current; }},
-            (new_pid, _, _, _) => { currpid(list, new_pid, cur_pid); }, }
+        { if cfg!(target_os = "macos")
+          { match x
+            { (current, _, 2, _) =>
+                { if list.into_iter().find(|&&(_, x, _, _)| x == current).is_some()
+                  { currpid(list, current, cur_pid); }
+                  else
+                  { *cur_pid = current; }},
+              (new_pid, _, _, _) => { currpid(list, new_pid, cur_pid); }, }}
+
+          else if cfg!(target_os = "linux")
+          { match x
+            { (current, _, b'R', _) =>
+                { if list.into_iter().find(|&&(_, x, _, _)| x == current).is_some()
+                  { currpid(list, current, cur_pid); }
+                  else
+                  { *cur_pid = current; }},
+              (new_pid, _, _, _) => { currpid(list, new_pid, cur_pid); }, }}
+
           true }); }}
     let mut pid: libc::pid_t = 0;
     currpid(&self.list, self.first_pid, &mut pid);

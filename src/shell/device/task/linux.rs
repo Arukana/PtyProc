@@ -11,8 +11,8 @@ use ::libc;
 pub struct Proc {
     /// The first pid of the tree.
     pub first_pid: libc::pid_t,
-    /// The last pid of the tree.
-    pub last_pid: libc::pid_t,
+    /// The current pid.
+    pub running_pid: libc::pid_t,
     /// List by pid, ppid. status and unsized-name.
     pub list: Vec<(libc::pid_t, libc::pid_t, libc::c_uchar, String)>,
 }
@@ -21,7 +21,7 @@ impl Proc {
 
     /// The method `with_list_process` pushes all process after the first pid.
     pub fn with_list_process(&mut self) -> Result<()> {
-        let fpid: PathBuf = PathBuf::from(self.fpid.to_string());
+        let fpid: PathBuf = PathBuf::from(self.first_pid.to_string());
         match fs::read_dir(Path::new(SPEC_PROC)) {
             Err(why) => Err(ProcError::ReadDir(why)),
             Ok(entry) => {
