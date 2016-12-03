@@ -38,8 +38,6 @@ impl Proc {
     pub fn new(first_pid: libc::pid_t) -> Result<Self> {
         let mut status: Proc = Proc::default();
 
-println!("FIRST_PID::{}", first_pid);
-
         status.first_pid = first_pid;
         status.running_pid = first_pid;
         status.with_list_process().and_then(|_| {
@@ -102,10 +100,7 @@ impl Iterator for Proc
     { self.running_pid = new_pid;
       println!("RUNNING::{}", self.running_pid);
       self.get_name(self.running_pid) }
-/*    else if test != self.list
-    { println!("MMMMMMMMMMMMMMMMMMMMMMMMM\nTEST::{:?}\nNNNNNNNNNNNNNNNNNNNNNNNNNN\nLIST::{:?}", test, self.list);
-      Some((666, [b'J'; 32])) }
- */   else
+    else
     { None }}}
     
 

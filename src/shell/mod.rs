@@ -127,7 +127,7 @@ impl Shell {
                           pid: pid,
                           config: Termios::default(),
                           speudo: master,
-                          device: Device::from_speudo(master, pid),
+                          device: Device::from_speudo(master, libc::getpid()),
                           state: ShellState::new(repeat, interval),
                           screen: Display::new(libc::STDOUT_FILENO).unwrap(),
                       })

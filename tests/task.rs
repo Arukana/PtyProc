@@ -74,8 +74,8 @@ fn test_proc_next()
     println!("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
 
     assert!(shell.write(b"exit\n").is_ok());
-  //      {0..100000000}.all(|_|
-  //      { shell.next().unwrap().is_task().is_none() });
+    {0..100000000}.all(|_|
+    { shell.next().unwrap().is_task().is_none() });
 
     println!("HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH");
 
