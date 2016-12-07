@@ -1,5 +1,1 @@
-
-!+ Gérer les échappements entre deux buffers
-
-+ Caractère de l'Unicode
-  /! Certaines pages de l'Unicode ne sont pas gérées !/
+!+ Faire des tests unitaires autour de la gestion d'erreur (display/mod)
