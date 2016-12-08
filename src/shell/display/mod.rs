@@ -22,7 +22,6 @@ pub struct Display {
     save_terminal: Option<SaveTerminal>,
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
-    ///Scroll_region set with \x1B[y1;y2r => region(y1, y2)
     region: (libc::size_t, libc::size_t),
     collection: Vec<libc::size_t>,
     oob: (libc::size_t, libc::size_t),
@@ -77,7 +76,7 @@ impl Display {
             bell: 0,
             screen: Cursor::new(
               (0..size.row_by_col()).map(|_: usize|
-                                            Character::from(' ')
+                                            Character::space()
                                         ).collect::<Vec<Character>>()
             ),
         }

@@ -19,16 +19,8 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn new(c: char) -> Self {
-        unsafe {
-            Character::from_slice (
-                &mem::transmute::<char, [libc::c_uchar; 4]>(c)
-            )
-        }
-    }
-
     pub fn space() -> Self {
-        Character::new(' ')
+        Character::from(' ')
     }
 
     /// The constructor method `new` returns a term character.
@@ -92,7 +84,6 @@ impl Write for Character {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-    //  println!("BUF::{:?}", buf);
         self.len = buf.len();
         (&mut self.buf[..]).write(buf)
     }
