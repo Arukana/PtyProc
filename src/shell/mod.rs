@@ -7,7 +7,11 @@ mod err;
 use std::os::unix::io::AsRawFd;
 use std::io::{self, Write};
 use std::mem;
+use std::ptr;
 use std::fmt;
+
+use std::fs::File;
+use std::io::Read;
 
 use ::libc;
 use ::fork::Child;
@@ -57,6 +61,36 @@ impl Shell {
               Ok(fork) => match fork {
                   pty::Fork::Child(ref slave) =>
                   {
+/*let coucou = libc::ttyname(0);
+let mut get: Vec<u8> = Vec::with_capacity(1024);
+get = Vec::from_raw_parts(coucou as *mut u8, 1024, get.capacity());
+print!("COUCOU::");
+get.iter().all(|&i|
+{ if i >= 32 { print!("{}", i as char); true } else { false } });
+println!("");
+                         let mut path: String = String::with_capacity(1024);
+                          path.push_str("/proc/");
+                          path.push_str(format!("{}", libc::getpid()).as_str());
+                          path.push_str("/fdinfo/0");
+			  let mut f = File::open(path.as_str()).unwrap();
+			  let mut buffer = Vec::new();
+			  f.read_to_end(&mut buffer);
+			  let mut tty: String = String::new();
+			  tty.push_str("/dev/pts/");
+			  match buffer.split(|car| car.eq(&b':')).last()
+			  { Some(&[_, a, b, c, _]) =>
+			      { tty.push(a as char);
+				tty.push(b as char);
+				tty.push(c as char); },
+			    Some(&[_, a, b, _]) =>
+			      { tty.push(a as char);
+				tty.push(b as char); },
+			    Some(&[_, a, _]) =>
+			      { tty.push(a as char); },
+			    _ => {}, }
+println!("CHILD::{} | PID::{}", tty, libc::getpid());
+libc::sleep(5);
+*/
                       // Child window init
                       libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
                       // Use pipe
@@ -72,18 +106,6 @@ impl Shell {
 
                           // Transfer it to master
                           libc::write(pipefd[1], bonjour, 1024); }
-                      else if cfg!(any(target_os = "linux", target_os = "android"))
-                      {   let mut path: String = String::with_capacity(1024);
-                          path.push_str("/proc/");
-                          path.push_str(format!("{}", libc::getpid()).as_str());
-                          path.push_str("/fd/0");
-                          let mut get: Vec<u8> = Vec::with_capacity(1024);
-                          let mut buf = get.as_ptr() as *mut i8;
-                          let hey = path.as_ptr() as *const i8;
-                          libc::readlink(hey, buf, 1024);
-                          get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity()); 
-                          let mut bonjour = get.as_ptr() as *mut libc::c_void;
-                          libc::write(pipefd[1], bonjour, 1024); }
                       libc::close(pipefd[1]);
 
                       // Enter the shell exec
@@ -93,7 +115,15 @@ impl Shell {
                       mem::forget(fork);
                       // Use pipe
                       libc::close(pipefd[1]);
-
+/*let coucou = libc::ttyname(0);
+let mut get: Vec<u8> = Vec::with_capacity(1024);
+get = Vec::from_raw_parts(coucou as *mut u8, 1024, get.capacity());
+print!("TTY::");
+get.iter().all(|&i|
+{ if i >= 32 { print!("{}", i as char); true } else { false } });
+println!("");
+libc::sleep(5);
+*/
                       let mut child_fd = if cfg!(target_os = "macos")
                       {   let mut get: Vec<u8> = Vec::with_capacity(1024);
                           let mut buf = get.as_ptr() as *mut libc::c_void;
@@ -106,13 +136,29 @@ impl Shell {
                           // Collect the file desciptor of the child
                           libc::open(buf, libc::O_RDWR) }
                       else if cfg!(any(target_os = "linux", target_os = "android"))
-                      {   let mut get: Vec<u8> = Vec::with_capacity(1024);
-                          let mut buf = get.as_ptr() as *mut libc::c_void;
-
-                          // Receive the /dev/tty of the child
-                          libc::read(pipefd[0], buf, 1024);
-                          get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
-                          let mut buf = get.as_ptr() as *const i8;
+                      {   let mut path: String = String::with_capacity(1024);
+                          path.push_str("/proc/");
+                          path.push_str(format!("{}", pid).as_str());
+                          path.push_str("/fdinfo/0");
+			  let mut f = File::open(path.as_str()).unwrap();
+			  let mut buffer = Vec::new();
+			  f.read_to_end(&mut buffer);
+			  let mut tty: String = String::new();
+			  tty.push_str("/dev/pts/");
+			  match buffer.split(|car| car.eq(&b':')).last()
+			  { Some(&[_, a, b, c, _]) =>
+			      { tty.push(a as char);
+				tty.push(b as char);
+				tty.push(c as char); },
+			    Some(&[_, a, b, _]) =>
+			      { tty.push(a as char);
+				tty.push(b as char); },
+			    Some(&[_, a, _]) =>
+			      { tty.push(a as char); },
+			    _ => {}, }
+/*println!("CHILD::{} | PID::{}", tty, pid);
+libc::sleep(5);*/
+                          let mut buf = tty.as_ptr() as *const i8;
                           libc::open(buf, libc::O_RDWR) }
                       else { 0 };
                       libc::close(pipefd[0]);

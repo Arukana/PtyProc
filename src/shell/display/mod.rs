@@ -738,6 +738,7 @@ impl Write for Display {
             &[b'\x1B', b'[', b'?', ref next..] |
             &[b'\x1B', b'[', b'>', ref next..] |
             &[b'\x1B', b'[', ref next..] |
+            &[b'\x1B', b']', ref next..] |
             &[b'\x1B', b'(', ref next..] |
             &[b'\x1B', b'?', ref next..] |
             &[b'\x1B', ref next..] =>
@@ -814,6 +815,9 @@ impl Write for Display {
                     self.write(next) },
 
                 //------------- ATTRIBUTS ---------------
+                &[b'm', b'%', ref next..] =>
+                  { self.collection.append(&mut bonjour);
+                    self.write(next) },
                 &[b'm', ref next..] =>
                   { self.collection.append(&mut bonjour);
                     self.write(next) },

@@ -213,6 +213,9 @@ impl ShellState {
     pub fn set_output(&mut self, out_screen: &mut Display, entry: Option<(Out, libc::size_t)>) {
         if let Some((mut buf, len)) = entry {
             self.out_last = Some((buf, len));
+/*print!("BUF::");
+{0..len}.all(|i| { print!(" {} |", buf[i]); true});
+println!("");*/
 
             let mut tmp = [0u8; 596];
             { let seeker = self.buffer.1;
