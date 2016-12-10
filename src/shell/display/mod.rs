@@ -139,6 +139,7 @@ impl Display {
     }
 
     pub fn resize_with(&mut self, size: &Winszed) {
+println!("SIZE::{:?}", size);
         if self.size.ws_row < size.ws_row
           { {self.size.ws_row..size.ws_row}.all(|i|
             { self.newline.push((self.size.get_col() - 1, i as usize));
@@ -487,7 +488,7 @@ impl Display {
             None => {}, }; }
         self.oob.1 += 1;
         self.oob.0 = 0; }
-      else if self.oob.1.eq(&(self.region.1.sub(&1)))
+      else if self.oob.1.eq(&(self.region.1.sub(&1))).bitand(self.ss_mod.not())
       { let x = self.region.0;
         self.scroll_up(x);
         self.goto_begin_row();

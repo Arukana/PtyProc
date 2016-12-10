@@ -9,6 +9,7 @@ use std::io::{self, Write};
 use std::mem;
 use std::ptr;
 use std::fmt;
+use std::ffi;
 
 use std::fs::File;
 use std::io::Read;
@@ -32,7 +33,7 @@ pub struct Shell {
     pid: libc::pid_t,
     #[allow(dead_code)]
     config: Termios,
-    speudo: pty::Master,
+    speudo: File,
     device: Device,
     state: ShellState,
     screen: Display,
@@ -56,129 +57,89 @@ impl Shell {
           libc::pipe(coucou);
           pipefd = Vec::from_raw_parts(coucou, 2, pipefd.capacity());
 
-          match pty::Fork::from_ptmx() {
-              Err(cause) => Err(ShellError::ForkFail(cause)),
-              Ok(fork) => match fork {
-                  pty::Fork::Child(ref slave) =>
-                  {
-/*let coucou = libc::ttyname(0);
-let mut get: Vec<u8> = Vec::with_capacity(1024);
-get = Vec::from_raw_parts(coucou as *mut u8, 1024, get.capacity());
-print!("COUCOU::");
-get.iter().all(|&i|
-{ if i >= 32 { print!("{}", i as char); true } else { false } });
-println!("");
-                         let mut path: String = String::with_capacity(1024);
-                          path.push_str("/proc/");
-                          path.push_str(format!("{}", libc::getpid()).as_str());
-                          path.push_str("/fdinfo/0");
-			  let mut f = File::open(path.as_str()).unwrap();
-			  let mut buffer = Vec::new();
-			  f.read_to_end(&mut buffer);
-			  let mut tty: String = String::new();
-			  tty.push_str("/dev/pts/");
-			  match buffer.split(|car| car.eq(&b':')).last()
-			  { Some(&[_, a, b, c, _]) =>
-			      { tty.push(a as char);
-				tty.push(b as char);
-				tty.push(c as char); },
-			    Some(&[_, a, b, _]) =>
-			      { tty.push(a as char);
-				tty.push(b as char); },
-			    Some(&[_, a, _]) =>
-			      { tty.push(a as char); },
-			    _ => {}, }
-println!("CHILD::{} | PID::{}", tty, libc::getpid());
-libc::sleep(5);
-*/
-                      // Child window init
-                      libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
-                      // Use pipe
-                      libc::close(pipefd[0]);
+	  let pid = libc::fork();
+	  let coucou = libc::ttyname(0);
+	  let get = Vec::from_raw_parts(coucou as *mut u8, 1024, 1024);
+	  let name = get.iter().map(|&x| x as char).collect::<String>();
+	  let master = File::open(name.as_str()).unwrap();
 
-                      if cfg!(target_os = "macos")
-                      {   // Max path length = 1024
-                          let mut the: Vec<u8> = Vec::with_capacity(1024);
-                          let mut bonjour = the.as_ptr() as *mut libc::c_void;
+	  match pid
+	  { 0 =>
+              { // Child window init
+	        libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
+	        // Use pipe
+	        libc::close(pipefd[0]);
 
-                          // Get info about /dev/tty of the child
-                          libc::fcntl(libc::STDOUT_FILENO, 50, bonjour);
+	        if cfg!(target_os = "macos")
+	        { // Max path length = 1024
+		  let mut the: Vec<u8> = Vec::with_capacity(1024);
+		  let mut bonjour = the.as_ptr() as *mut libc::c_void;
 
-                          // Transfer it to master
-                          libc::write(pipefd[1], bonjour, 1024); }
-                      libc::close(pipefd[1]);
+		  // Get info about /dev/tty of the child
+		  libc::fcntl(libc::STDOUT_FILENO, 50, bonjour);
 
-                      // Enter the shell exec
-                      slave.exec(command.unwrap_or("/bin/bash")) },
+                  // Transfer it to master
+                  libc::write(pipefd[1], bonjour, 1024); }
+                else if cfg!(any(target_os = "linux", target_os = "android"))
+		{ let mut path: String = String::with_capacity(1024);
+                  path.push_str("/proc/");
+                	  path.push_str(format!("{}", libc::getpid()).as_str());
+                  path.push_str("/fd/0");
+                  let mut get: Vec<u8> = Vec::with_capacity(1024);
+                  let mut buf = get.as_ptr() as *mut i8;
+                  let hey = path.as_ptr() as *const i8;
+                  libc::readlink(hey, buf, 1024);
+                  get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity()); };
 
-                  pty::Fork::Parent(pid, master) => {
-                      mem::forget(fork);
-                      // Use pipe
-                      libc::close(pipefd[1]);
-/*let coucou = libc::ttyname(0);
-let mut get: Vec<u8> = Vec::with_capacity(1024);
-get = Vec::from_raw_parts(coucou as *mut u8, 1024, get.capacity());
-print!("TTY::");
-get.iter().all(|&i|
-{ if i >= 32 { print!("{}", i as char); true } else { false } });
-println!("");
-libc::sleep(5);
-*/
-                      let mut child_fd = if cfg!(target_os = "macos")
-                      {   let mut get: Vec<u8> = Vec::with_capacity(1024);
-                          let mut buf = get.as_ptr() as *mut libc::c_void;
+                  libc::close(pipefd[1]);
+    let cmd = ffi::CString::new(command.unwrap_or("/bin/bash")).unwrap();
+    let mut args: Vec<*const libc::c_char> = Vec::with_capacity(1);
 
-                          // Receive the /dev/tty of the child
-                          libc::read(pipefd[0], buf, 1024);
-                          get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
-                          let mut buf = get.as_ptr() as *const i8;
+    args.push(cmd.as_ptr());
+    args.push(ptr::null());
+    unsafe {
+      if libc::execvp(cmd.as_ptr(), args.as_mut_ptr()).eq(&-1) {
+        panic!("{}: {}", cmd.to_string_lossy(), ::errno::errno());
+      }
+    }
+    unreachable!(); },
 
-                          // Collect the file desciptor of the child
-                          libc::open(buf, libc::O_RDWR) }
-                      else if cfg!(any(target_os = "linux", target_os = "android"))
-                      {   let mut path: String = String::with_capacity(1024);
-                          path.push_str("/proc/");
-                          path.push_str(format!("{}", pid).as_str());
-                          path.push_str("/fdinfo/0");
-			  let mut f = File::open(path.as_str()).unwrap();
-			  let mut buffer = Vec::new();
-			  f.read_to_end(&mut buffer);
-			  let mut tty: String = String::new();
-			  tty.push_str("/dev/pts/");
-			  match buffer.split(|car| car.eq(&b':')).last()
-			  { Some(&[_, a, b, c, _]) =>
-			      { tty.push(a as char);
-				tty.push(b as char);
-				tty.push(c as char); },
-			    Some(&[_, a, b, _]) =>
-			      { tty.push(a as char);
-				tty.push(b as char); },
-			    Some(&[_, a, _]) =>
-			      { tty.push(a as char); },
-			    _ => {}, }
-/*println!("CHILD::{} | PID::{}", tty, pid);
-libc::sleep(5);*/
-                          let mut buf = tty.as_ptr() as *const i8;
-                          libc::open(buf, libc::O_RDWR) }
-                      else { 0 };
-                      libc::close(pipefd[0]);
+	    -1 => { unreachable!(); },
+            pid =>
+              { // Use pipe
+                libc::close(pipefd[1]);
+                let mut child_fd =
+		if cfg!(target_os = "macos")
+                { let mut get: Vec<u8> = Vec::with_capacity(1024);
+                  let mut buf = get.as_ptr() as *mut libc::c_void;
 
-                      // Cas d'erreur si le fd est inférieur ou égal à 2
-                      //assert!(child_fd.gt(&2));
-                      if child_fd.le(&2)
-                      {   child_fd = 0; }
+                  // Receive the /dev/tty of the child
+                  libc::read(pipefd[0], buf, 1024);
+                  get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
+                  let mut buf = get.as_ptr() as *const i8;
 
-                      Ok(Shell {
-                          child_fd: child_fd,
-                          pid: pid,
-                          config: Termios::default(),
-                          speudo: master,
-                          device: Device::from_speudo(master, libc::getpid()),
-                          state: ShellState::new(repeat, interval),
-                          screen: Display::new(libc::STDOUT_FILENO).unwrap(),
-                      })
+                  // Collect the file desciptor of the child
+                  libc::open(buf, libc::O_RDWR) }
+                else if cfg!(any(target_os = "linux", target_os = "android"))
+		{ 0 }
+                else { 0 };
+
+                libc::close(pipefd[0]);
+
+                // Cas d'erreur si le fd est inférieur ou égal à 2
+                //assert!(child_fd.gt(&2));
+                if child_fd.le(&2)
+                { child_fd = 0; }
+
+                Ok(Shell
+                { child_fd: child_fd,
+                  pid: pid,
+                  config: Termios::default(),
+                  speudo: master,
+                  device: Device::from_speudo(master, libc::getpid()),
+                  state: ShellState::new(repeat, interval),
+                  screen: Display::new(libc::STDOUT_FILENO).unwrap(), })
                   },
-              },
           }
       }}
 
