@@ -7,12 +7,8 @@ mod err;
 use std::os::unix::io::AsRawFd;
 use std::io::{self, Write};
 use std::mem;
-use std::ptr;
 use std::fmt;
 use std::ffi;
-
-use std::fs::File;
-use std::io::Read;
 
 use ::libc;
 use ::fork::Child;
@@ -57,6 +53,7 @@ impl Shell {
           libc::pipe(coucou);
           pipefd = Vec::from_raw_parts(coucou, 2, pipefd.capacity());
 
+<<<<<<< HEAD
 	  let pid = libc::fork();
 	  let coucou = libc::ttyname(0);
 	  let get = Vec::from_raw_parts(coucou as *mut u8, 1024, 1024);
@@ -139,6 +136,87 @@ impl Shell {
                   device: Device::from_speudo(master, libc::getpid()),
                   state: ShellState::new(repeat, interval),
                   screen: Display::new(libc::STDOUT_FILENO).unwrap(), })
+=======
+          match pty::Fork::from_ptmx() {
+              Err(cause) => Err(ShellError::ForkFail(cause)),
+              Ok(fork) => match fork {
+                  pty::Fork::Child(ref slave) =>
+                  {
+                      // Child window init
+                      libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
+                      // Use pipe
+                      libc::close(pipefd[0]);
+
+                      if cfg!(target_os = "macos")
+                      {   // Max path length = 1024
+                          let mut the: Vec<u8> = Vec::with_capacity(1024);
+                          let mut bonjour = the.as_ptr() as *mut libc::c_void;
+
+                          // Get info about /dev/tty of the child
+                          libc::fcntl(libc::STDOUT_FILENO, 50, bonjour);
+
+                          // Transfer it to master
+                          libc::write(pipefd[1], bonjour, 1024); }
+                      else if cfg!(any(target_os = "linux", target_os = "android"))
+                      {   let mut path: String = String::with_capacity(1024);
+                          path.push_str("/proc/");
+                          path.push_str(format!("{}", libc::getpid()).as_str());
+                          path.push_str("/fd/0");
+                          let mut get: Vec<u8> = Vec::with_capacity(1024);
+                          let mut buf = get.as_ptr() as *mut i8;
+                          let hey = path.as_ptr() as *const i8;
+                          libc::readlink(hey, buf, 1024);
+                          get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity()); 
+                          let mut bonjour = get.as_ptr() as *mut libc::c_void;
+                          libc::write(pipefd[1], bonjour, 1024); }
+                      libc::close(pipefd[1]);
+
+                      // Enter the shell exec
+                      slave.exec(command.unwrap_or("/bin/bash")) },
+
+                  pty::Fork::Parent(pid, master) => {
+                      mem::forget(fork);
+                      // Use pipe
+                      libc::close(pipefd[1]);
+
+                      let mut child_fd = if cfg!(target_os = "macos")
+                      {   let mut get: Vec<u8> = Vec::with_capacity(1024);
+                          let mut buf = get.as_ptr() as *mut libc::c_void;
+
+                          // Receive the /dev/tty of the child
+                          libc::read(pipefd[0], buf, 1024);
+                          get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
+                          let mut buf = get.as_ptr() as *const i8;
+
+                          // Collect the file desciptor of the child
+                          libc::open(buf, libc::O_RDWR) }
+                      else if cfg!(any(target_os = "linux", target_os = "android"))
+                      {   let mut get: Vec<u8> = Vec::with_capacity(1024);
+                          let mut buf = get.as_ptr() as *mut libc::c_void;
+
+                          // Receive the /dev/tty of the child
+                          libc::read(pipefd[0], buf, 1024);
+                          get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
+                          let mut buf = get.as_ptr() as *const i8;
+                          libc::open(buf, libc::O_RDWR) }
+                      else { 0 };
+                      libc::close(pipefd[0]);
+
+                      // Cas d'erreur si le fd est inférieur ou égal à 2
+                      //assert!(child_fd.gt(&2));
+                      if child_fd.le(&2)
+                      {   child_fd = 0; }
+
+                      Ok(Shell {
+                          child_fd: child_fd,
+                          pid: pid,
+                          config: Termios::default(),
+                          speudo: master,
+                          device: Device::from_speudo(master, libc::getpid()),
+                          state: ShellState::new(repeat, interval),
+                          screen: Display::new(libc::STDOUT_FILENO).unwrap(),
+                      })
+>>>>>>> parent of 72e09f9... Ok display/mod for Linux
                   },
           }
       }}
