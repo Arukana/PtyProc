@@ -91,8 +91,6 @@ impl Shell {
 
                   pty::Fork::Parent(pid, master) => {
                       mem::forget(fork);
-                      // Use pipe
-                      libc::close(pipefd[1]);
 
                       let mut child_fd = if cfg!(target_os = "macos")
                       {   let mut get: Vec<u8> = Vec::with_capacity(1024);
@@ -110,11 +108,13 @@ impl Shell {
                           let mut buf = get.as_ptr() as *mut libc::c_void;
 
                           // Receive the /dev/tty of the child
-                          libc::read(pipefd[0], buf, 1024);
+                          libc::read(pipefd[1], buf, 1024);
                           get = Vec::from_raw_parts(buf as *mut u8, 1024, get.capacity());
                           let mut buf = get.as_ptr() as *const i8;
                           libc::open(buf, libc::O_RDWR) }
                       else { 0 };
+                      // Use pipe
+                      libc::close(pipefd[1]);
                       libc::close(pipefd[0]);
 
                       // Cas d'erreur si le fd est inférieur ou égal à 2
