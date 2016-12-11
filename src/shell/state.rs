@@ -213,10 +213,13 @@ impl ShellState {
     pub fn set_output(&mut self, out_screen: &mut Display, entry: Option<(Out, libc::size_t)>) {
         if let Some((mut buf, len)) = entry {
             self.out_last = Some((buf, len));
+<<<<<<< HEAD
 
 /*print!("BUF::");
 {0..len}.all(|i| { print!(" {} {} |", if buf[i] > 32 { buf[i] as char } else { ' ' }, buf[i]); true});
 println!("");*/
+=======
+>>>>>>> parent of 72e09f9... Ok display/mod for Linux
 
             let mut tmp = [0u8; 596];
             { let seeker = self.buffer.1;

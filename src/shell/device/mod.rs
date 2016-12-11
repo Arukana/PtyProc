@@ -50,7 +50,7 @@ impl Device {
         }
     }
 
-    pub fn from_speudo(master: pty::Master, pid: libc::pid_t) -> Self {
+    pub fn from_speudo(master: File, pid: libc::pid_t) -> Self {
         let (tx_task, rx_task) = chan::sync(0);
         let (tx_out, rx_out) = chan::sync(0);
         let (tx_in, rx_in) = chan::sync(0);
@@ -80,7 +80,7 @@ impl Device {
         }
     }
 
-    pub fn from_speudo(master: pty::Master, _: libc::pid_t) -> Self {
+    pub fn from_speudo(master: File, _: libc::pid_t) -> Self {
         let (tx_out, rx_out) = chan::sync(0);
         let (tx_in, rx_in) = chan::sync(0);
         let (tx_sig, rx_sig) = chan::sync(0);
