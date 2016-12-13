@@ -139,7 +139,6 @@ impl Display {
     }
 
     pub fn resize_with(&mut self, size: &Winszed) {
-println!("SIZE::{:?}", size);
         if self.size.ws_row < size.ws_row
           { {self.size.ws_row..size.ws_row}.all(|i|
             { self.newline.push((self.size.get_col() - 1, i as usize));
@@ -816,6 +815,7 @@ impl Write for Display {
                     self.write(next) },
 
                 //------------- ATTRIBUTS ---------------
+		&[b'm', b'%', ref next..] |
                 &[b'm', ref next..] =>
                   { self.collection.append(&mut bonjour);
                     self.write(next) },
