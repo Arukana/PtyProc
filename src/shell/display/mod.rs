@@ -739,6 +739,7 @@ impl Write for Display {
             &[b'\x1B', b'[', b'?', ref next..] |
             &[b'\x1B', b'[', b'>', ref next..] |
             &[b'\x1B', b'[', ref next..] |
+            &[b'\x1B', b']', ref next..] |
             &[b'\x1B', b'(', ref next..] |
             &[b'\x1B', b'?', ref next..] |
             &[b'\x1B', ref next..] =>
