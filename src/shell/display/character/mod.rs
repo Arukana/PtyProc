@@ -7,8 +7,9 @@ use std::mem;
 use ::libc;
 
 use self::operate::Operate;
+use self::operate::color::Color;
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct Character {
    /// Term's buffer.
    buf: [libc::c_uchar; 4],
@@ -19,9 +20,12 @@ pub struct Character {
 }
 
 impl Character {
-    pub fn space() -> Self {
-        Character::from(' ')
-    }
+    fn new(glyph: char, attr: u8, fore: Color, back: Color) -> Character
+    { unsafe
+      { Character
+        { buf: mem::transmute::<char, [libc::c_uchar; 4]>(glyph),
+          len: glyph.len_utf8(),
+          operate: Operate::new(attr, fore, back), }}}
 
     /// The constructor method `new` returns a term character.
     pub fn from_slice(buf: &[libc::c_uchar]) -> Self {
@@ -67,7 +71,6 @@ impl Character {
 }
 
 impl From<char> for Character {
-
     fn from(glyph: char) -> Character {
         unsafe {
             Character {
@@ -78,6 +81,10 @@ impl From<char> for Character {
         }
     }
 }
+
+impl Default for Character
+{ fn default() -> Self
+  { Character::from(' ') }}
 
 impl Write for Character {
 
