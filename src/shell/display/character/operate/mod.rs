@@ -27,6 +27,36 @@ impl Operate
   fn has_attributes(&self) -> bool
   { self.attr.eq(&0).not() }
 
+  fn set_bold(&mut self)
+  { self.attr |= IS_BOLD; }
+
+  fn set_underline(&mut self)
+  { self.attr |= IS_UNDERLINE; }
+
+  fn set_blink(&mut self)
+  { self.attr |= IS_BLINK; }
+
+  fn set_reverse(&mut self)
+  { self.attr |= IS_REVERSE; }
+
+  fn set_hidden(&mut self)
+  { self.attr |= IS_HIDDEN; }
+
+  fn unset_bold(&mut self)
+  { self.attr &= !IS_BOLD; }
+
+  fn unset_underline(&mut self)
+  { self.attr &= !IS_UNDERLINE; }
+
+  fn unset_blink(&mut self)
+  { self.attr &= !IS_BLINK; }
+
+  fn unset_reverse(&mut self)
+  { self.attr &= !IS_REVERSE; }
+
+  fn unset_hidden(&mut self)
+  { self.attr &= !IS_HIDDEN; }
+
   fn is_bold(&self) -> bool
   { (self.attr & IS_BOLD).eq(&0).not() }
 
@@ -53,9 +83,6 @@ impl Operate
 
   fn set_background(&mut self, back: Color)
   { self.background = back; }
-
-  fn set_attributes(&mut self, attr: u8)
-  { self.attr = attr; }
 }
 
 impl Default for Operate

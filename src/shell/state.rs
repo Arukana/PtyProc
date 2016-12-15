@@ -369,7 +369,6 @@ println!("");*/
     /// the event DeviceState interface.
     #[cfg(feature = "task")]
     pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
-//      println!("Event::{:?}", event);
         self.set_task(event.is_task());
         self.set_idle(event.is_idle());
         self.set_signal(event.is_signal());

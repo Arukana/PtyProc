@@ -24,8 +24,7 @@ extern crate libc;
 extern crate time;
 extern crate errno;
 
-#[macro_use]
-mod macros;
+#[macro_use] mod macros;
 mod fork;
 pub mod shell;
 pub mod prelude;
