@@ -1,7 +1,7 @@
-
 pub mod color;
 
 use std::ops::{BitAnd, Not};
+use std::fmt;
 
 pub use self::color::{Color, DEFAULT_FOREGROUND, DEFAULT_BACKGROUND};
 
@@ -106,3 +106,9 @@ impl Default for Operate
     { attr: 0,
       foreground: DEFAULT_FOREGROUND,
       background: DEFAULT_BACKGROUND, }}}
+
+impl fmt::Display for Operate {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        Ok(())
+    }
+}

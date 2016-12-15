@@ -58,32 +58,7 @@ impl Cursor<Vec<Character>>
       { bonjour[i] = glyph[i];
         true });
       let buf = std::mem::transmute::<[libc::c_uchar; 4], char>(bonjour);
-      *self.inner.get_unchecked_mut(self.pos) = Character::new(buf, ope);
+      *self.inner.get_unchecked_mut(self.pos) = Character::from((buf, ope));
       self.pos += 1;
       Ok(glyph.len()) }}
-}
-
-impl <T> IntoIterator for Cursor<Vec<T>> {
-    type Item = T;
-    type IntoIter = ::std::vec::IntoIter<T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.inner.into_iter()
-    }
-}
-
-impl Write for Cursor<Vec<Character>> {
-    /// The method `write` from trait `io::Write` inserts a new list of terms
-    /// from output.
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        unsafe {
-            *self.inner.get_unchecked_mut(self.pos) = Character::from_slice(buf);
-            self.pos += 1;
-        }
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
 }

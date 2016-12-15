@@ -103,7 +103,7 @@ impl Shell {
     pub fn write_with_color(&self)
     { self.screen.into_iter().all(|&glyph|
       { if glyph.get_attributes().has_attributes()
-        { println!("ATTR::{:?} | {:?}", *glyph.get_attributes(), glyph.get_ref());
+        { println!("ATTR::{:?} | {:?}", *glyph.get_attributes(), glyph.get_glyph());
         }
         true }); }
 }
@@ -144,11 +144,8 @@ impl fmt::Display for Shell {
 impl Drop for Shell {
     fn drop(&mut self) {
         unsafe {
-            if libc::close(self.speudo.as_raw_fd()).eq(&-1) {
-                unreachable!()
-            } else {
-                libc::kill(self.pid, libc::SIGKILL);
-            }
+            assert_ne!(libc::close(self.speudo.as_raw_fd()), -1);
+            libc::kill(self.pid, libc::SIGKILL);
         }
     }
 }

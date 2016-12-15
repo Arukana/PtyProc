@@ -111,9 +111,9 @@ impl Display {
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
         let mut screen: Vec<libc::c_uchar> = Vec::new();
 
-        self.screen.get_ref().iter().all(|control: &Character| {
-            let buf: &[u8] = control.get_ref();
-            screen.extend_from_slice(buf);
+        self.screen.get_ref().iter().all(|control: &Character| unsafe {
+            let buf: [u8; 4] = mem::transmute::<char, [u8; 4]>(control.get_glyph());
+            screen.extend_from_slice(&buf[..]);
             true
         });
         screen
@@ -121,9 +121,9 @@ impl Display {
 
     /// The method `clear` purges the screen vector.
     pub fn clear(&mut self) -> io::Result<libc::size_t> {
-        self.screen.get_mut().iter_mut().all(|mut term: &mut Character|
-                                             term.clear().is_ok()
-        );
+        self.screen.get_mut().iter_mut().all(|mut term: &mut Character| {
+                                             term.clear();
+                                             true});
         self.newline.clear();
         {0..self.size.ws_row}.all(|i|
         { self.newline.push((self.size.get_col() - 1, i as usize));
@@ -397,7 +397,7 @@ impl Display {
                     { Some(k) =>
                         { match k.checked_sub(pos)
                           { Some(j) => 
-                              { self.screen.get_mut().into_iter().skip(pos).take(j).all(|mut term: &mut Character| { term.clear().is_ok() }); },
+                              { self.screen.get_mut().into_iter().skip(pos).take(j).all(|mut term: &mut Character| { term.clear(); true }); },
                             None => { self.erase_down(); }, }},
                       None => { self.erase_down(); }, }},
                 None => { self.erase_down(); }, }},
@@ -421,7 +421,7 @@ impl Display {
                     { Some(k) =>
                         { match pos.add(&1).checked_sub(k)
                           { Some(j) => 
-                              { self.screen.get_mut().into_iter().skip(k).take(j).all(|mut term: &mut Character| { term.clear().is_ok() }); },
+                              { self.screen.get_mut().into_iter().skip(k).take(j).all(|mut term: &mut Character| { term.clear(); true }); },
                             None => { self.erase_up(); }, }},
                       None => { self.erase_up(); }, }},
                 None => { self.erase_up(); }, }},
@@ -453,7 +453,7 @@ impl Display {
     pub fn erase_up(&mut self)
     { let pos = self.screen.position();
       self.screen.get_mut().into_iter().take(pos + 1).all(|mut term: &mut Character|
-      { term.clear().is_ok() }); }
+      { term.clear(); true }); }
 
     /// The method `erase_down` erase all lines from the current line down to
     /// the bottom of the screen and erase the current line from the cursor to
@@ -463,7 +463,7 @@ impl Display {
     { let pos = self.screen.position();
       let len = self.size.row_by_col();
       self.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Character|
-      { term.clear().is_ok() }); }
+      { term.clear(); true }); }
 
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
