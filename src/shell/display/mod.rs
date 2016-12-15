@@ -15,6 +15,7 @@ pub use self::winsz::Winszed;
 pub use self::err::{DisplayError, Result};
 use self::cursor::Cursor;
 pub use self::character::Character;
+use self::character::operate::Operate;
 
 #[derive(Debug, Clone)]
 pub struct Display {
@@ -23,7 +24,7 @@ pub struct Display {
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
-    collection: Vec<libc::size_t>,
+    collection: Operate,
     oob: (libc::size_t, libc::size_t),
     line_wrap: bool,
     size: Winszed,
@@ -37,7 +38,7 @@ pub struct SaveTerminal {
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
-    collection: Vec<libc::size_t>,
+    collection: Operate,
     oob: (libc::size_t, libc::size_t),
     line_wrap: bool,
     size: Winszed,
@@ -69,7 +70,7 @@ impl Display {
                 true });
               end_row_newlines },
             region: (0, size.get_row()),
-            collection: Vec::new(),
+            collection: Operate::default(),
             oob: (0, 0),
             line_wrap: true,
             size: size,
@@ -498,17 +499,6 @@ impl Display {
         self.goto(pos - 1); }
       self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
 
-    pub fn catch_numbers<'a>(&self, mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
-    { match parse_number!(buf)
-      { Some((number, &[b';', ref next..])) =>
-          { acc.push(number);
-            self.catch_numbers(acc, next) },
-        Some((number, &[ref next..])) =>
-          { acc.push(number);
-            (acc, next) },
-        _ =>
-          { (acc, buf) }, }}
-
     /// The method `next_tab` return the size of the current printed tabulation
     pub fn next_tab(&self) -> libc::size_t
     { 8 - (self.oob.0 % 8) }
@@ -732,7 +722,7 @@ impl Write for Display {
             //------------ CL ATTR -------------
             &[b'\x1B', b'[', b'0', b'm', ref next..] |
             &[b'\x1B', b'[', b'm', ref next..] =>
-              { self.collection.clear();
+              { //self.collection.clear();
                 self.write(next) },
 
             &[b'\x1B', b'[', b'?', ref next..] |
@@ -742,105 +732,130 @@ impl Write for Display {
             &[b'\x1B', b'(', ref next..] |
             &[b'\x1B', b'?', ref next..] |
             &[b'\x1B', ref next..] =>
-            { let (mut bonjour, coucou) =
-              { self.catch_numbers(Vec::new(), next) };
-              match coucou
-              { //------------- n GOTO ------------------
-                &[b'A', ref next..] =>
-                  { if bonjour.len() == 1
-                    { self.goto_up(bonjour[0]); }
-                    self.write(next) },
-                &[b'B', ref next..] =>
-                  { if bonjour.len() == 1
-                    { self.goto_down(bonjour[0]); }
-                    self.write(next) },
-                &[b'C', ref next..] =>
-                  { if bonjour.len() == 1
-                    { self.goto_right(bonjour[0]); }
-                    self.write(next) },
-                &[b'D', ref next..] =>
-                  { if bonjour.len() == 1
-                    { self.goto_left(bonjour[0]); }
-                    self.write(next) },
-                &[b'G', ref next..] =>
-                  { if bonjour.len() == 1 && self.size.get_col() >= bonjour[0]
-                    { let y = self.oob.1;
-                      self.goto_coord(bonjour[0] - 1, y); }
-                    self.write(next) },
-                &[b'd', ref next..] =>
-                  { if bonjour.len() == 1 && self.size.get_row() >= bonjour[0]
-                    { let x = self.oob.0;
-                      self.goto_coord(x, bonjour[0] - 1); }
-                    self.write(next) },
-                &[b'H', ref next..] |
-                &[b'f', ref next..] =>
-                  { if bonjour.len() == 2 && bonjour[0] > 0 && bonjour[1] > 0
-                    { self.goto_coord(bonjour[1] - 1, bonjour[0] - 1); }
-                    self.write(next) },
+              { if next.eq(&[]).not()
+                { if let Some(get) = next.iter().position(|&x| x.eq(&b';').not().bitand(x.ge(&b'0')).bitand(x.le(&b'9')))
+                  { let (hi, coucou) = next.split_at(get as usize);
+                    let bonjour = hi.split(|car| car.eq(&b';'));
+                    let len = bonjour.into_iter().count();
 
-                //-------------- ERASE ----------------
-                &[b'P', ref next..] =>
-                  { if bonjour.len() == 1
-                    { self.erase_chars(bonjour[0]); }
-                    self.write(next) },
+                    if len == 1
+                    { match unsafe
+                      { usize::from_str_radix(str::from_utf8_unchecked
+                        (hi.split(|car| car.eq(&b';')).next().unwrap()), 10) }
+                      { Ok(q) =>
+                      { match coucou
+                        { //------------- n GOTO ------------------
+                          &[b'A', ref next..] =>
+                            { self.goto_up(q);
+                              self.write(next) },
+                          &[b'B', ref next..] =>
+                            { self.goto_down(q);
+                              self.write(next) },
+                          &[b'C', ref next..] =>
+                            { self.goto_right(q);
+                              self.write(next) },
+                          &[b'D', ref next..] =>
+                            { self.goto_left(q);
+                              self.write(next) },
+                          &[b'G', ref next..] =>
+                            { if self.size.get_col() >= q
+                              { let y = self.oob.1;
+                                self.goto_coord(q - 1, y); }
+                              self.write(next) },
+                          &[b'd', ref next..] =>
+                            { if self.size.get_row() >= q
+                              { let x = self.oob.0;
+                                self.goto_coord(x, q - 1); }
+                              self.write(next) },
 
-                //-------------- SCROLL ----------------
-                &[b'M', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
-                    { let x = self.oob.1;
-                      {0..bonjour[0]}.all(|_|
-                      { self.scroll_up(x);
-                        true }); }
-                    self.write(next) },
-                &[b'S', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
-                    { let x = self.region.0;
-                      {0..bonjour[0]}.all(|_|
-                      { self.scroll_up(x);
-                        true }); }
-                    self.write(next) },
-                &[b'L', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
-                    { let x = self.oob.1;
-                      {0..bonjour[0]}.all(|_|
-                      { self.scroll_down(x);
-                        true }); }
-                    self.write(next) },
-                &[b'T', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.oob.1.ge(&self.region.0)).bitand(self.oob.1.lt(&self.region.1))
-                    { let x = self.region.0;
-                      {0..bonjour[0]}.all(|_|
-                      { self.scroll_down(x);
-                        true }); }
-                    self.write(next) },
+                          //-------------- ERASE ----------------
+                          &[b'P', ref next..] =>
+                            { self.erase_chars(q);
+                              self.write(next) },
 
-                //------------- ATTRIBUTS ---------------
-		&[b'm', b'%', ref next..] |
-                &[b'm', ref next..] =>
-                  { self.collection.append(&mut bonjour);
-                    self.write(next) },
+                          //-------------- SCROLL ----------------
+                          &[b'M', ref next..] =>
+                          { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
+                            { let x = self.oob.1;
+                              {0..q}.all(|_|
+                              { self.scroll_up(x);
+                                true }); }
+                            self.write(next) },
+                          &[b'S', ref next..] =>
+                            { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
+                              { let x = self.region.0;
+                                {0..q}.all(|_|
+                                { self.scroll_up(x);
+                                  true }); }
+                              self.write(next) },
+                          &[b'L', ref next..] =>
+                            { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
+                              { let x = self.oob.1;
+                                {0..q}.all(|_|
+                                { self.scroll_down(x);
+                                  true }); }
+                              self.write(next) },
+                          &[b'T', ref next..] =>
+                            { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
+                              { let x = self.region.0;
+                                {0..q}.all(|_|
+                                { self.scroll_down(x);
+                                  true }); }
+                              self.write(next) },
 
-                //----------- TRICKY RESIZE -------------
-                &[b'r', ref next..] =>
-                  { if bonjour.len() == 2
-                    { self.tricky_resize(bonjour[0], bonjour[1]); }
-                    self.write(next) },
+                          &[b'm', b'%', ref next..] |
+                          &[b'm', ref next..] =>
+                            { //a
+                              self.write(next) },
 
-                //----------- TERM VERSION --------------
-                &[b'c', ref next..] =>
-                  { self.write(next) },
-                &[b';', b'c', ref next..] =>
-                  { self.write(next) },
+                          &[_, ref next..] |
+                          &[ref next..] =>
+                            { self.write(next) }, }},
+                    _ => { self.write(next) }, }}
+                    else if len == 2
+                    { match unsafe
+                      { usize::from_str_radix(str::from_utf8_unchecked
+                        (hi.split(|car| car.eq(&b';')).next().unwrap()), 10) }
+                      { Ok(q) =>
+                    { let q = bonjour.next().unwrap()[0] as usize;
+                      let p = bonjour.last().unwrap()[0] as usize;
+                      match coucou
+                      { &[b'm', b'%', ref next..] |
+                        &[b'm', ref next..] =>
+                          { //a
+                            self.write(next) },
 
-                &[_, ref next..] |
-                &[ref next..] =>
-                  { self.write(next) }, }},
+                        &[b'H', ref next..] |
+                        &[b'f', ref next..] =>
+                          { if q > 0 && p > 0
+                            { self.goto_coord(p - 1, q - 1); }
+                            self.write(next) },
+                        //----------- TRICKY RESIZE -------------
+                        &[b'r', ref next..] =>
+                          { self.tricky_resize(q, p);
+                            self.write(next) },
 
-            &[b'\x07', ref next..] =>
-              { self.bell += 1;
-                self.write(next) },
-            &[b'\x0A', b'\x0D', ref next..] |
-            &[b'\x0A', ref next..] |
+                      //----------- TERM VERSION --------------
+                      &[b'c', ref next..] =>
+                        { self.write(next) },
+                      &[b';', b'c', ref next..] =>
+                        { self.write(next) },
+
+                      &[_, ref next..] |
+                      &[ref next..] =>
+                        { self.write(next) }, }}
+                    else
+                    { self.write(next) }}
+                  else
+                  { self.write(next) }}
+                else
+                { self.write(next)}},
+
+              &[b'\x07', ref next..] =>
+                { self.bell += 1;
+                  self.write(next) },
+              &[b'\x0A', b'\x0D', ref next..] |
+              &[b'\x0A', ref next..] |
             &[b'\x0D', b'\x0A', ref next..] =>
               { self.print_enter();
                 self.goto_begin_row();
@@ -861,12 +876,6 @@ impl Write for Display {
                   true }); }
               self.goto_right(tab_width);
               self.write(next) },
-
-         /*   &[u1 @ b'\xE0' ... b'\xF8', u2 @ b'\x00' ... b'\xFF', ref next..] =>
-            { println!("THE::[{}, {}]", u1, u2);
-              if next != &[]
-              { println!(" && [{}, {}]", next[0], next[1]); }
-              self.print_char(&[0, 0, u1, u2], next) },*/
 
             &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] =>
             { self.print_char(&[u1, u2, u3, u4], next) },
