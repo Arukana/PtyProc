@@ -1,6 +1,10 @@
+use ::std;
+use ::libc;
+
 use std::io::{self, Write};
 
 use super::character::Character;
+use super::character::operate::Operate;
 
 #[derive(Debug, Clone)]
 pub struct Cursor<T> {
@@ -44,6 +48,19 @@ impl <T> Cursor <T> {
     pub fn set_position(&mut self, pos: usize) {
         self.pos = pos;
     }
+}
+
+impl Cursor<Vec<Character>>
+{ pub fn write_with_color(&mut self, glyph: &[u8], ope: Operate) -> io::Result<usize>
+  { unsafe
+    { let mut bonjour: [libc::c_uchar; 4] = [0; 4];
+      {0..glyph.len()}.all(|i|
+      { bonjour[i] = glyph[i];
+        true });
+      let buf = std::mem::transmute::<[libc::c_uchar; 4], char>(bonjour);
+      *self.inner.get_unchecked_mut(self.pos) = Character::new(buf, ope);
+      self.pos += 1;
+      Ok(glyph.len()) }}
 }
 
 impl <T> IntoIterator for Cursor<Vec<T>> {

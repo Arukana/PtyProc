@@ -20,12 +20,15 @@ pub struct Character {
 }
 
 impl Character {
-    fn new(glyph: char, attr: u8, fore: Color, back: Color) -> Character
+    pub fn new(glyph: char, operate: Operate) -> Self
     { unsafe
       { Character
         { buf: mem::transmute::<char, [libc::c_uchar; 4]>(glyph),
           len: glyph.len_utf8(),
-          operate: Operate::new(attr, fore, back), }}}
+          operate: operate, }}}
+
+    pub fn get_attributes(&self) -> &Operate
+    { &self.operate }
 
     /// The constructor method `new` returns a term character.
     pub fn from_slice(buf: &[libc::c_uchar]) -> Self {
@@ -64,10 +67,11 @@ impl Character {
     }
 
     /// The method `clear` resets the term character.
-    pub fn clear(&mut self) -> io::Result<usize> {
-        *self = Default::default();
-        self.write(&[b' '][..])
-    }
+    pub fn clear(&mut self) -> io::Result<()>
+    { unsafe { self.buf = mem::transmute::<char, [libc::c_uchar; 4]>(' '); }
+      self.len = 1;
+      self.operate = Operate::default();
+      Ok(()) }
 }
 
 impl From<char> for Character {

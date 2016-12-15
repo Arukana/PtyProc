@@ -20,7 +20,9 @@ fn main() {
             shell.flush().unwrap();
         }
         if let Some(()) = event.is_output_screen() {
-            print!("\x1B[H{}", format!("{}", shell)
+            shell.write_with_color();
+           // print!("\x1B[H{}", format!("{}", shell)
+            print!("{}", format!("{}", shell)
                    .chars()
                    .take(shell.get_screen()
                          .get_window_size()

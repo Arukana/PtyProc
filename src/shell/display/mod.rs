@@ -15,6 +15,7 @@ pub use self::winsz::Winszed;
 pub use self::err::{DisplayError, Result};
 use self::cursor::Cursor;
 pub use self::character::Character;
+use self::character::operate::{Operate, Color};
 
 #[derive(Debug, Clone)]
 pub struct Display {
@@ -23,7 +24,7 @@ pub struct Display {
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
-    collection: Vec<libc::size_t>,
+    collection: Operate,
     oob: (libc::size_t, libc::size_t),
     line_wrap: bool,
     size: Winszed,
@@ -37,7 +38,7 @@ pub struct SaveTerminal {
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
-    collection: Vec<libc::size_t>,
+    collection: Operate,
     oob: (libc::size_t, libc::size_t),
     line_wrap: bool,
     size: Winszed,
@@ -69,7 +70,7 @@ impl Display {
                 true });
               end_row_newlines },
             region: (0, size.get_row()),
-            collection: Vec::new(),
+            collection: Operate::default(),
             oob: (0, 0),
             line_wrap: true,
             size: size,
@@ -496,7 +497,7 @@ impl Display {
       else
       { let pos = self.screen.position();
         self.goto(pos - 1); }
-      self.screen.write(first).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
+      self.screen.write_with_color(first, self.collection).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
 
     pub fn catch_numbers<'a>(&self, mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
     { match parse_number!(buf)
@@ -815,9 +816,50 @@ impl Write for Display {
                     self.write(next) },
 
                 //------------- ATTRIBUTS ---------------
-		&[b'm', b'%', ref next..] |
+		            &[b'm', b'%', ref next..] |
                 &[b'm', ref next..] =>
-                  { self.collection.append(&mut bonjour);
+                  { bonjour.iter().all(|&attr|
+                    { match attr
+                      { 0 => { self.collection.clear(); },
+
+                        //Set special attributes
+                        1 => { self.collection.set_bold(); },
+                        3 => { self.collection.set_italic(); },
+                        4 => { self.collection.set_underline(); },
+                        5 => { self.collection.set_blink(); },
+                        7 => { self.collection.set_reverse(); },
+                        8 => { self.collection.set_hidden(); },
+
+                        //Unset special attributes
+                        22 => { self.collection.unset_bold(); },
+                        23 => { self.collection.unset_italic(); },
+                        24 => { self.collection.unset_underline(); },
+                        25 => { self.collection.unset_blink(); },
+                        27 => { self.collection.unset_reverse(); },
+                        28 => { self.collection.unset_hidden(); },
+
+                        //Foreground colors
+                        30 => { self.collection.set_foreground(Color::Black); },
+                        31 => { self.collection.set_foreground(Color::Red); },
+                        32 => { self.collection.set_foreground(Color::Green); },
+                        33 => { self.collection.set_foreground(Color::Yellow); },
+                        34 => { self.collection.set_foreground(Color::Blue); },
+                        35 => { self.collection.set_foreground(Color::Magenta); },
+                        36 => { self.collection.set_foreground(Color::Cyan); },
+                        37 => { self.collection.set_foreground(Color::White); },
+
+                        //Background colors
+                        40 => { self.collection.set_background(Color::Black); },
+                        41 => { self.collection.set_background(Color::Red); },
+                        42 => { self.collection.set_background(Color::Green); },
+                        43 => { self.collection.set_background(Color::Yellow); },
+                        44 => { self.collection.set_background(Color::Blue); },
+                        45 => { self.collection.set_background(Color::Magenta); },
+                        46 => { self.collection.set_background(Color::Cyan); },
+                        47 => { self.collection.set_background(Color::White); },
+
+                        _ => {}, }
+                      true });
                     self.write(next) },
 
                 //----------- TRICKY RESIZE -------------
@@ -861,12 +903,6 @@ impl Write for Display {
                   true }); }
               self.goto_right(tab_width);
               self.write(next) },
-
-         /*   &[u1 @ b'\xE0' ... b'\xF8', u2 @ b'\x00' ... b'\xFF', ref next..] =>
-            { println!("THE::[{}, {}]", u1, u2);
-              if next != &[]
-              { println!(" && [{}, {}]", next[0], next[1]); }
-              self.print_char(&[0, 0, u1, u2], next) },*/
 
             &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] =>
             { self.print_char(&[u1, u2, u3, u4], next) },

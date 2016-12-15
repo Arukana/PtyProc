@@ -99,6 +99,13 @@ impl Shell {
     pub fn write_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.screen.write(buf)
     }
+
+    pub fn write_with_color(&self)
+    { self.screen.into_iter().all(|&glyph|
+      { if glyph.get_attributes().has_attributes()
+        { println!("ATTR::{:?} | {:?}", *glyph.get_attributes(), glyph.get_ref());
+        }
+        true }); }
 }
 
 impl Iterator for Shell {
@@ -138,7 +145,7 @@ impl Drop for Shell {
     fn drop(&mut self) {
         unsafe {
             if libc::close(self.speudo.as_raw_fd()).eq(&-1) {
-                unimplemented!()
+                unreachable!()
             } else {
                 libc::kill(self.pid, libc::SIGKILL);
             }

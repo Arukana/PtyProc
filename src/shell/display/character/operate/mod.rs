@@ -1,15 +1,16 @@
 
 pub mod color;
 
-use std::ops::Not;
+use std::ops::{BitAnd, Not};
 
-use self::color::{Color, DEFAULT_FOREGROUND, DEFAULT_BACKGROUND};
+pub use self::color::{Color, DEFAULT_FOREGROUND, DEFAULT_BACKGROUND};
 
 const IS_BOLD: u8 = 0x01;
 const IS_UNDERLINE: u8 = 0x02;
 const IS_BLINK: u8 = 0x04;
 const IS_REVERSE: u8 = 0x08;
 const IS_HIDDEN: u8 = 0x10;
+const IS_ITALIC: u8 = 0x20;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Operate
@@ -24,65 +25,79 @@ impl Operate
       foreground: fore,
       background: back, }}
 
-  fn has_attributes(&self) -> bool
-  { self.attr.eq(&0).not() }
+  pub fn has_attributes(&self) -> bool
+  { (self.attr.eq(&0).bitand(self.foreground.eq(&DEFAULT_FOREGROUND)).bitand(self.background.eq(&DEFAULT_BACKGROUND))).not() }
 
-  fn set_bold(&mut self)
+  pub fn set_bold(&mut self)
   { self.attr |= IS_BOLD; }
 
-  fn set_underline(&mut self)
+  pub fn set_underline(&mut self)
   { self.attr |= IS_UNDERLINE; }
 
-  fn set_blink(&mut self)
+  pub fn set_blink(&mut self)
   { self.attr |= IS_BLINK; }
 
-  fn set_reverse(&mut self)
+  pub fn set_reverse(&mut self)
   { self.attr |= IS_REVERSE; }
 
-  fn set_hidden(&mut self)
+  pub fn set_hidden(&mut self)
   { self.attr |= IS_HIDDEN; }
 
-  fn unset_bold(&mut self)
+  pub fn set_italic(&mut self)
+  { self.attr |= IS_ITALIC; }
+
+  pub fn unset_bold(&mut self)
   { self.attr &= !IS_BOLD; }
 
-  fn unset_underline(&mut self)
+  pub fn unset_underline(&mut self)
   { self.attr &= !IS_UNDERLINE; }
 
-  fn unset_blink(&mut self)
+  pub fn unset_blink(&mut self)
   { self.attr &= !IS_BLINK; }
 
-  fn unset_reverse(&mut self)
+  pub fn unset_reverse(&mut self)
   { self.attr &= !IS_REVERSE; }
 
-  fn unset_hidden(&mut self)
+  pub fn unset_hidden(&mut self)
   { self.attr &= !IS_HIDDEN; }
 
-  fn is_bold(&self) -> bool
+  pub fn unset_italic(&mut self)
+  { self.attr &= !IS_ITALIC; }
+
+  pub fn is_bold(&self) -> bool
   { (self.attr & IS_BOLD).eq(&0).not() }
 
-  fn is_underline(&self) -> bool
+  pub fn is_underline(&self) -> bool
   { (self.attr & IS_UNDERLINE).eq(&0).not() }
 
-  fn is_blink(&self) -> bool
+  pub fn is_blink(&self) -> bool
   { (self.attr & IS_BLINK).eq(&0).not() }
 
-  fn is_reverse(&self) -> bool
+  pub fn is_reverse(&self) -> bool
   { (self.attr & IS_REVERSE).eq(&0).not() }
 
-  fn is_hidden(&self) -> bool
+  pub fn is_hidden(&self) -> bool
   { (self.attr & IS_HIDDEN).eq(&0).not() }
 
-  fn get_foreground(&self) -> &Color
+  pub fn is_italic(&self) -> bool
+  { (self.attr & IS_ITALIC).eq(&0).not() }
+
+  pub fn get_foreground(&self) -> &Color
   { &self.foreground }
 
-  fn get_background(&self) -> &Color
+  pub fn get_background(&self) -> &Color
   { &self.background }
 
-  fn set_foreground(&mut self, fore: Color)
+  pub fn set_foreground(&mut self, fore: Color)
   { self.foreground = fore; }
 
-  fn set_background(&mut self, back: Color)
+  pub fn set_background(&mut self, back: Color)
   { self.background = back; }
+
+  pub fn clear(&mut self)
+  { self.attr = 0;
+    self.foreground = DEFAULT_FOREGROUND;
+    self.background = DEFAULT_BACKGROUND; }
 }
 
 impl Default for Operate
