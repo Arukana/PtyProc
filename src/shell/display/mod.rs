@@ -684,16 +684,13 @@ impl Write for Display {
             &[b'\x1B', b'[', b'P', ref next..] =>
               { self.erase_chars(1);
                 self.write(next) },
-            &[b'P', ref next..] =>
-              { self.erase_chars(1);
-                self.write(next) },
 
             //------------ INSERT -----------------
             &[b'\x1B', b'[', b'L', ref next..] =>
               { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
                 { self.insert_empty_line(1); }
                 self.write(next) },
-            &[b'@', ref next..] =>
+            &[b'\x1B', b'[', b'@', ref next..] =>
               { self.insert_chars(1);
                 self.write(next) },
 
