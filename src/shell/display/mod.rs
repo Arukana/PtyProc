@@ -227,7 +227,8 @@ impl Display {
 
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
-        self.clear_cursor();
+        if self.show_cursor
+        { self.clear_cursor(); }
         self.screen.set_position(index);
         Ok(0)
     }
@@ -482,6 +483,7 @@ impl Display {
     pub fn print_char(&mut self, first: char, next: &[u8]) -> io::Result<usize>
     { let wrap = self.line_wrap;
       let row = self.size.get_row();
+     // println!("FIRST::{}, COLLECT::{:?}", first, self.collection);
       let col = self.size.get_col();
       if self.oob.0 < col - 1
       { self.oob.0 += 1; }
@@ -567,6 +569,18 @@ impl Display {
       {0..mv}.all(|i|
       { (*coucou).insert(border, Character::default());
         (*coucou).remove(pos);
+        true }); }
+
+    /// The method `erase_chars` erases couple of chars in the current line from the cursor.
+    pub fn insert_chars(&mut self, mv: libc::size_t)
+    { let pos = self.screen.position();
+      let border = match self.newline.iter().position(|&x| x.1.ge(&self.oob.1))
+      { Some(n) => self.newline[n].0 + (self.newline[n].1 * self.size.get_col()) + 1,
+        None => self.size.row_by_col() - 1, };
+      let coucou = self.screen.get_mut();
+      {0..mv}.all(|i|
+      { (*coucou).insert(pos, Character::default());
+        (*coucou).remove(border);
         true }); }
 
     fn clear_cursor(&mut self)
@@ -670,11 +684,17 @@ impl Write for Display {
             &[b'\x1B', b'[', b'P', ref next..] =>
               { self.erase_chars(1);
                 self.write(next) },
+            &[b'P', ref next..] =>
+              { self.erase_chars(1);
+                self.write(next) },
 
             //------------ INSERT -----------------
             &[b'\x1B', b'[', b'L', ref next..] =>
               { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
                 { self.insert_empty_line(1); }
+                self.write(next) },
+            &[b'@', ref next..] =>
+              { self.insert_chars(1);
                 self.write(next) },
 
             //------------- GOTO ------------------
@@ -805,8 +825,12 @@ impl Write for Display {
 
                 //-------------- ERASE ----------------
                 &[b'P', ref next..] =>
-                  { if bonjour.len() == 1
+                  { if bonjour.len().eq(&1)
                     { self.erase_chars(bonjour[0]); }
+                    self.write(next) },
+                &[b'@', ref next..] =>
+                  { if bonjour.len().eq(&1)
+                    { self.insert_chars(bonjour[0]); }
                     self.write(next) },
 
                 //-------------- SCROLL ----------------
@@ -874,6 +898,7 @@ impl Write for Display {
                         35 => { self.collection.set_foreground(Color::Magenta); },
                         36 => { self.collection.set_foreground(Color::Cyan); },
                         37 => { self.collection.set_foreground(Color::White); },
+                        39 => { self.collection.set_foreground(Color::Black); },
 
                         //Background colors
                         40 => { self.collection.set_background(Color::Black); },
@@ -884,9 +909,11 @@ impl Write for Display {
                         45 => { self.collection.set_background(Color::Magenta); },
                         46 => { self.collection.set_background(Color::Cyan); },
                         47 => { self.collection.set_background(Color::White); },
+                        49 => { self.collection.set_background(Color::White); },
 
                         _ => {}, }
                       true });
+                    println!("COLLECT::{:?}", self.collection);
                     self.write(next) },
 
                 //----------- TRICKY RESIZE -------------
