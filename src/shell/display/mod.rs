@@ -224,6 +224,7 @@ impl Display {
 
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
+        self.clear_cursor();
         self.screen.set_position(index);
         Ok(0)
     }
@@ -562,6 +563,18 @@ impl Display {
       { (*coucou).insert(border, Character::default());
         (*coucou).remove(pos);
         true }); }
+
+    fn clear_cursor(&mut self)
+    { let pos = self.screen.position();
+      let coucou = self.screen.get_mut();
+      let mut operate: Operate = Operate::new(0, Color::Black, Color::White);
+      (*coucou)[pos] = Character::new((*coucou)[pos].get_glyph(), operate); }
+
+    fn color_cursor(&mut self)
+    { let pos = self.screen.position();
+      let coucou = self.screen.get_mut();
+      let mut operate: Operate = Operate::new(0x02, Color::Red, Color::Cyan);
+      (*coucou)[pos] = Character::new((*coucou)[pos].get_glyph(), operate); }
 }
 
 impl<'a> IntoIterator for &'a Display {
@@ -578,18 +591,17 @@ impl fmt::Display for Display
   { let mut disp: String = String::new();
     self.into_iter().all(|character|
     { disp.push_str(format!("{}", character).as_str());
- //     println!("CHAR::{:?}", character);
       true });
- //   println!("DISP! LEN::{}, SIZE::{:?}", disp.len(), self.size);
     write!(f, "{}", disp) }}
 
 impl Write for Display {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-//        print!("\"{}\"{{\n\r{:?}\n\r}}\n\r", String::from_utf8_lossy(buf), self.into_bytes().iter().take(30).collect::<Vec<&u8>>() );
         match buf {
-            &[] => Ok(0),
+            &[] => 
+              { self.color_cursor();
+                Ok(0) },
 
             //---------- TERMINAL SAVE -----------
             &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'h', ref next..] =>
@@ -824,6 +836,7 @@ impl Write for Display {
 
                         //Set special attributes
                         1 => { self.collection.set_bold(); },
+                        2 => { self.collection.set_dim(); },
                         3 => { self.collection.set_italic(); },
                         4 => { self.collection.set_underline(); },
                         5 => { self.collection.set_blink(); },
@@ -831,7 +844,9 @@ impl Write for Display {
                         8 => { self.collection.set_hidden(); },
 
                         //Unset special attributes
-                        22 => { self.collection.unset_bold(); },
+                        22 =>
+                          { self.collection.unset_bold();
+                            self.collection.unset_dim(); },
                         23 => { self.collection.unset_italic(); },
                         24 => { self.collection.unset_underline(); },
                         25 => { self.collection.unset_blink(); },
