@@ -483,7 +483,6 @@ impl Display {
     pub fn print_char(&mut self, first: char, next: &[u8]) -> io::Result<usize>
     { let wrap = self.line_wrap;
       let row = self.size.get_row();
-     // println!("FIRST::{}, COLLECT::{:?}", first, self.collection);
       let col = self.size.get_col();
       if self.oob.0 < col - 1
       { self.oob.0 += 1; }
@@ -910,7 +909,6 @@ impl Write for Display {
 
                         _ => {}, }
                       true });
-                    println!("COLLECT::{:?}", self.collection);
                     self.write(next) },
 
                 //----------- TRICKY RESIZE -------------
