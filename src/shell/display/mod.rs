@@ -21,6 +21,7 @@ use self::character::operate::{Operate, Color};
 pub struct Display {
     save_position: (libc::size_t, libc::size_t),
     save_terminal: Option<SaveTerminal>,
+    show_cursor: bool,
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
@@ -35,6 +36,7 @@ pub struct Display {
 #[derive(Debug, Clone)]
 pub struct SaveTerminal {
     save_position: (libc::size_t, libc::size_t),
+    show_cursor: bool,
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
@@ -62,6 +64,7 @@ impl Display {
         Display {
             save_position: (0, 0),
             save_terminal: None,
+            show_cursor: true,
             ss_mod: false,
             newline:
             { let mut end_row_newlines: Vec<(libc::size_t, libc::size_t)> = Vec::with_capacity(size.get_row());
@@ -111,9 +114,9 @@ impl Display {
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
         let mut screen: Vec<libc::c_uchar> = Vec::new();
 
-        self.screen.get_ref().iter().all(|control: &Character| {
-            let buf: &[u8] = control.get_ref();
-            screen.extend_from_slice(buf);
+        self.screen.get_ref().iter().all(|control: &Character| unsafe {
+            let buf: [u8; 4] = mem::transmute::<char, [u8; 4]>(control.get_glyph());
+            screen.extend_from_slice(&buf[..]);
             true
         });
         screen
@@ -121,9 +124,9 @@ impl Display {
 
     /// The method `clear` purges the screen vector.
     pub fn clear(&mut self) -> io::Result<libc::size_t> {
-        self.screen.get_mut().iter_mut().all(|mut term: &mut Character|
-                                             term.clear().is_ok()
-        );
+        self.screen.get_mut().iter_mut().all(|mut term: &mut Character| {
+                                             term.clear();
+                                             true});
         self.newline.clear();
         {0..self.size.ws_row}.all(|i|
         { self.newline.push((self.size.get_col() - 1, i as usize));
@@ -224,6 +227,8 @@ impl Display {
 
     /// The method `goto` moves the cursor position
     pub fn goto(&mut self, index: libc::size_t) -> io::Result<libc::size_t> {
+        if self.show_cursor
+        { self.clear_cursor(); }
         self.screen.set_position(index);
         Ok(0)
     }
@@ -397,7 +402,7 @@ impl Display {
                     { Some(k) =>
                         { match k.checked_sub(pos)
                           { Some(j) => 
-                              { self.screen.get_mut().into_iter().skip(pos).take(j).all(|mut term: &mut Character| { term.clear().is_ok() }); },
+                              { self.screen.get_mut().into_iter().skip(pos).take(j).all(|mut term: &mut Character| { term.clear(); true }); },
                             None => { self.erase_down(); }, }},
                       None => { self.erase_down(); }, }},
                 None => { self.erase_down(); }, }},
@@ -421,7 +426,7 @@ impl Display {
                     { Some(k) =>
                         { match pos.add(&1).checked_sub(k)
                           { Some(j) => 
-                              { self.screen.get_mut().into_iter().skip(k).take(j).all(|mut term: &mut Character| { term.clear().is_ok() }); },
+                              { self.screen.get_mut().into_iter().skip(k).take(j).all(|mut term: &mut Character| { term.clear(); true }); },
                             None => { self.erase_up(); }, }},
                       None => { self.erase_up(); }, }},
                 None => { self.erase_up(); }, }},
@@ -453,7 +458,7 @@ impl Display {
     pub fn erase_up(&mut self)
     { let pos = self.screen.position();
       self.screen.get_mut().into_iter().take(pos + 1).all(|mut term: &mut Character|
-      { term.clear().is_ok() }); }
+      { term.clear(); true }); }
 
     /// The method `erase_down` erase all lines from the current line down to
     /// the bottom of the screen and erase the current line from the cursor to
@@ -463,7 +468,7 @@ impl Display {
     { let pos = self.screen.position();
       let len = self.size.row_by_col();
       self.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Character|
-      { term.clear().is_ok() }); }
+      { term.clear(); true }); }
 
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
@@ -475,7 +480,7 @@ impl Display {
         self.scroll_up(x); }}
 
     /// The method `print_char` print an unicode character (1 to 4 chars range)
-    pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
+    pub fn print_char(&mut self, first: char, next: &[u8]) -> io::Result<usize>
     { let wrap = self.line_wrap;
       let row = self.size.get_row();
       let col = self.size.get_col();
@@ -518,10 +523,11 @@ impl Display {
     pub fn save_terminal(&mut self)
     { self.save_terminal = Some(SaveTerminal
       { save_position: self.save_position,
+        show_cursor: self.show_cursor,
         ss_mod: self.ss_mod,
         newline: self.newline.clone(),
         region: self.region,
-        collection: self.collection.clone(),
+        collection: self.collection,
         oob: self.oob,
         line_wrap: self.line_wrap,
         size: self.size,
@@ -534,10 +540,11 @@ impl Display {
     { let mut flag_resize: bool = false;
       if let Some(ref save_terminal) = self.save_terminal
       { self.save_position = save_terminal.save_position;
+        self.show_cursor = save_terminal.show_cursor;
         self.ss_mod = save_terminal.ss_mod;
         self.newline = save_terminal.newline.clone();
         self.region = save_terminal.region;
-        self.collection = save_terminal.collection.clone();
+        self.collection = save_terminal.collection;
         self.oob = save_terminal.oob;
         self.line_wrap = save_terminal.line_wrap;
         self.screen = save_terminal.screen.clone();
@@ -562,6 +569,30 @@ impl Display {
       { (*coucou).insert(border, Character::default());
         (*coucou).remove(pos);
         true }); }
+
+    /// The method `erase_chars` erases couple of chars in the current line from the cursor.
+    pub fn insert_chars(&mut self, mv: libc::size_t)
+    { let pos = self.screen.position();
+      let border = match self.newline.iter().position(|&x| x.1.ge(&self.oob.1))
+      { Some(n) => self.newline[n].0 + (self.newline[n].1 * self.size.get_col()) + 1,
+        None => self.size.row_by_col() - 1, };
+      let coucou = self.screen.get_mut();
+      {0..mv}.all(|i|
+      { (*coucou).insert(pos, Character::default());
+        (*coucou).remove(border);
+        true }); }
+
+    fn clear_cursor(&mut self)
+    { let pos = self.screen.position();
+      let coucou = self.screen.get_mut();
+      let mut operate: Operate = Operate::new(0, Color::Black, Color::White);
+      (*coucou)[pos] = Character::new((*coucou)[pos].get_glyph(), operate); }
+
+    fn color_cursor(&mut self)
+    { let pos = self.screen.position();
+      let coucou = self.screen.get_mut();
+      let mut operate: Operate = Operate::new(0x02, Color::Red, Color::Cyan);
+      (*coucou)[pos] = Character::new((*coucou)[pos].get_glyph(), operate); }
 }
 
 impl<'a> IntoIterator for &'a Display {
@@ -573,23 +604,23 @@ impl<'a> IntoIterator for &'a Display {
     }
 }
 
-impl fmt::Display for Display {
-     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-         unsafe {
-              write!(f, "{}", String::from_utf8_unchecked(self.into_bytes())
-                                     .chars().take(self.size.row_by_col())
-                                     .collect::<String>())
-         }
-     }
-}
+impl fmt::Display for Display
+{ fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
+  { let mut disp: String = String::new();
+    self.into_iter().all(|character|
+    { disp.push_str(format!("{}", character).as_str());
+      true });
+    write!(f, "{}", disp) }}
 
 impl Write for Display {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-//        print!("\"{}\"{{\n\r{:?}\n\r}}\n\r", String::from_utf8_lossy(buf), self.into_bytes().iter().take(30).collect::<Vec<&u8>>() );
         match buf {
-            &[] => Ok(0),
+            &[] => 
+              { if self.show_cursor
+                { self.color_cursor(); }
+                Ok(0) },
 
             //---------- TERMINAL SAVE -----------
             &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'h', ref next..] =>
@@ -621,6 +652,12 @@ impl Write for Display {
             &[b'\x1B', b'[', b'?', b'1', b'l', ref next..] =>
               { self.ss_mod = false;
                 self.write(next) },
+            &[b'\x1B', b'[', b'?', b'2', b'5', b'h', ref next..] =>
+              { self.show_cursor = true;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'2', b'5', b'l', ref next..] =>
+              { self.show_cursor = false;
+                self.write(next) },
 
             //------------ ERASE -----------------
             &[b'\x1B', b'[', b'K', ref next..] |
@@ -651,6 +688,9 @@ impl Write for Display {
             &[b'\x1B', b'[', b'L', ref next..] =>
               { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
                 { self.insert_empty_line(1); }
+                self.write(next) },
+            &[b'\x1B', b'[', b'@', ref next..] =>
+              { self.insert_chars(1);
                 self.write(next) },
 
             //------------- GOTO ------------------
@@ -781,8 +821,12 @@ impl Write for Display {
 
                 //-------------- ERASE ----------------
                 &[b'P', ref next..] =>
-                  { if bonjour.len() == 1
+                  { if bonjour.len().eq(&1)
                     { self.erase_chars(bonjour[0]); }
+                    self.write(next) },
+                &[b'@', ref next..] =>
+                  { if bonjour.len().eq(&1)
+                    { self.insert_chars(bonjour[0]); }
                     self.write(next) },
 
                 //-------------- SCROLL ----------------
@@ -824,6 +868,7 @@ impl Write for Display {
 
                         //Set special attributes
                         1 => { self.collection.set_bold(); },
+                        2 => { self.collection.set_dim(); },
                         3 => { self.collection.set_italic(); },
                         4 => { self.collection.set_underline(); },
                         5 => { self.collection.set_blink(); },
@@ -831,7 +876,9 @@ impl Write for Display {
                         8 => { self.collection.set_hidden(); },
 
                         //Unset special attributes
-                        22 => { self.collection.unset_bold(); },
+                        22 =>
+                          { self.collection.unset_bold();
+                            self.collection.unset_dim(); },
                         23 => { self.collection.unset_italic(); },
                         24 => { self.collection.unset_underline(); },
                         25 => { self.collection.unset_blink(); },
@@ -847,6 +894,7 @@ impl Write for Display {
                         35 => { self.collection.set_foreground(Color::Magenta); },
                         36 => { self.collection.set_foreground(Color::Cyan); },
                         37 => { self.collection.set_foreground(Color::White); },
+                        39 => { self.collection.set_foreground(Color::Black); },
 
                         //Background colors
                         40 => { self.collection.set_background(Color::Black); },
@@ -857,6 +905,7 @@ impl Write for Display {
                         45 => { self.collection.set_background(Color::Magenta); },
                         46 => { self.collection.set_background(Color::Cyan); },
                         47 => { self.collection.set_background(Color::White); },
+                        49 => { self.collection.set_background(Color::White); },
 
                         _ => {}, }
                       true });
@@ -905,13 +954,13 @@ impl Write for Display {
               self.write(next) },
 
             &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] =>
-            { self.print_char(&[u1, u2, u3, u4], next) },
+            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, u2, u3, u4]) }, next) },
             &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0', u3 @ b'\x80' ... b'\xBF', ref next..] =>
-            { self.print_char(&[u1, u2, u3], next) },
+            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, u2, u3, 0]) }, next) },
             &[u1 @ b'\xC2' ... b'\xDF', u2 @ b'\x80' ... b'\xBF', ref next..] =>
-            { self.print_char(&[u1, u2], next) },
+            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, u2, 0, 0]) }, next) },
             &[u1, ref next..] =>
-            { self.print_char(&[u1], next) },
+            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, 0, 0, 0]) }, next) },
 
         }
     }

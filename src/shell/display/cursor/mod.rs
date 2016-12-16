@@ -51,39 +51,9 @@ impl <T> Cursor <T> {
 }
 
 impl Cursor<Vec<Character>>
-{ pub fn write_with_color(&mut self, glyph: &[u8], ope: Operate) -> io::Result<usize>
+{ pub fn write_with_color(&mut self, glyph: char, ope: Operate) -> io::Result<usize>
   { unsafe
-    { let mut bonjour: [libc::c_uchar; 4] = [0; 4];
-      {0..glyph.len()}.all(|i|
-      { bonjour[i] = glyph[i];
-        true });
-      let buf = std::mem::transmute::<[libc::c_uchar; 4], char>(bonjour);
-      *self.inner.get_unchecked_mut(self.pos) = Character::new(buf, ope);
+    { *self.inner.get_unchecked_mut(self.pos) = Character::new(glyph, ope);
       self.pos += 1;
-      Ok(glyph.len()) }}
-}
-
-impl <T> IntoIterator for Cursor<Vec<T>> {
-    type Item = T;
-    type IntoIter = ::std::vec::IntoIter<T>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.inner.into_iter()
-    }
-}
-
-impl Write for Cursor<Vec<Character>> {
-    /// The method `write` from trait `io::Write` inserts a new list of terms
-    /// from output.
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        unsafe {
-            *self.inner.get_unchecked_mut(self.pos) = Character::from_slice(buf);
-            self.pos += 1;
-        }
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
+      Ok(1) }}
 }

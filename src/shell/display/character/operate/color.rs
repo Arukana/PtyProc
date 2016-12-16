@@ -5,11 +5,11 @@ pub const DEFAULT_BACKGROUND: Color = Color::White;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Color
 { Black,
-  White,
   Red,
   Green,
-  Blue,
   Yellow,
-  Cyan,
+  Blue,
   Magenta,
+  Cyan,
+  White,
   Custom(u8, u8, u8), }
