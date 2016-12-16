@@ -322,6 +322,8 @@ impl Display {
     /// (the cursor doesn't move)
     pub fn scroll_down(&mut self, base: libc::size_t)
     { let col = self.size.get_col();
+      if self.show_cursor
+      { self.clear_cursor(); }
       let resize = self.region;
       if !self.newline.is_empty()
       { match self.newline.iter().position(|&i| i.1.eq(&(resize.1 - 1)).bitand(i.1.eq(&(self.size.get_row() - 1)).not()))
@@ -344,6 +346,8 @@ impl Display {
     /// (the cursor doesn't move)
     pub fn scroll_up(&mut self, base: libc::size_t)
     { let col = self.size.get_col();
+      if self.show_cursor
+      { self.clear_cursor(); }
       let resize = self.region;
       if !self.newline.is_empty()
       { match self.newline.iter().position(|&i| i.1.eq(&base))
