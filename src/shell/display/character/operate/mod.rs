@@ -81,7 +81,7 @@ impl Operate
 
   pub fn is_hidden(&self) -> bool
   { (self.attr & IS_HIDDEN).eq(&0).not() }
-
+  
   pub fn get_foreground(&self) -> &Color
   { &self.foreground }
 
@@ -130,19 +130,20 @@ impl fmt::Display for Operate {
             Color::Magenta => { "35".fmt(f); },
             Color::Cyan => { "36".fmt(f); },
             Color::White => { "37".fmt(f); },
-            Color::Custom(_, _, _) => { "37".fmt(f); /* unimplemented!() */ }, }
-          match self.background
-          { Color::Black => { "40".fmt(f); },
-            Color::Red => { "41".fmt(f); },
-            Color::Green => { "42".fmt(f); },
-            Color::Yellow => { "43".fmt(f); },
-            Color::Blue => { "44".fmt(f); },
-            Color::Magenta => { "45".fmt(f); },
-            Color::Cyan => { "46".fmt(f); },
-            Color::White => { "47".fmt(f); },
-            Color::Custom(_, _, _) => { "47".fmt(f); /* unimplemented!() */ }, }
-          "m".fmt(f) }
-        else
-        { "\x1B[m".fmt(f) }
-    }
-}
+            Color::Custom(_, _, _) => { "37".fmt(f); }, }
+          if self.background != DEFAULT_BACKGROUND
+          { match self.background
+            { Color::Black => { ";40".fmt(f); },
+              Color::Red => { ";41".fmt(f); },
+              Color::Green => { ";42".fmt(f); },
+              Color::Yellow => { ";43".fmt(f); },
+              Color::Blue => { ";44".fmt(f); },
+              Color::Magenta => { ";45".fmt(f); },
+              Color::Cyan => { ";46".fmt(f); },
+              Color::White => { ";47".fmt(f); },
+              Color::Custom(_, _, _) => { ";47".fmt(f); }, }}
+            "m".fmt(f) }
+          else
+          { "\x1B[m".fmt(f) }
+      }
+  }
