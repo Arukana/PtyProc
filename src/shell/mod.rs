@@ -100,12 +100,12 @@ impl Shell {
         self.screen.write(buf)
     }
 
-    pub fn write_with_color(&self)
+/*    pub fn write_with_color(&self)
     { self.screen.into_iter().all(|&glyph|
       { if glyph.get_attributes().has_attributes()
         { println!("ATTR::{:?} | {:?}", *glyph.get_attributes(), glyph.get_glyph());
         }
-        true }); }
+        true }); }*/
 }
 
 impl Iterator for Shell {

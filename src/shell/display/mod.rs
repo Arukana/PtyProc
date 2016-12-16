@@ -475,7 +475,7 @@ impl Display {
         self.scroll_up(x); }}
 
     /// The method `print_char` print an unicode character (1 to 4 chars range)
-    pub fn print_char(&mut self, first: &[u8], next: &[u8]) -> io::Result<usize>
+    pub fn print_char(&mut self, first: char, next: &[u8]) -> io::Result<usize>
     { let wrap = self.line_wrap;
       let row = self.size.get_row();
       let col = self.size.get_col();
@@ -521,7 +521,7 @@ impl Display {
         ss_mod: self.ss_mod,
         newline: self.newline.clone(),
         region: self.region,
-        collection: self.collection.clone(),
+        collection: self.collection,
         oob: self.oob,
         line_wrap: self.line_wrap,
         size: self.size,
@@ -537,7 +537,7 @@ impl Display {
         self.ss_mod = save_terminal.ss_mod;
         self.newline = save_terminal.newline.clone();
         self.region = save_terminal.region;
-        self.collection = save_terminal.collection.clone();
+        self.collection = save_terminal.collection;
         self.oob = save_terminal.oob;
         self.line_wrap = save_terminal.line_wrap;
         self.screen = save_terminal.screen.clone();
@@ -573,15 +573,15 @@ impl<'a> IntoIterator for &'a Display {
     }
 }
 
-impl fmt::Display for Display {
-     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-         unsafe {
-              write!(f, "{}", String::from_utf8_unchecked(self.into_bytes())
-                                     .chars().take(self.size.row_by_col())
-                                     .collect::<String>())
-         }
-     }
-}
+impl fmt::Display for Display
+{ fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
+  { let mut disp: String = String::new();
+    self.into_iter().all(|character|
+    { disp.push_str(format!("{}", character).as_str());
+ //     println!("CHAR::{:?}", character);
+      true });
+ //   println!("DISP! LEN::{}, SIZE::{:?}", disp.len(), self.size);
+    write!(f, "{}", disp) }}
 
 impl Write for Display {
     /// The method `write` from trait `io::Write` inserts a new list of terms
@@ -905,13 +905,13 @@ impl Write for Display {
               self.write(next) },
 
             &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] =>
-            { self.print_char(&[u1, u2, u3, u4], next) },
+            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, u2, u3, u4]) }, next) },
             &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0', u3 @ b'\x80' ... b'\xBF', ref next..] =>
-            { self.print_char(&[u1, u2, u3], next) },
+            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, u2, u3, 0]) }, next) },
             &[u1 @ b'\xC2' ... b'\xDF', u2 @ b'\x80' ... b'\xBF', ref next..] =>
-            { self.print_char(&[u1, u2], next) },
+            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, u2, 0, 0]) }, next) },
             &[u1, ref next..] =>
-            { self.print_char(&[u1], next) },
+            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, 0, 0, 0]) }, next) },
 
         }
     }

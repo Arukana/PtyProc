@@ -18,37 +18,28 @@ pub struct Character {
 }
 
 impl Character {
+    pub fn new(glyph: char, operate: Operate) -> Self
+    { Character
+      { glyph: glyph,
+        operate: operate, }}
+
     pub fn get_attributes(&self) -> &Operate { &self.operate }
 
     pub fn is_enter(&self) -> bool { self.glyph.eq(&'\n') }
 
     pub fn is_space(&self) -> bool { self.glyph.eq(&' ') }
 
-    /// The accessor method `get_ref` returns a reference on term character buffer.
     pub fn get_glyph(&self) -> char { self.glyph }
 
     /// The method `clear` resets the term character.
     pub fn clear(&mut self) { *self = Self::default(); }
 }
 
-impl From<(char, Operate)> for Character {
-    fn from((glyph, operate): (char, Operate)) -> Character {
-        unsafe {
-            Character {
-                glyph: glyph,
-                operate: operate,
-            }
-        }
-    }
-}
-
 impl From<char> for Character {
     fn from(glyph: char) -> Character {
-        unsafe {
-            Character {
-                glyph: glyph,
-                operate: Operate::default(),
-            }
+        Character {
+           glyph: glyph,
+           operate: Operate::default(),
         }
     }
 }

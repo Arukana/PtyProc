@@ -108,7 +108,6 @@ impl Iterator for Proc
     let new_pid = self.current_pid();
     if self.running_pid != new_pid && new_pid > 1
     { self.running_pid = new_pid;
-      println!("RUNNING::{}", self.running_pid);
       self.get_name(self.running_pid) }
     else
     { None }}}
