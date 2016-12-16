@@ -21,6 +21,7 @@ use self::character::operate::{Operate, Color};
 pub struct Display {
     save_position: (libc::size_t, libc::size_t),
     save_terminal: Option<SaveTerminal>,
+    show_cursor: bool,
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
@@ -35,6 +36,7 @@ pub struct Display {
 #[derive(Debug, Clone)]
 pub struct SaveTerminal {
     save_position: (libc::size_t, libc::size_t),
+    show_cursor: bool,
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
@@ -62,6 +64,7 @@ impl Display {
         Display {
             save_position: (0, 0),
             save_terminal: None,
+            show_cursor: true,
             ss_mod: false,
             newline:
             { let mut end_row_newlines: Vec<(libc::size_t, libc::size_t)> = Vec::with_capacity(size.get_row());
@@ -519,6 +522,7 @@ impl Display {
     pub fn save_terminal(&mut self)
     { self.save_terminal = Some(SaveTerminal
       { save_position: self.save_position,
+        show_cursor: self.show_cursor,
         ss_mod: self.ss_mod,
         newline: self.newline.clone(),
         region: self.region,
@@ -535,6 +539,7 @@ impl Display {
     { let mut flag_resize: bool = false;
       if let Some(ref save_terminal) = self.save_terminal
       { self.save_position = save_terminal.save_position;
+        self.show_cursor = save_terminal.show_cursor;
         self.ss_mod = save_terminal.ss_mod;
         self.newline = save_terminal.newline.clone();
         self.region = save_terminal.region;
@@ -600,7 +605,8 @@ impl Write for Display {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         match buf {
             &[] => 
-              { self.color_cursor();
+              { if self.show_cursor
+                { self.color_cursor(); }
                 Ok(0) },
 
             //---------- TERMINAL SAVE -----------
@@ -632,6 +638,12 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'?', b'1', b'l', ref next..] =>
               { self.ss_mod = false;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'2', b'5', b'h', ref next..] =>
+              { self.show_cursor = true;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'2', b'5', b'l', ref next..] =>
+              { self.show_cursor = false;
                 self.write(next) },
 
             //------------ ERASE -----------------
