@@ -22,6 +22,8 @@ pub struct Display {
     save_position: (libc::size_t, libc::size_t),
     save_terminal: Option<SaveTerminal>,
     show_cursor: bool,
+    /// Press, Press/Release, Motion, SGR-Mode
+    mouse_handle: (bool, bool, bool, bool),
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
@@ -37,6 +39,7 @@ pub struct Display {
 pub struct SaveTerminal {
     save_position: (libc::size_t, libc::size_t),
     show_cursor: bool,
+    mouse_handle: (bool, bool, bool, bool),
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
@@ -65,6 +68,7 @@ impl Display {
             save_position: (0, 0),
             save_terminal: None,
             show_cursor: true,
+            mouse_handle: (false, false, false, false),
             ss_mod: false,
             newline:
             { let mut end_row_newlines: Vec<(libc::size_t, libc::size_t)> = Vec::with_capacity(size.get_row());
@@ -89,6 +93,10 @@ impl Display {
     /// The accessor `ss` returns the value of 'ss_mod'.
     pub fn ss(&self) -> bool
     { self.ss_mod }
+
+    /// The accessor `mouse` returns the value of 'mouse_handle'.
+    pub fn mouse(&self) -> (bool, bool, bool, bool)
+    { self.mouse_handle }
 
     /// The accessor `get_window_size` returns the window size interface.
     pub fn get_window_size(&self) -> &Winszed {
@@ -527,6 +535,7 @@ impl Display {
     pub fn save_terminal(&mut self)
     { self.save_terminal = Some(SaveTerminal
       { save_position: self.save_position,
+        mouse_handle: self.mouse_handle,
         show_cursor: self.show_cursor,
         ss_mod: self.ss_mod,
         newline: self.newline.clone(),
@@ -545,6 +554,7 @@ impl Display {
       if let Some(ref save_terminal) = self.save_terminal
       { self.save_position = save_terminal.save_position;
         self.show_cursor = save_terminal.show_cursor;
+        self.mouse_handle = save_terminal.mouse_handle;
         self.ss_mod = save_terminal.ss_mod;
         self.newline = save_terminal.newline.clone();
         self.region = save_terminal.region;
@@ -632,6 +642,32 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'l', ref next..] =>
               { self.restore_terminal();
+                self.write(next) },
+
+            //---------- MOUSE HANDLE -----------
+            &[b'\x1B', b'[', b'?', b'9', b'h', ref next..] =>
+              { self.mouse_handle.0 = true;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'9', b'l', ref next..] =>
+              { self.mouse_handle.0 = false;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'0', b'h', ref next..] =>
+              { self.mouse_handle.1 = true;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'0', b'l', ref next..] =>
+              { self.mouse_handle.1 = false;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'2', b'h', ref next..] =>
+              { self.mouse_handle.2 = true;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'2', b'l', ref next..] =>
+              { self.mouse_handle.2 = false;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'6', b'h', ref next..] =>
+              { self.mouse_handle.3 = true;
+                self.write(next) },
+            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'6', b'l', ref next..] =>
+              { self.mouse_handle.3 = false;
                 self.write(next) },
 
             //------------ SETTINGS -------------

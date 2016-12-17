@@ -154,16 +154,29 @@ impl ShellState {
     /// The mutator method `set_input` update the `in_text`
     /// and save the old `in_text` to `in_text_past`.
     pub fn set_input(&mut self, out_screen: &mut Display, mut down: Option<Control>) {
-        match down
+        match down 
         { Some(is_mouse) =>
             { match is_mouse.as_slice()
               { &[b'\x1B', b'[', b'<', ref next..] =>
                   { let (bonjour, coucou) =
                     { catch_numbers(Vec::new(), next) };
                     match coucou
-                    { &[b'm', ref next..] |
-                      &[b'M', ref next..] =>
-                        { down = None; },
+                    { &[b'M', ref next..] =>
+                      { if out_screen.mouse().3 == false && bonjour[0] > 2
+                        { down = None; }
+                        else if out_screen.mouse().3 == false && out_screen.mouse().0 == false && out_screen.mouse().1 == false
+                        { down = None; }
+                        else if out_screen.mouse().3 == false && (out_screen.mouse().1 == true || out_screen.mouse().0 == true) && bonjour[0] == 0
+                        { down = Some(Control::new([b'\x1B', b'[', b'M', b' ', bonjour[1] as u8 + 32, bonjour[2] as u8 + 32, 0, 0, 0, 0, 0, 0], 6)); }
+                        else if out_screen.mouse().3 == false && out_screen.mouse().0 == true
+                        { down = None; }},
+                      &[b'm', ref next..] =>
+                      { if out_screen.mouse().0 == false && out_screen.mouse().1 == false
+                        { down = None; }
+                        else if out_screen.mouse().1 == true && out_screen.mouse().3 == false && bonjour[0] <= 2
+                        { down = Some(Control::new([b'\x1B', b'[', b'M', b'#', bonjour[1] as u8 + 32, bonjour[2] as u8 + 32, 0, 0, 0, 0, 0, 0], 6)); }
+                        else if out_screen.mouse().0 == true
+                        { down = None; }},
                       _ => {}, }},
                _ => {}, }},
           _ => {}, };
@@ -175,9 +188,7 @@ impl ShellState {
                   &[b'\x1B', b'[', b'B', ref next..] => b'B',
                   &[b'\x1B', b'[', b'C', ref next..] => b'C',
                   &[b'\x1B', b'[', b'D', ref next..] => b'D',
-               /*   &[b'\x0D', ref next..] |
-                  &[b'\x0A', ref next..] => b'M',
-                 */ _ => 0, }},
+                  _ => 0, }},
               _ => 0, };
             if ss > 0
             { down = Some(Control::new([b'\x1B', b'O', ss, 0, 0, 0, 0, 0, 0, 0, 0, 0], 3)); }}
