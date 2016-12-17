@@ -27,5 +27,6 @@ os:
 
 script:
   - cargo build --verbose
+  - cargo test -- winsz
   - cargo test
   - cargo test --features task -- --nocapture
