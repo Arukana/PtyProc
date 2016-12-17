@@ -11,11 +11,13 @@ pub const SIZE: Winszed = Winszed {
 };
 
 #[test]
+#[cfg(target_os = "linux")]
 fn test_winszed_new() {
     assert!(Winszed::new(libc::STDIN_FILENO).is_ok());
 }
 
 #[test]
+#[cfg(target_os = "linux")]
 fn test_winszed_resize() {
     assert!(Winszed::from_winsized(libc::STDIN_FILENO, &SIZE).is_ok());
 
