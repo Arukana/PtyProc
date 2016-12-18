@@ -33,6 +33,7 @@ fn test_proc_new() {
 
 #[test]
 #[cfg(feature = "task")]
+#[cfg(target_os = "linux")]
 fn test_proc_next()
 { env::set_var("HOME", "/tmp");
   { let mut shell: Shell = Shell::new(
@@ -81,4 +82,4 @@ fn test_proc_next()
 
     assert!(shell.write(b"exit\n").is_ok()); }}
 
-  // cargo test --no-fail-fast --features task -- --nocapture
+// cargo test --no-fail-fast --features task -- --nocapture
