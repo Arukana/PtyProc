@@ -4,7 +4,7 @@ use ::libc;
 use std::io::{self, Write};
 
 use super::character::Character;
-use super::character::operate::Operate;
+use super::character::attribute::Attribute;
 
 #[derive(Debug, Clone)]
 pub struct Cursor<T> {
@@ -50,10 +50,17 @@ impl <T> Cursor <T> {
     }
 }
 
-impl Cursor<Vec<Character>>
-{ pub fn write_with_color(&mut self, glyph: char, ope: Operate) -> io::Result<usize>
-  { unsafe
-    { *self.inner.get_unchecked_mut(self.pos) = Character::new(glyph, ope);
-      self.pos += 1;
-      Ok(1) }}
+impl Cursor<Vec<Character>> {
+    pub fn write_with_color(
+        &mut self,
+        glyph: char,
+        mut ope: Character,
+    ) -> io::Result<usize> {
+        unsafe {
+            ope.set_glyph(glyph);
+            *self.inner.get_unchecked_mut(self.pos) = ope;
+            self.pos += 1;
+            Ok(1)
+        }
+    }
 }

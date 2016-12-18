@@ -14,8 +14,9 @@ use ::libc;
 pub use self::winsz::Winszed;
 pub use self::err::{DisplayError, Result};
 use self::cursor::Cursor;
+use self::character::color;
 pub use self::character::Character;
-use self::character::operate::{Operate, Color};
+use self::character::attribute::Attribute;
 
 #[derive(Debug, Clone)]
 pub struct Display {
@@ -27,7 +28,7 @@ pub struct Display {
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
-    collection: Operate,
+    collection: Character,
     oob: (libc::size_t, libc::size_t),
     line_wrap: bool,
     size: Winszed,
@@ -43,7 +44,7 @@ pub struct SaveTerminal {
     ss_mod: bool,
     newline: Vec<(libc::size_t, libc::size_t)>,
     region: (libc::size_t, libc::size_t),
-    collection: Operate,
+    collection: Character,
     oob: (libc::size_t, libc::size_t),
     line_wrap: bool,
     size: Winszed,
@@ -77,7 +78,7 @@ impl Display {
                 true });
               end_row_newlines },
             region: (0, size.get_row()),
-            collection: Operate::default(),
+            collection: Character::default(),
             oob: (0, 0),
             line_wrap: true,
             size: size,
@@ -604,17 +605,25 @@ impl Display {
         (*coucou).remove(border);
         true }); }
 
-    fn clear_cursor(&mut self)
-    { let pos = self.screen.position();
-      let coucou = self.screen.get_mut();
-      let mut operate: Operate = Operate::new(0, Color::Black, Color::White);
-      (*coucou)[pos] = Character::new((*coucou)[pos].get_glyph(), operate); }
+    /// Reset the color.
+    fn clear_cursor(&mut self) {
+        let pos = self.screen.position();
 
-    fn color_cursor(&mut self)
-    { let pos = self.screen.position();
-      let coucou = self.screen.get_mut();
-      let mut operate: Operate = Operate::new(0x02, Color::Red, Color::Cyan);
-      (*coucou)[pos] = Character::new((*coucou)[pos].get_glyph(), operate); }
+        if let Some(character) = self.screen.get_mut().get_mut(pos) {
+            character.set_attribute(Attribute::None);
+        }
+    }
+
+    /// Color the cursor.
+    fn color_cursor(&mut self) {
+        let pos = self.screen.position();
+
+        if let Some(character) = self.screen.get_mut().get_mut(pos) {
+            character.set_attribute(Attribute::Dim);
+            character.set_foreground([255, 0, 0]);
+            character.set_background([0, 255, 255]);
+        }
+    }
 }
 
 impl<'a> IntoIterator for &'a Display {
@@ -915,45 +924,60 @@ impl Write for Display {
                       { 0 => { self.collection.clear(); },
 
                         //Set special attributes
-                        1 => { self.collection.set_bold(); },
-                        2 => { self.collection.set_dim(); },
-                        3 => { self.collection.set_italic(); },
-                        4 => { self.collection.set_underline(); },
-                        5 => { self.collection.set_blink(); },
-                        7 => { self.collection.set_reverse(); },
-                        8 => { self.collection.set_hidden(); },
+                        1 => {
+                            self.collection.add_attribute(Attribute::Bold);
+                        },
+                        2 => {
+                            self.collection.add_attribute(Attribute::Dim);
+                        },
+                        3 => {
+                            self.collection.add_attribute(Attribute::Italic);
+                        },
+                        4 => {
+                            self.collection.add_attribute(Attribute::Underline);
+                        },
+                        5 => {
+                            self.collection.add_attribute(Attribute::Blink);
+                        },
+                        7 => {
+                            self.collection.add_attribute(Attribute::Reverse);
+                        },
+                        8 => {
+                            self.collection.add_attribute(Attribute::Hidden);
+                        },
 
                         //Unset special attributes
-                        22 =>
-                          { self.collection.unset_bold();
-                            self.collection.unset_dim(); },
-                        23 => { self.collection.unset_italic(); },
-                        24 => { self.collection.unset_underline(); },
-                        25 => { self.collection.unset_blink(); },
-                        27 => { self.collection.unset_reverse(); },
-                        28 => { self.collection.unset_hidden(); },
+                        22 => {
+                            self.collection.sub_attribute(Attribute::Bold);
+                            self.collection.sub_attribute(Attribute::Dim);
+                        },
+                        23 => { self.collection.sub_attribute(Attribute::Italic); },
+                        24 => { self.collection.sub_attribute(Attribute::Underline); },
+                        25 => { self.collection.sub_attribute(Attribute::Blink); },
+                        27 => { self.collection.sub_attribute(Attribute::Reverse); },
+                        28 => { self.collection.sub_attribute(Attribute::Hidden); },
 
                         //Foreground colors
-                        30 => { self.collection.set_foreground(Color::Black); },
-                        31 => { self.collection.set_foreground(Color::Red); },
-                        32 => { self.collection.set_foreground(Color::Green); },
-                        33 => { self.collection.set_foreground(Color::Yellow); },
-                        34 => { self.collection.set_foreground(Color::Blue); },
-                        35 => { self.collection.set_foreground(Color::Magenta); },
-                        36 => { self.collection.set_foreground(Color::Cyan); },
-                        37 => { self.collection.set_foreground(Color::White); },
-                        39 => { self.collection.set_foreground(Color::Black); },
+                        30 => { self.collection.set_foreground(color::Black); },
+                        31 => { self.collection.set_foreground(color::Red); },
+                        32 => { self.collection.set_foreground(color::Green); },
+                        33 => { self.collection.set_foreground(color::Yellow); },
+                        34 => { self.collection.set_foreground(color::Blue); },
+                        35 => { self.collection.set_foreground(color::Magenta); },
+                        36 => { self.collection.set_foreground(color::Cyan); },
+                        37 => { self.collection.set_foreground(color::White); },
+                        39 => { self.collection.set_foreground(color::Black); },
 
                         //Background colors
-                        40 => { self.collection.set_background(Color::Black); },
-                        41 => { self.collection.set_background(Color::Red); },
-                        42 => { self.collection.set_background(Color::Green); },
-                        43 => { self.collection.set_background(Color::Yellow); },
-                        44 => { self.collection.set_background(Color::Blue); },
-                        45 => { self.collection.set_background(Color::Magenta); },
-                        46 => { self.collection.set_background(Color::Cyan); },
-                        47 => { self.collection.set_background(Color::White); },
-                        49 => { self.collection.set_background(Color::White); },
+                        40 => { self.collection.set_background(color::Black); },
+                        41 => { self.collection.set_background(color::Red); },
+                        42 => { self.collection.set_background(color::Green); },
+                        43 => { self.collection.set_background(color::Yellow); },
+                        44 => { self.collection.set_background(color::Blue); },
+                        45 => { self.collection.set_background(color::Magenta); },
+                        46 => { self.collection.set_background(color::Cyan); },
+                        47 => { self.collection.set_background(color::White); },
+                        49 => { self.collection.set_background(color::White); },
 
                         _ => {}, }
                       true });

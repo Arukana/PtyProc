@@ -1,1 +1,0 @@
-!+ Faire des tests unitaires autour de la gestion d'erreur (display/mod)
