@@ -32,8 +32,8 @@ fn test_proc_new() {
 }
 
 #[test]
+#[ignore]
 #[cfg(feature = "task")]
-#[cfg(target_os = "linux")]
 fn test_proc_next()
 { env::set_var("HOME", "/tmp");
   { let mut shell: Shell = Shell::new(
