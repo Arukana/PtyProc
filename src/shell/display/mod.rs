@@ -122,9 +122,17 @@ impl Display {
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
         let mut screen: Vec<libc::c_uchar> = Vec::new();
 
+          println!("SIZE::{:?}", self.size);
         self.screen.get_ref().iter().all(|control: &Character| unsafe {
             let buf: [u8; 4] = mem::transmute::<char, [u8; 4]>(control.get_glyph());
-            screen.extend_from_slice(&buf[..]);
+            let mut len = 0;
+            {0..4}.all(|_|
+            { if !buf[len].eq(&0)
+              { len += 1;
+                true }
+              else
+              { false }});
+            screen.extend_from_slice(&buf[..len]);
             true
         });
         screen
