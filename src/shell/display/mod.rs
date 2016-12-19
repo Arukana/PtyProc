@@ -713,9 +713,11 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'?', b'2', b'5', b'h', ref next..] =>
               { self.show_cursor = true;
+                self.color_cursor();
                 self.write(next) },
             &[b'\x1B', b'[', b'?', b'2', b'5', b'l', ref next..] =>
               { self.show_cursor = false;
+                self.clear_cursor();
                 self.write(next) },
 
             //------------ ERASE -----------------

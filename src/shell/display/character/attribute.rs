@@ -18,7 +18,7 @@ impl fmt::Display for Attribute {
         write!(f, "{}", match *self {
             Attribute::None => "",
             Attribute::Bold => "1;",
-            Attribute::Dim => "2",
+            Attribute::Dim => "2;",
             Attribute::Italic => "3;",
             Attribute::Underline => "4;",
             Attribute::Blink => "5;",

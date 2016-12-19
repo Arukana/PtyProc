@@ -108,36 +108,40 @@ impl fmt::Display for Character {
         .bitand(self.foreground.eq(&color::DEFAULT_FOREGROUND)
         .bitand(self.background.eq(&color::DEFAULT_BACKGROUND)))
         .not() {
-            try!("\x1B[".fmt(f));
-            if self.is_bold() {
+            if self.attribute.gt(&0)
+            { try!("\x1B[".fmt(f));
+              if self.is_bold() {
                 try!(Attribute::Bold.fmt(f));
-            }
-            if self.is_dim() {
+              }
+              if self.is_dim() {
                 try!(Attribute::Dim.fmt(f));
-            }
-            if self.is_italic() {
+              }
+              if self.is_italic() {
                 try!(Attribute::Italic.fmt(f));
-            }
-            if self.is_underline() {
+              }
+              if self.is_underline() {
                 try!(Attribute::Underline.fmt(f));
-            }
-            if self.is_blink() {
+              }
+              if self.is_blink() {
                 try!(Attribute::Blink.fmt(f));
-            }
-            if self.is_reverse() {
+              }
+              if self.is_reverse() {
                 try!(Attribute::Reverse.fmt(f));
-            }
-            if self.is_hidden() {
+              }
+              if self.is_hidden() {
                 try!(Attribute::Hidden.fmt(f));
-            }
-            try!(format!("\x1B[38;2;{};{};{};2m",
+              }
+              try!(format!("m").fmt(f)); }
+            if self.foreground.eq(&[0, 0, 0]).not()
+            { try!(format!("\x1B[38;2;{};{};{};2m",
                          self.foreground[0],
                          self.foreground[1],
-                         self.foreground[2]).fmt(f));
-            try!(format!("\x1B[48;2;{};{};{};2m",
+                         self.foreground[2]).fmt(f)); }
+            if self.background.eq(&[255, 255, 255]).not()
+            { try!(format!("\x1B[48;2;{};{};{};2m",
                          self.background[0],
                          self.background[1],
-                         self.background[2]).fmt(f));
+                         self.background[2]).fmt(f)); }
         } else {
             try!(format!("\x1B[m").fmt(f));
         }
