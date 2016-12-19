@@ -50,7 +50,7 @@ impl Shell {
               Ok(fork) => match fork {
                   pty::Fork::Child(ref slave) =>
                     { libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
-                      slave.exec(command.unwrap_or("/bin/bash")) },
+                      slave.exec(command.unwrap_or("/bin/zsh")) },
                   pty::Fork::Parent(pid, master) => {
                       mem::forget(fork);
                       Ok(Shell {
