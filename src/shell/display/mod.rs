@@ -122,8 +122,6 @@ impl Display {
     /// Converts a Vector of Character into a byte vector.
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
         let mut screen: Vec<libc::c_uchar> = Vec::new();
-
-          println!("SIZE::{:?}", self.size);
         self.screen.get_ref().iter().all(|control: &Character| unsafe {
             let buf: [u8; 4] = mem::transmute::<char, [u8; 4]>(control.get_glyph());
             let mut len = 0;
@@ -505,6 +503,8 @@ impl Display {
     { let wrap = self.line_wrap;
       let row = self.size.get_row();
       let col = self.size.get_col();
+      if self.show_cursor
+      { self.clear_cursor(); }
       if self.oob.0 < col - 1
       { self.oob.0 += 1; }
       else if self.oob.1.lt(&self.region.1.sub(&1)).bitand(self.ss_mod.not())
@@ -611,6 +611,8 @@ impl Display {
 
         if let Some(character) = self.screen.get_mut().get_mut(pos) {
             character.set_attribute(Attribute::None);
+            character.set_foreground([0, 0, 0]);
+            character.set_background([255, 255, 255]);
         }
     }
 
