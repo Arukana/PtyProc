@@ -225,8 +225,8 @@ impl ShellState {
         if let Some((mut buf, len)) = entry {
             self.out_last = Some((buf, len));
             let mut tmp = [0u8; 596];
-            { let seeker = self.buffer.1;
-              let hey: &mut [u8] = self.buffer.deref_mut();
+            let seeker = self.buffer.1;
+            { let hey: &mut [u8] = self.buffer.deref_mut();
               if seeker > 0
               { { let mut buffer: &mut [u8] = &mut tmp[..];
                   buffer.write(&[b'\x1B']).unwrap(); }
@@ -247,7 +247,7 @@ impl ShellState {
                 buffer.write(&ss[..]).unwrap(); }}
             self.buffer.1 = 0;
 
-            if (&buf[..len]).iter().position(|&i| i.eq(&0)).is_none()
+            if (&buf[..len]).iter().position(|&i| i.eq(&b'\x1B')).is_some()
             { match (&buf[..len]).split(|&at| at == b'\x1B').take(len).last()
               { Some(get) =>
                   { if get.is_empty() || get.iter().position(|&i| i.eq(&b';').not().bitand(i.eq(&b'(').not()).bitand(i.eq(&b'[').not()).bitand(i.lt(&b'0').bitor(i.gt(&b'9')))).is_none()
