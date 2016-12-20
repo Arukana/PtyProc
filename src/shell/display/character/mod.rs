@@ -133,12 +133,12 @@ impl fmt::Display for Character {
               }
               try!(format!("m").fmt(f)); }
             if self.foreground.eq(&[0, 0, 0]).not()
-            { try!(format!("\x1B[38;2;{};{};{};2m",
+            { try!(format!("\x1B[38;2;{};{};{}m",
                          self.foreground[0],
                          self.foreground[1],
                          self.foreground[2]).fmt(f)); }
             if self.background.eq(&[255, 255, 255]).not()
-            { try!(format!("\x1B[48;2;{};{};{};2m",
+            { try!(format!("\x1B[48;2;{};{};{}m",
                          self.background[0],
                          self.background[1],
                          self.background[2]).fmt(f)); }
