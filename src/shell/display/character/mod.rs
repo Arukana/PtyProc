@@ -30,6 +30,10 @@ impl Character {
 
     pub fn is_space(&self) -> bool { self.glyph.eq(&32) }
 
+    pub fn is_null(&self) -> bool {
+        self.glyph.eq(&0)
+    }
+
     pub fn is_bold(&self) -> bool {
         (self.attribute & Attribute::Bold as u8).eq(&0).not()
     }
