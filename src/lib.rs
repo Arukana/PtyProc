@@ -15,7 +15,6 @@
 #![deny(
     unused_import_braces,
     blacklisted_name,
-    unused_qualifications
 )]
 
 #[macro_use(chan_select)] extern crate chan;
