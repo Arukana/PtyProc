@@ -89,7 +89,7 @@ impl Key {
     match buf {
       &[b'\x1B', b'\0', ..] => Key::Esc,
       &[b'\t', b'\0', ..] => Key::Tab,
-      &[b'\x7F', b'\0', ..] => Key::Backspace, 
+      &[b'\x7F', b'\0', ..] => Key::Backspace,
       &[b'\x1B', b'O', b'P', b'\0', ..] => Key::F(1),
       &[b'\x1B', b'O', b'Q', b'\0', ..] => Key::F(2),
       &[b'\x1B', b'O', b'R', b'\0', ..] => Key::F(3),
@@ -138,10 +138,10 @@ impl Key {
       &[b'\x1B', b'[', b'1', b';', b'1', b'0', b'C', b'\0', ..] => Key::AltShiftRight,
       &[b'\x1B', b'[', b'1', b';', b'1', b'0', b'D', b'\0', ..] => Key::AltShiftLeft,
       &[u1 @ b'\xF0' ... b'\xF4',
-        u2 @ b'\x8F' ... b'\x90', 
+        u2 @ b'\x8F' ... b'\x90',
         u3 @ b'\x80' ... b'\xBF',
         u4 @ b'\x80' ... b'\xBF', ..] => Key::from_utf8([u1, u2, u3, u4]),
-      &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0', 
+      &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0',
         u3 @ b'\x80' ... b'\xBF', ..] => Key::from_utf8([u1, u2, u3, b'\x00']),
       &[u1 @ b'\xC2' ... b'\xDF',
         u2 @ b'\x80' ... b'\xBF', ..] => Key::from_utf8([u1, u2, b'\x00', b'\x00']),
@@ -159,12 +159,158 @@ impl Key {
     }
   }
 
-  /// The accessor method `is_enter` returns an Option for the Enter Key.
-  pub fn is_enter(&self) -> Option<()> {
-    if self.eq(&Key::Enter) {
-      Some(())
-    } else {
-      None
+    /// The accessor method `is_enter` returns an Option for the Enter Key.
+    pub fn is_enter(&self) -> bool {
+        self.eq(&Key::Enter)
     }
-  }
+
+    pub fn is_c0(&self) -> bool {
+        match *self {
+            Key::Utf8(e @ '\u{0}'...'\u{32}') => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.eq(&Key::Utf8('\u{0}'))
+    }
+
+    pub fn is_start_heading(&self) -> bool {
+        self.eq(&Key::Utf8('\u{1}'))
+    }
+
+    pub fn is_start_text(&self) -> bool {
+        self.eq(&Key::Utf8('\u{b2}'))
+    }
+
+    pub fn is_end_text(&self) -> bool {
+        self.eq(&Key::Utf8('\u{3}'))
+    }
+
+    pub fn is_end_transmission(&self) -> bool {
+        self.eq(&Key::Utf8('\u{4}'))
+    }
+
+    pub fn is_enquiry(&self) -> bool {
+        self.eq(&Key::Utf8('\u{5}'))
+    }
+
+    pub fn is_acknowledge(&self) -> bool {
+        self.eq(&Key::Utf8('\u{6}'))
+    }
+
+    pub fn is_bell(&self) -> bool {
+        self.eq(&Key::Utf8('\u{7}'))
+    }
+
+    pub fn is_backspace(&self) -> bool {
+        self.eq(&Key::Utf8('\u{8}'))
+    }
+
+    pub fn is_horizontal_tabulation(&self) -> bool {
+        self.eq(&Key::Utf8('\u{9}'))
+    }
+
+    pub fn is_line_feed(&self) -> bool {
+        self.eq(&Key::Utf8('\u{10}'))
+    }
+
+    pub fn is_vertical_tabulation(&self) -> bool {
+        self.eq(&Key::Utf8('\u{11}'))
+    }
+
+    pub fn is_form_feed(&self) -> bool {
+        self.eq(&Key::Utf8('\u{12}'))
+    }
+
+    pub fn is_carriage_return(&self) -> bool {
+        self.eq(&Key::Utf8('\u{13}'))
+    }
+
+    pub fn is_shift_out(&self) -> bool {
+        self.eq(&Key::Utf8('\u{14}'))
+    }
+
+    pub fn is_shift_in(&self) -> bool {
+        self.eq(&Key::Utf8('\u{15}'))
+    }
+
+    pub fn is_data_link_escape(&self) -> bool {
+        self.eq(&Key::Utf8('\u{16}'))
+    }
+
+    pub fn is_device_control_one(&self) -> bool {
+        self.eq(&Key::Utf8('\u{17}'))
+    }
+
+    pub fn is_device_control_two(&self) -> bool {
+        self.eq(&Key::Utf8('\u{18}'))
+    }
+
+    pub fn is_device_control_three(&self) -> bool {
+        self.eq(&Key::Utf8('\u{19}'))
+    }
+
+    pub fn is_device_control_four(&self) -> bool {
+        self.eq(&Key::Utf8('\u{20}'))
+    }
+
+    pub fn is_negative_acknowledge(&self) -> bool {
+        self.eq(&Key::Utf8('\u{21}'))
+    }
+
+    pub fn is_synchronous_idle(&self) -> bool {
+        self.eq(&Key::Utf8('\u{22}'))
+    }
+
+    pub fn is_end_transmission_block(&self) -> bool {
+        self.eq(&Key::Utf8('\u{23}'))
+    }
+
+    pub fn is_cancel(&self) -> bool {
+        self.eq(&Key::Utf8('\u{24}'))
+    }
+
+    pub fn is_end_of_medium(&self) -> bool {
+        self.eq(&Key::Utf8('\u{25}'))
+    }
+
+    pub fn is_substitute(&self) -> bool {
+        self.eq(&Key::Utf8('\u{26}'))
+    }
+
+    pub fn is_escape(&self) -> bool {
+        self.eq(&Key::Utf8('\u{27}'))
+    }
+
+    pub fn is_file_separator(&self) -> bool {
+        self.eq(&Key::Utf8('\u{28}'))
+    }
+
+    pub fn is_group_separator(&self) -> bool {
+        self.eq(&Key::Utf8('\u{29}'))
+    }
+
+    pub fn is_record_separator(&self) -> bool {
+        self.eq(&Key::Utf8('\u{30}'))
+    }
+
+    pub fn is_unit_separator(&self) -> bool {
+        self.eq(&Key::Utf8('\u{31}'))
+    }
+
+    pub fn is_space(&self) -> bool {
+        self.eq(&Key::Utf8('\u{32}'))
+    }
+
+    pub fn is_delete(&self) -> bool {
+        self.eq(&Key::Utf8('\u{33}'))
+    }
+
+    pub fn is_c1(&self) -> bool {
+        match *self {
+            Key::Utf8(e @ '\u{128}'...'\u{159}') => true,
+            _ => false,
+        }
+    }
 }

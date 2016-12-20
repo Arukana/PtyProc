@@ -61,8 +61,8 @@ impl Control {
   /// The accessor method `is_enter` returns an Option for the Enter Key.
   pub fn is_enter(&self) -> Option<()> {
     match self.operate.is_key() {
-      Some(key) => key.is_enter(),
-      None => None,
+      Some(key) if key.is_enter() => Some(()),
+      _ => None,
     }
   }
 

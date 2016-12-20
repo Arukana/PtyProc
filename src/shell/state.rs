@@ -2,6 +2,7 @@ pub const DEFAULT_REPEAT: libc::c_long = 1_000i64;
 pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 
 use std::fmt;
+use std::mem;
 use std::io::Write;
 use std::ops::BitOr;
 use std::ops::{Add, Sub, BitAnd, Not};
@@ -127,6 +128,21 @@ impl ShellState {
             in_interval: None,
             out_last: None,
             buffer: Buf([0; 100], 0),
+        }
+    }
+
+    pub fn set_input_keyown(&mut self, key: char) {
+        unsafe {
+            let mut buf: [libc::c_uchar; 12] = mem::uninitialized();
+
+            let data: [libc::c_uchar; 4] = mem::transmute::<char, [libc::c_uchar; 4]>(key);
+            buf[0] = data[0];
+            buf[1] = data[1];
+            buf[2] = data[2];
+            buf[3] = data[3];
+            self.in_down = Some(
+                Control::new(buf, key.len_utf8())
+            );
         }
     }
 
