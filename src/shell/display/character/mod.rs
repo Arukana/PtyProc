@@ -62,6 +62,10 @@ impl Character {
         (self.attribute & Attribute::Hidden as u8).eq(&0).not()
     }
 
+    pub fn get_attribute(&self) -> u8 {
+        self.attribute
+    }
+
     pub fn get_foreground(&self) -> [libc::c_uchar; 3] {
         self.foreground
     }
@@ -94,6 +98,10 @@ impl Character {
 
     pub fn set_attribute(&mut self, attr: Attribute) {
         self.attribute = attr as u8;
+    }
+
+    pub fn set_attribute_from_u8(&mut self, attr: u8) {
+        self.attribute = attr;
     }
 
     pub fn set_glyph(&mut self, glyph: char) {
