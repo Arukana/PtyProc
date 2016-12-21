@@ -518,14 +518,14 @@ impl Display {
       { self.clear_cursor(); }
       if self.oob.0 < col - 1
       { self.oob.0 += 1; }
-      else if self.oob.1.lt(&self.region.1.sub(&1)).bitand(self.ss_mod.not())
+      else if self.oob.1.lt(&self.region.1.sub(&1))
       { if self.newline.is_empty().not().bitand(self.ss_mod.not())
         { match self.newline.iter().position(|&x| x.1.eq(&self.oob.1))
           { Some(n) => { self.newline.remove(n); },
             None => {}, }; }
         self.oob.1 += 1;
         self.oob.0 = 0; }
-      else if self.oob.1.eq(&(self.region.1.sub(&1))).bitand(self.ss_mod.not())
+      else if self.oob.1.eq(&(self.region.1.sub(&1)))
       { let x = self.region.0;
         self.scroll_up(x);
         self.goto_begin_row();
