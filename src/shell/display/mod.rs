@@ -22,6 +22,7 @@ use self::character::attribute::Attribute;
 pub struct Display {
     save_position: (libc::size_t, libc::size_t),
     save_terminal: Option<SaveTerminal>,
+//    cursor: Character,
     show_cursor: bool,
     /// Press, Press/Release, Motion, SGR-Mode
     mouse_handle: (bool, bool, bool, bool),
@@ -39,6 +40,7 @@ pub struct Display {
 #[derive(Debug, Clone)]
 pub struct SaveTerminal {
     save_position: (libc::size_t, libc::size_t),
+//    cursor: Character,
     show_cursor: bool,
     mouse_handle: (bool, bool, bool, bool),
     ss_mod: bool,
@@ -68,6 +70,7 @@ impl Display {
         Display {
             save_position: (0, 0),
             save_terminal: None,
+//            cursor: Character::default(),
             show_cursor: true,
             mouse_handle: (false, false, false, false),
             ss_mod: false,
@@ -556,6 +559,7 @@ impl Display {
     { self.save_terminal = Some(SaveTerminal
       { save_position: self.save_position,
         mouse_handle: self.mouse_handle,
+//        cursor: self.cursor,
         show_cursor: self.show_cursor,
         ss_mod: self.ss_mod,
         newline: self.newline.clone(),
@@ -573,6 +577,7 @@ impl Display {
     { let mut flag_resize: bool = false;
       if let Some(ref save_terminal) = self.save_terminal
       { self.save_position = save_terminal.save_position;
+ //       self.cursor = save_terminal.cursor;
         self.show_cursor = save_terminal.show_cursor;
         self.mouse_handle = save_terminal.mouse_handle;
         self.ss_mod = save_terminal.ss_mod;
@@ -622,11 +627,16 @@ impl Display {
     fn clear_cursor(&mut self) {
         let pos = self.screen.position();
         let collection = self.collection;
+//        let cursor = self.cursor;
 
         if let Some(character) = self.screen.get_mut().get_mut(pos) {
-            character.set_attribute_from_u8(collection.get_attribute());
-            character.set_foreground(collection.get_foreground());
-            character.set_background(collection.get_background());
+          character.set_attribute_from_u8(collection.get_attribute());
+          character.set_foreground(collection.get_foreground());
+          character.set_background(collection.get_background());
+
+/*          character.set_attribute_from_u8(cursor.get_attribute());
+          character.set_foreground(cursor.get_foreground());
+          character.set_background(cursor.get_background());*/
         }
     }
 
@@ -635,6 +645,7 @@ impl Display {
         let pos = self.screen.position();
 
         if let Some(character) = self.screen.get_mut().get_mut(pos) {
+//            self.cursor = *character;
             character.set_attribute(Attribute::Dim);
             character.set_foreground([255, 0, 0]);
             character.set_background([0, 255, 255]);
@@ -849,6 +860,7 @@ impl Write for Display {
                 self.write(next) },
 
             //------------ CL ATTR -------------
+            &[b'\x1B', b'[', b'?', b'1', b'2', b'l', ref next..] |
             &[b'\x1B', b'[', b'0', b'm', ref next..] |
             &[b'\x1B', b'[', b'm', ref next..] =>
               { self.collection.clear();
@@ -940,68 +952,69 @@ impl Write for Display {
                 //------------- ATTRIBUTS ---------------
 		            &[b'm', b'%', ref next..] |
                 &[b'm', ref next..] =>
-                  { bonjour.iter().all(|&attr|
-                    { match attr
-                      { 0 => { self.collection.clear(); },
+                  { //if self.show_cursor
+                    { bonjour.iter().all(|&attr|
+                      { match attr
+                        { 0 => { self.collection.clear(); },
 
-                        //Set special attributes
-                        1 => {
-                            self.collection.add_attribute(Attribute::Bold);
-                        },
-                        2 => {
-                            self.collection.add_attribute(Attribute::Dim);
-                        },
-                        3 => {
-                            self.collection.add_attribute(Attribute::Italic);
-                        },
-                        4 => {
-                            self.collection.add_attribute(Attribute::Underline);
-                        },
-                        5 => {
-                            self.collection.add_attribute(Attribute::Blink);
-                        },
-                        7 => {
-                            self.collection.add_attribute(Attribute::Reverse);
-                        },
-                        8 => {
-                            self.collection.add_attribute(Attribute::Hidden);
-                        },
+                          //Set special attributes
+                          1 => {
+                              self.collection.add_attribute(Attribute::Bold);
+                          },
+                          2 => {
+                              self.collection.add_attribute(Attribute::Dim);
+                          },
+                          3 => {
+                              self.collection.add_attribute(Attribute::Italic);
+                          },
+                          4 => {
+                              self.collection.add_attribute(Attribute::Underline);
+                          },
+                          5 => {
+                              self.collection.add_attribute(Attribute::Blink);
+                          },
+                          7 => {
+                              self.collection.add_attribute(Attribute::Reverse);
+                          },
+                          8 => {
+                              self.collection.add_attribute(Attribute::Hidden);
+                          },
 
-                        //Unset special attributes
-                        22 => {
-                            self.collection.sub_attribute(Attribute::Bold);
-                            self.collection.sub_attribute(Attribute::Dim);
-                        },
-                        23 => { self.collection.sub_attribute(Attribute::Italic); },
-                        24 => { self.collection.sub_attribute(Attribute::Underline); },
-                        25 => { self.collection.sub_attribute(Attribute::Blink); },
-                        27 => { self.collection.sub_attribute(Attribute::Reverse); },
-                        28 => { self.collection.sub_attribute(Attribute::Hidden); },
+                          //Unset special attributes
+                          22 => {
+                              self.collection.sub_attribute(Attribute::Bold);
+                              self.collection.sub_attribute(Attribute::Dim);
+                          },
+                          23 => { self.collection.sub_attribute(Attribute::Italic); },
+                          24 => { self.collection.sub_attribute(Attribute::Underline); },
+                          25 => { self.collection.sub_attribute(Attribute::Blink); },
+                          27 => { self.collection.sub_attribute(Attribute::Reverse); },
+                          28 => { self.collection.sub_attribute(Attribute::Hidden); },
 
-                        //Foreground colors
-                        30 => { self.collection.set_foreground(color::Black); },
-                        31 => { self.collection.set_foreground(color::Red); },
-                        32 => { self.collection.set_foreground(color::Green); },
-                        33 => { self.collection.set_foreground(color::Yellow); },
-                        34 => { self.collection.set_foreground(color::Blue); },
-                        35 => { self.collection.set_foreground(color::Magenta); },
-                        36 => { self.collection.set_foreground(color::Cyan); },
-                        37 => { self.collection.set_foreground(color::White); },
-                        39 => { self.collection.set_foreground(color::Black); },
+                          //Foreground colors
+                          30 => { self.collection.set_foreground(color::Black); },
+                          31 => { self.collection.set_foreground(color::Red); },
+                          32 => { self.collection.set_foreground(color::Green); },
+                          33 => { self.collection.set_foreground(color::Yellow); },
+                          34 => { self.collection.set_foreground(color::Blue); },
+                          35 => { self.collection.set_foreground(color::Magenta); },
+                          36 => { self.collection.set_foreground(color::Cyan); },
+                          37 => { self.collection.set_foreground(color::White); },
+                          39 => { self.collection.set_foreground(color::Black); },
 
-                        //Background colors
-                        40 => { self.collection.set_background(color::Black); },
-                        41 => { self.collection.set_background(color::Red); },
-                        42 => { self.collection.set_background(color::Green); },
-                        43 => { self.collection.set_background(color::Yellow); },
-                        44 => { self.collection.set_background(color::Blue); },
-                        45 => { self.collection.set_background(color::Magenta); },
-                        46 => { self.collection.set_background(color::Cyan); },
-                        47 => { self.collection.set_background(color::White); },
-                        49 => { self.collection.set_background(color::White); },
+                          //Background colors
+                          40 => { self.collection.set_background(color::Black); },
+                          41 => { self.collection.set_background(color::Red); },
+                          42 => { self.collection.set_background(color::Green); },
+                          43 => { self.collection.set_background(color::Yellow); },
+                          44 => { self.collection.set_background(color::Blue); },
+                          45 => { self.collection.set_background(color::Magenta); },
+                          46 => { self.collection.set_background(color::Cyan); },
+                          47 => { self.collection.set_background(color::White); },
+                          49 => { self.collection.set_background(color::White); },
 
-                        _ => {}, }
-                      true });
+                          _ => {}, }
+                        true }); }
                     self.write(next) },
 
                 //----------- TRICKY RESIZE -------------

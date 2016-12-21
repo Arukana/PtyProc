@@ -116,6 +116,7 @@ impl Character {
 
 impl fmt::Display for Character {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(format!("\x1B[m").fmt(f));
         if self.attribute.eq(&0)
         .bitand(self.foreground.eq(&color::DEFAULT_FOREGROUND)
         .bitand(self.background.eq(&color::DEFAULT_BACKGROUND)))
@@ -154,8 +155,6 @@ impl fmt::Display for Character {
                          self.background[0],
                          self.background[1],
                          self.background[2]).fmt(f)) }
-        } else {
-            try!(format!("\x1B[m").fmt(f))
         }
         unsafe {
             try!(format!("{}", char::from_u32_unchecked(self.glyph)).fmt(f))

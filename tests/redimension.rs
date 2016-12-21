@@ -188,7 +188,6 @@ vec![b'm', b' ', b'i', b'p', b's', b'u', b'm', b' ', b'd', b'o', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]); }
 
 #[test]
-#[ignore]
 /// fn resize(&mut self) -> Result<()>
 fn hard_redimension()
 { let mut display: Display = Display::from_winszed(SIZE);
