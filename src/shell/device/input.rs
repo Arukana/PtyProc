@@ -1,20 +1,28 @@
-use std::ops::{Index, RangeTo, Deref, DerefMut};
+use std::ops::{Index, IndexMut, RangeTo, Deref, DerefMut};
 use std::fmt;
 use std::mem;
 
 use ::libc;
 
-pub struct Out([libc::c_uchar; 496]);
+pub struct In(pub [libc::c_uchar; 496]);
 
-impl Default for Out {
-    fn default() -> Out {
+impl Default for In {
+    fn default() -> In {
         unsafe {
-            Out(mem::zeroed())
+            In(mem::zeroed())
         }
     }
 }
 
-impl Deref for Out {
+impl Eq for In {}
+
+impl PartialEq for In {
+    fn eq(&self, other: &In) -> bool {
+        self.0.eq(&other.0[..])
+    }
+}
+
+impl Deref for In {
    type Target = [libc::c_uchar];
 
    fn deref<'a>(&'a self) -> &[libc::c_uchar] {
@@ -22,13 +30,13 @@ impl Deref for Out {
    }
 }
 
-impl DerefMut for Out {
+impl DerefMut for In {
    fn deref_mut(&mut self) -> &mut [libc::c_uchar] {
        &mut self.0
    }
 }
 
-impl Index<libc::size_t> for Out {
+impl Index<libc::size_t> for In {
     type Output = libc::c_uchar;
 
     fn index(&self, count: libc::size_t) -> &libc::c_uchar {
@@ -36,7 +44,13 @@ impl Index<libc::size_t> for Out {
     }
 }
 
-impl Index<RangeTo<libc::size_t>> for Out {
+impl IndexMut<libc::size_t> for In {
+    fn index_mut(&mut self, count: libc::size_t) -> &mut libc::c_uchar {
+        &mut self.0[count]
+    }
+}
+
+impl Index<RangeTo<libc::size_t>> for In {
     type Output = [libc::c_uchar];
 
     fn index(&self, range: RangeTo<libc::size_t>) -> &[libc::c_uchar] {
@@ -44,15 +58,15 @@ impl Index<RangeTo<libc::size_t>> for Out {
     }
 }
 
-impl Copy for Out {}
+impl Copy for In {}
 
-impl Clone for Out {
+impl Clone for In {
     fn clone(&self) -> Self {
-        Out(self.0)
+        In(self.0)
     }
 }
 
-impl fmt::Debug for Out {
+impl fmt::Debug for In {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", String::from_utf8_lossy(&self.0) )
     }

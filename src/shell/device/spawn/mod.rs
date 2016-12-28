@@ -9,7 +9,6 @@ use std::{thread, time};
 use ::chan;
 use ::libc;
 use ::pty::prelude as pty;
-use std::fs::File;
 
 #[cfg(feature = "task")]
 pub fn task(tx_task: chan::Sender<BufProc>, pid: libc::pid_t) {
@@ -23,7 +22,7 @@ pub fn task(tx_task: chan::Sender<BufProc>, pid: libc::pid_t) {
 }
 
 pub fn input(tx_in: chan::Sender<(In, libc::size_t)>) {
-    let mut bytes: In = [0u8; 12];
+    let mut bytes: In = In::default();
     while let Some(read) = io::stdin().read(&mut bytes).ok() {
         tx_in.send((bytes, read));
     }

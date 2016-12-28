@@ -2,23 +2,23 @@
 pub mod task;
 pub mod control;
 mod state;
+mod input;
 mod output;
 mod spawn;
 
 use ::chan;
 use ::libc;
 use ::pty::prelude as pty;
-use std::fs::File;
+
 use std::thread;
 
 pub use self::state::DeviceState;
 
+pub use self::input::In;
 pub use self::output::Out;
 
 #[cfg(feature = "task")]
 pub use self::task::BufProc;
-
-pub type In = [libc::c_uchar; 12];
 
 pub type Sig = libc::c_int;
 

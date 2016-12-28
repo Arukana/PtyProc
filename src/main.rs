@@ -19,8 +19,8 @@ fn main() {
             shell.write(text).unwrap();
             shell.flush().unwrap();
         }
-        if let Some(()) = event.is_output_screen()
-        { print!("\x1B[H{}", shell); }
-       // { print!("{}", shell); }
+        if let Some(()) = event.is_output_screen() {
+            print!("\x1B[H{}", shell);
+        }
     }
 }

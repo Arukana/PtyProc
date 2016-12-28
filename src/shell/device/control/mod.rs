@@ -24,22 +24,21 @@ pub struct Control {
 
 impl Control {
     /// The constructor method `new` returns a Control's event from Device.
-    pub fn new(mut buf: In, len: libc::size_t) -> Self {
-        buf.get_mut(len).and_then(|mut elm| Some(*elm = b'\0'));
+    pub fn new(buf: In, len: libc::size_t) -> Self {
         Control {
             buf: buf,
             len: len,
             time: time::now(),
-            operate: Operate::new(&buf, len),
+            operate: Operate::new(buf, len),
         }
     }
 
-    /*  pub fn clone_from_buf(&mut self, buf: In) {
-        self.buf.write(buf);
-        } */
-
-    pub fn ss_mod(&mut self, ss: libc::c_uchar)
-    { self.buf = [b'\x1B', b'O', ss, 0, 0, 0, 0, 0, 0, 0, 0, 0]; } 
+    pub fn ss_mod(&mut self, ss: libc::c_uchar) {
+        self.buf = In::default();
+        self.buf[0] = b'\x1B';
+        self.buf[1] = b'O';
+        self.buf[2] = ss;
+    } 
 
     /// The accessor method `as_slice` returns the Control Event.
     pub fn as_slice(&self) -> &[libc::c_uchar] {

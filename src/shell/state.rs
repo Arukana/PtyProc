@@ -10,6 +10,8 @@ use std::ops::{Add, Sub, BitAnd, Not};
 use ::libc;
 use ::time;
 
+pub use super::device::In;
+
 use super::display::Display;
 use super::device::control::Control;
 
@@ -132,10 +134,10 @@ impl ShellState {
     }
 
     pub fn set_input_keyown(&mut self, key: char) {
+        let mut buf: In = In::default();
         unsafe {
-            let mut buf: [libc::c_uchar; 12] = mem::uninitialized();
-
             let data: [libc::c_uchar; 4] = mem::transmute::<char, [libc::c_uchar; 4]>(key);
+
             buf[0] = data[0];
             buf[1] = data[1];
             buf[2] = data[2];
@@ -177,20 +179,38 @@ impl ShellState {
                   { let (bonjour, coucou) =
                     { catch_numbers(Vec::new(), next) };
                     match coucou
-                    { &[b'M', ref next..] =>
+                    { &[b'M', ..] =>
                       { if out_screen.mouse().3 == false && bonjour[0] > 2
                         { down = None; }
                         else if out_screen.mouse().3 == false && out_screen.mouse().0 == false && out_screen.mouse().1 == false
                         { down = None; }
-                        else if out_screen.mouse().3 == false && (out_screen.mouse().1 == true || out_screen.mouse().0 == true) && bonjour[0] == 0
-                        { down = Some(Control::new([b'\x1B', b'[', b'M', b' ', bonjour[1] as u8 + 32, bonjour[2] as u8 + 32, 0, 0, 0, 0, 0, 0], 6)); }
+                        else if out_screen.mouse().3 == false && (out_screen.mouse().1 == true || out_screen.mouse().0 == true) && bonjour[0] == 0 {
+                            let mut buf: In = In::default();
+
+                            buf[0] = b'\x1B';
+                            buf[1] = b'[';
+                            buf[2] = b'M';
+                            buf[3] = b' ';
+                            buf[4] = bonjour[1] as u8 + 32;
+                            buf[5] = bonjour[2] as u8 + 32;
+                            down = Some(Control::new(buf, 6));
+                        }
                         else if out_screen.mouse().3 == false && out_screen.mouse().0 == true
                         { down = None; }},
-                      &[b'm', ref next..] =>
+                      &[b'm', ..] =>
                       { if out_screen.mouse().0 == false && out_screen.mouse().1 == false
                         { down = None; }
-                        else if out_screen.mouse().1 == true && out_screen.mouse().3 == false && bonjour[0] <= 2
-                        { down = Some(Control::new([b'\x1B', b'[', b'M', b'#', bonjour[1] as u8 + 32, bonjour[2] as u8 + 32, 0, 0, 0, 0, 0, 0], 6)); }
+                        else if out_screen.mouse().1 == true && out_screen.mouse().3 == false && bonjour[0] <= 2 {
+                            let mut buf: In = In::default();
+
+                            buf[0] = b'\x1B';
+                            buf[1] = b'[';
+                            buf[2] = b'M';
+                            buf[3] = b'#';
+                            buf[4] = bonjour[1] as u8 + 32;
+                            buf[5] = bonjour[2] as u8 + 32;
+                            down = Some(Control::new(buf, 6));
+                        }
                         else if out_screen.mouse().0 == true
                         { down = None; }},
                       _ => {}, }},
@@ -200,14 +220,20 @@ impl ShellState {
           { let ss: libc::c_uchar = match down
             { Some(after) =>
               { match after.as_slice()
-                { &[b'\x1B', b'[', b'A', ref next..] => b'A',
-                  &[b'\x1B', b'[', b'B', ref next..] => b'B',
-                  &[b'\x1B', b'[', b'C', ref next..] => b'C',
-                  &[b'\x1B', b'[', b'D', ref next..] => b'D',
+                { &[b'\x1B', b'[', b'A', ..] => b'A',
+                  &[b'\x1B', b'[', b'B', ..] => b'B',
+                  &[b'\x1B', b'[', b'C', ..] => b'C',
+                  &[b'\x1B', b'[', b'D', ..] => b'D',
                   _ => 0, }},
               _ => 0, };
-            if ss > 0
-            { down = Some(Control::new([b'\x1B', b'O', ss, 0, 0, 0, 0, 0, 0, 0, 0, 0], 3)); }}
+            if ss > 0 {
+                let mut buf: In = In::default();
+
+                buf[0] = b'\x1B';
+                buf[1] = b'O';
+                buf[2] = ss;
+                down = Some(Control::new(buf, 3));
+            }}
 
         self.in_down = down;
         if let Some(after) = down {
@@ -258,7 +284,8 @@ println!("");*/
               else
               { let mut buffer: &mut [u8] = &mut tmp[..];
                 buffer.write(&buf[..len]).unwrap(); }
-            { let buffer: &[u8] = &tmp[..]; }}
+            { let buffer: &[u8] = &tmp[..]; }
+            }
 
             out_screen.write(&tmp[..len + self.buffer.1]);
 

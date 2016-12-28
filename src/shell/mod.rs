@@ -99,13 +99,6 @@ impl Shell {
     pub fn write_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.screen.write(buf)
     }
-
-/*    pub fn write_with_color(&self)
-    { self.screen.into_iter().all(|&glyph|
-      { if glyph.get_attributes().has_attributes()
-        { println!("ATTR::{:?} | {:?}", *glyph.get_attributes(), glyph.get_glyph());
-        }
-        true }); }*/
 }
 
 impl Iterator for Shell {
