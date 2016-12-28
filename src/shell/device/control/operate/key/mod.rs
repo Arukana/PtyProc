@@ -189,7 +189,7 @@ impl Key {
 
     pub fn is_c0(&self) -> bool {
         match *self {
-            Key::Char(e @ 0...32) => true,
+            Key::Char(e @ 0...31) => true,
             _ => false,
         }
     }
