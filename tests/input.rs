@@ -10,7 +10,7 @@ fn test_arrow_left()
         Control::new(
             [b'\x1B', b'[', b'D',
             b'\x00',  b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00', b'\x00',
-            ], 2
+            ], 3
         ).is_key().unwrap_or(Key::Esc),
         Key::Left
     );
