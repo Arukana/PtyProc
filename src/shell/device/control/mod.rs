@@ -25,7 +25,7 @@ pub struct Control {
 impl Control {
     /// The constructor method `new` returns a Control's event from Device.
     pub fn new(mut buf: In, len: libc::size_t) -> Self {
-        buf[len] = b'\0';
+        buf.get_mut(len).and_then(|mut elm| Some(*elm = b'\0'));
         Control {
             buf: buf,
             len: len,
