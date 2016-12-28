@@ -175,6 +175,10 @@ impl Key {
         self.eq(&Key::Utf8('\u{0}'))
     }
 
+    pub fn is_backspace(&self) -> bool {
+        self.eq(&Key::Backspace)
+    }
+
     pub fn is_start_heading(&self) -> bool {
         self.eq(&Key::Utf8('\u{1}'))
     }
