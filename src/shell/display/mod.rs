@@ -1059,15 +1059,39 @@ impl Write for Display {
               self.goto_right(tab_width);
               self.write(next) },
 
-            &[u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90', u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF', ref next..] =>
-            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, u2, u3, u4]) }, next) },
-            &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0', u3 @ b'\x80' ... b'\xBF', ref next..] =>
-            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, u2, u3, 0]) }, next) },
-            &[u1 @ b'\xC2' ... b'\xDF', u2 @ b'\x80' ... b'\xBF', ref next..] =>
-            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, u2, 0, 0]) }, next) },
             &[u1, ref next..] =>
-            { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, 0, 0, 0]) }, next) },
-
+            { if u1 & 0b10000000 == 0
+              { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, 0, 0, 0]) }, next) }
+              else if (u1 & 0b11111000) == 0b11110000
+              { match next
+                { &[u2, u3, u4, ref next..] =>
+                  { let mut m = 0u32;
+                    m |= (u1 as u32 & 0x07) << 18;
+                    m |= (u2 as u32 & 0x3F) << 12;
+                    m |= (u3 as u32 & 0x3F) << 6;
+                    m |= u4 as u32 & 0x3F;
+                    self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
+                  _ => Ok(0), }}
+              else if (u1 & 0b11110000) == 0b11100000
+              { match next
+                { &[u2, u3, ref next..] =>
+                  { let mut m = 0u32;
+                    m |= (u1 as u32 & 0x0F) << 12;
+                    m |= (u2 as u32 & 0x3F) << 6;
+                    m |= u3 as u32 & 0x3F;
+                    self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
+                  _ => Ok(0), }}
+              else if (u1 & 0b11100000) == 0b11000000
+              { match next
+                { &[u2, ref next..] =>
+                  { let mut m = 0u32;
+                    m |= (u1 as u32 & 0x3F) << 6;
+                    m |= u2 as u32 & 0x3F;
+                    self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
+                  _ => Ok(0), }}
+              else
+              { Ok(0) }
+            },
         }
     }
 

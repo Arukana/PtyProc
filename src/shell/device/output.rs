@@ -1,4 +1,4 @@
-use std::ops::{Index, RangeTo, Deref, DerefMut};
+use std::ops::{Index, RangeTo, RangeFrom, Range, Deref, DerefMut};
 use std::fmt;
 use std::mem;
 
@@ -40,6 +40,22 @@ impl Index<RangeTo<libc::size_t>> for Out {
     type Output = [libc::c_uchar];
 
     fn index(&self, range: RangeTo<libc::size_t>) -> &[libc::c_uchar] {
+        &self.0[range]
+    }
+}
+
+impl Index<RangeFrom<libc::size_t>> for Out {
+    type Output = [libc::c_uchar];
+
+    fn index(&self, range: RangeFrom<libc::size_t>) -> &[libc::c_uchar] {
+        &self.0[range]
+    }
+}
+
+impl Index<Range<libc::size_t>> for Out {
+    type Output = [libc::c_uchar];
+
+    fn index(&self, range: Range<libc::size_t>) -> &[libc::c_uchar] {
         &self.0[range]
     }
 }

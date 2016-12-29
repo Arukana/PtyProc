@@ -304,9 +304,16 @@ println!("");*/
                       coucou.write(&get[..]).unwrap(); }},
                 None => {}, }}
 
-            { let get: &mut [u8] = buf.deref_mut();
-              { let mut buffer: &mut [u8] = &mut get[..];
-                buffer.write(&[0; 496]).unwrap(); }}
+            else if (&buf[..len]).iter().position(|&i| (i & 0b11110000 == 0b11110000) || (i & 0b11100000 == 0b11100000) || (i & 0b11000000 == 0b11000000)).is_some()
+            { let mut hs = &buf[len-3..len];
+
+              let mut coucou: &mut [u8] = self.buffer.deref_mut();
+              if hs[2] & 0b11000000 == 0b11000000 || hs[2] & 0b11100000 == 0b11100000 || hs[2] & 0b11110000 == 0b11110000
+              { coucou.write(&hs[2..]).unwrap(); }
+              else if hs[1] & 0b11100000 == 0b11100000 || hs[1] & 0b11110000 == 0b11110000
+              { coucou.write(&hs[1..]).unwrap(); }
+              else if hs[0] & 0b11110000 == 0b11110000
+              { coucou.write(&hs[0..]).unwrap(); }}
 
         } else {
             self.out_last = None;
