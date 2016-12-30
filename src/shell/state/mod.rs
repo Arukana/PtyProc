@@ -1,11 +1,12 @@
 pub const DEFAULT_REPEAT: libc::c_long = 1_000i64;
 pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
+mod buf;
 
 use std::fmt;
 use std::mem;
 use std::io::Write;
 use std::ops::BitOr;
-use std::ops::{Add, Sub, BitAnd, Not};
+use std::ops::{Add, Sub, BitAnd, Not, DerefMut};
 
 use ::libc;
 use ::time;
@@ -21,38 +22,7 @@ pub use super::device::{Out, DeviceState};
 pub use super::device::control::operate::key::Key;
 pub use super::device::control::operate::mouse::Mouse;
 
-pub struct Buf([libc::c_uchar; 100], usize);
-impl Default for Buf
-{ fn default() -> Buf
-  { Buf([0u8; 100], 0) }}
-
-use std::ops::{Deref, DerefMut};
-impl Deref for Buf
-{ type Target = [libc::c_uchar];
-  fn deref<'a>(&'a self) -> &[libc::c_uchar]
-  { &self.0 }}
-
-impl DerefMut for Buf
-{ fn deref_mut(&mut self) -> &mut [libc::c_uchar]
-  { &mut self.0 }}
-
-use std::ops::Index;
-impl Index<libc::size_t> for Buf
-{ type Output = libc::c_uchar;
-  fn index(&self, count: libc::size_t) -> &libc::c_uchar
-  { &self.0[count] }}
-
-use std::ops::RangeTo;
-impl Index<RangeTo<libc::size_t>> for Buf
-{ type Output = [libc::c_uchar];
-  fn index(&self, range: RangeTo<libc::size_t>) -> &[libc::c_uchar]
-  { &self.0[range] }}
-
-impl Clone for Buf
-{ fn clone(&self) -> Self
-  { Buf(self.0, self.1) }}
-impl Copy for Buf
-{}
+use self::buf::Buf;
 
 fn catch_numbers<'a>(mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
 { match parse_number!(buf)
