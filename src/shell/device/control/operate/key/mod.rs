@@ -1,4 +1,6 @@
+use std::ops::Shr;
 use std::mem;
+use std::char;
 
 use ::libc;
 
@@ -25,10 +27,47 @@ pub use super::In;
 //           &[b'\x1B', b'[', b'1', b';', b'1', b'0', b'C', ..] => Key::AltShiftRight,
 //           &[b'\x1B', b'[', b'1', b';', b'1', b'0', b'D', ..] => Key::AltShiftLeft,
 
+pub const ENTER: u64 = 0xa;
+pub const TABULATION: u64 = 0x9;
+pub const BACKSPACE: u64 = 0x7f;
+pub const ESCAPE: u64 = 0x1b;
+pub const UP: u64 = 0x415b1b;
+pub const DOWN: u64 = 0x425b1b;
+pub const RIGHT: u64 = 0x435b1b;
+pub const LEFT: u64 = 0x445b1b;
+pub const END: u64 = 0x465b1b;
+pub const HOME: u64 = 0x7e315b1b;
+pub const DELETE: u64 = 0x7e335b1b;
+pub const PAGE_UP: u64 = 0x7e355b1b;
+pub const PAGE_DOWN: u64 = 0x7e365b1b;
+pub const ALT_UP: u64 = 0x41393b311b;
+pub const ALT_DOWN: u64 = 0x42393b311b;
+pub const ALT_RIGHT: u64 = 0x43393b311b;
+pub const ALT_LEFT: u64 = 0x44393b311b;
+pub const FUNCTION_1: u64 = 0x504f5b1b;
+pub const FUNCTION_2: u64 = 0x514f5b1b;
+pub const FUNCTION_3: u64 = 0x524f5b1b;
+pub const FUNCTION_4: u64 = 0x534f5b1b;
+pub const FUNCTION_5: u64 = 0x7e35315b1b;
+pub const FUNCTION_6: u64 = 0x7e37315b1b;
+pub const FUNCTION_7: u64 = 0x7e38315b1b;
+pub const FUNCTION_8: u64 = 0x7e39315b1b;
+pub const FUNCTION_9: u64 = 0x7e30325b1b;
+pub const FUNCTION_10: u64 = 0x7e31325b1b;
+pub const FUNCTION_11: u64 = 0x7e33325b1b;
+pub const FUNCTION_12: u64 = 0x7e34325b1b;
+pub const FUNCTION_13: u64 = 0x50323b315b1b;
+pub const FUNCTION_14: u64 = 0x51323b315b1b;
+pub const FUNCTION_15: u64 = 0x52323b315b1b;
+pub const FUNCTION_16: u64 = 0x53323b315b1b;
+pub const FUNCTION_17: u64 = 0x7e31335b1b;
+pub const FUNCTION_18: u64 = 0x7e32335b1b;
+pub const FUNCTION_19: u64 = 0x7e33335b1b;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Key {
     /// Unicode characters.
-    Char(u32),
+    Char(u64),
     /// Unicode strings.
     Str(In),
 }
@@ -37,78 +76,72 @@ impl Key {
     /// The constructor method `new` returns a parsed Key.
     pub fn new(buf: In, len: libc::size_t) -> Self {
         match &buf[..len] {
-            /// Up.
-            &[b'\x1B', b'[', b'A'] => Key::Char(279165),
-            /// Down.
-            &[b'\x1B', b'[', b'B'] => Key::Char(279166),
-            /// Right.
-            &[b'\x1B', b'[', b'C'] => Key::Char(279167),
-            /// Left.
-            &[b'\x1B', b'[', b'D'] => Key::Char(279168),
-            /// Delete.
-            &[b'\x1B', b'[', b'3', b'~'] => Key::Char(279151126),
-            /// Backspace.
-            &[b'\x7F'] => Key::Char(127),
-            /// Escape.
-            &[b'\x1B'] => Key::Char(27),
-            /// End.
-            &[b'\x1B', b'[', b'F'] => Key::Char(279152126),
-            /// Home.
-            &[b'\x1B', b'[', b'1', b'~'] => Key::Char(279149126),
-            /// Page Up.
-            &[b'\x1B', b'[', b'5', b'~'] => Key::Char(279153126),
-            /// Page Down.
-            &[b'\x1B', b'[', b'6', b'~'] => Key::Char(279154126),
-            /// Function 1.
-            &[b'\x1B', b'O', b'P'] => Key::Char(277980),
-            /// Function 2.
-            &[b'\x1B', b'O', b'Q'] => Key::Char(277981),
-            /// Function 3.
-            &[b'\x1B', b'O', b'R'] => Key::Char(277982),
-            /// Function 4.
-            &[b'\x1B', b'O', b'S'] => Key::Char(277983),
-            /// Function 5.
-            &[b'\x1B', b'[', b'1', b'5', b'~'] => Key::Char(27914953126),
-            /// Function 6.
-            &[b'\x1B', b'[', b'1', b'7', b'~'] => Key::Char(27914955126),
-            /// Function 7.
-            &[b'\x1B', b'[', b'1', b'8', b'~'] => Key::Char(27914956126),
-            /// Function 8.
-            &[b'\x1B', b'[', b'1', b'9', b'~'] => Key::Char(27914957126),
-            /// Function 9.
-            &[b'\x1B', b'[', b'2', b'0', b'~'] => Key::Char(27915048126),
-            /// Function 10.
-            &[b'\x1B', b'[', b'2', b'1', b'~'] => Key::Char(27915049126),
-            /// Function 11.
-            &[b'\x1B', b'[', b'2', b'3', b'~'] => Key::Char(27915051126),
-            /// Function 12.
-            &[b'\x1B', b'[', b'2', b'4', b'~'] => Key::Char(27915052126),
-            /// Function 13.
-            &[b'\x1B', b'[', b'2', b'5', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'P'] => Key::Char(27915053126),
-            /// Function 14.
-            &[b'\x1B', b'[', b'2', b'6', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'Q'] => Key::Char(27915054126),
-            /// Function 15.
-            &[b'\x1B', b'[', b'2', b'8', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'R'] => Key::Char(27915056126),
-            /// Function 16.
-            &[b'\x1B', b'[', b'2', b'9', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'S'] => Key::Char(27915057126),
-            /// Function 17.
-            &[b'\x1B', b'[', b'3', b'1', b'~'] => Key::Char(27915149126),
-            /// Function 18.
-            &[b'\x1B', b'[', b'3', b'2', b'~'] => Key::Char(27915150126),
-            /// Function 19.
-            &[b'\x1B', b'[', b'3', b'3', b'~'] => Key::Char(27915151126),
-            /// Tabulation.
-            &[b'\t'] => Key::Char(9),
             /// Enter.
-            &[b'\n'] | &[b'\r'] | &[b'\n', b'\r'] => Key::Char(10),
+            &[b'\n'] | &[b'\r'] | &[b'\n', b'\r'] => Key::Char(ENTER),
+            /// Up.
+            &[b'\x1B', b'[', b'A'] => Key::Char(UP),
+            /// Down.
+            &[b'\x1B', b'[', b'B'] => Key::Char(DOWN),
+            /// Right.
+            &[b'\x1B', b'[', b'C'] => Key::Char(RIGHT),
+            /// Left.
+            &[b'\x1B', b'[', b'D'] => Key::Char(LEFT),
+            /// End.
+            &[b'\x1B', b'[', b'F'] => Key::Char(END),
+            /// Home.
+            &[b'\x1B', b'[', b'1', b'~'] => Key::Char(HOME),
+            /// Delete.
+            &[b'\x1B', b'[', b'3', b'~'] => Key::Char(DELETE),
+            /// Page Up.
+            &[b'\x1B', b'[', b'5', b'~'] => Key::Char(PAGE_UP),
+            /// Page Down.
+            &[b'\x1B', b'[', b'6', b'~'] => Key::Char(PAGE_DOWN),
             /// Alt Up.
-            &[b'\x1B', b'[', b'1', b';', b'9', b'A'] => Key::Char(27279165),
+            &[b'\x1B', b'[', b'1', b';', b'9', b'A'] => Key::Char(ALT_UP),
             //// Alt Down.
-            &[b'\x1B', b'[', b'1', b';', b'9', b'B'] => Key::Char(27279166),
+            &[b'\x1B', b'[', b'1', b';', b'9', b'B'] => Key::Char(ALT_DOWN),
             /// Alt Right.
-            &[b'\x1B', b'[', b'1', b';', b'9', b'C'] => Key::Char(27279167),
+            &[b'\x1B', b'[', b'1', b';', b'9', b'C'] => Key::Char(ALT_RIGHT),
             /// Alt Left.
-            &[b'\x1B', b'[', b'1', b';', b'9', b'D'] => Key::Char(27279168),
+            &[b'\x1B', b'[', b'1', b';', b'9', b'D'] => Key::Char(ALT_LEFT),
+            /// Function 1.
+            &[b'\x1B', b'O', b'P'] => Key::Char(FUNCTION_1),
+            /// Function 2.
+            &[b'\x1B', b'O', b'Q'] => Key::Char(FUNCTION_2),
+            /// Function 3.
+            &[b'\x1B', b'O', b'R'] => Key::Char(FUNCTION_3),
+            /// Function 4.
+            &[b'\x1B', b'O', b'S'] => Key::Char(FUNCTION_4),
+            /// Function 5.
+            &[b'\x1B', b'[', b'1', b'5', b'~'] => Key::Char(FUNCTION_5),
+            /// Function 6.
+            &[b'\x1B', b'[', b'1', b'7', b'~'] => Key::Char(FUNCTION_6),
+            /// Function 7.
+            &[b'\x1B', b'[', b'1', b'8', b'~'] => Key::Char(FUNCTION_7),
+            /// Function 8.
+            &[b'\x1B', b'[', b'1', b'9', b'~'] => Key::Char(FUNCTION_8),
+            /// Function 9.
+            &[b'\x1B', b'[', b'2', b'0', b'~'] => Key::Char(FUNCTION_9),
+            /// Function 10.
+            &[b'\x1B', b'[', b'2', b'1', b'~'] => Key::Char(FUNCTION_10),
+            /// Function 11.
+            &[b'\x1B', b'[', b'2', b'3', b'~'] => Key::Char(FUNCTION_11),
+            /// Function 12.
+            &[b'\x1B', b'[', b'2', b'4', b'~'] => Key::Char(FUNCTION_12),
+            /// Function 13.
+            &[b'\x1B', b'[', b'2', b'5', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'P'] => Key::Char(FUNCTION_13),
+            /// Function 14.
+            &[b'\x1B', b'[', b'2', b'6', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'Q'] => Key::Char(FUNCTION_14),
+            /// Function 15.
+            &[b'\x1B', b'[', b'2', b'8', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'R'] => Key::Char(FUNCTION_15),
+            /// Function 16.
+            &[b'\x1B', b'[', b'2', b'9', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'S'] => Key::Char(FUNCTION_16),
+            /// Function 17.
+            &[b'\x1B', b'[', b'3', b'1', b'~'] => Key::Char(FUNCTION_17),
+            /// Function 18.
+            &[b'\x1B', b'[', b'3', b'2', b'~'] => Key::Char(FUNCTION_18),
+            /// Function 19.
+            &[b'\x1B', b'[', b'3', b'3', b'~'] => Key::Char(FUNCTION_19),
 
             &[u1 @ b'\xF0' ... b'\xF4',
               u2 @ b'\x8F' ... b'\x90',
@@ -126,65 +159,74 @@ impl Key {
     /// The constructor method `from_utf8` returns a UTF-8 parsed Key.
     pub fn from_utf8(buf: [libc::c_uchar; 4]) -> Self {
         unsafe {
-            let i: libc::c_uint = mem::transmute::<[libc::c_uchar; 4], libc::c_uint>(buf);
+            let i: libc::c_uint = mem::transmute::<[libc::c_uchar; 4], u32>(buf);
 
-            Key::Char(i)
+            Key::Char(i as u64)
+        }
+    }
+
+    pub fn is_utf8(&self) -> Option<char> {
+        match *self {
+            Key::Char(e) if e.shr(&32u64).ne(&0) => unsafe {
+                Some(char::from_u32_unchecked(e as u32))
+            },
+            _ => None,
         }
     }
 
     /// The accessor method `is_up` returns an Option for the Up Key.
     pub fn is_up(&self) -> bool {
-        self.eq(&Key::Char(279165))
+        self.eq(&Key::Char(UP))
     }
 
     /// The accessor method `is_down` returns an Option for the down Key.
     pub fn is_down(&self) -> bool {
-        self.eq(&Key::Char(279166))
+        self.eq(&Key::Char(DOWN))
     }
 
     /// The accessor method `is_right` returns an Option for the right Key.
     pub fn is_right(&self) -> bool {
-        self.eq(&Key::Char(279167))
+        self.eq(&Key::Char(RIGHT))
     }
 
     /// The accessor method `is_left` returns an Option for the left Key.
     pub fn is_left(&self) -> bool {
-        self.eq(&Key::Char(279168))
+        self.eq(&Key::Char(LEFT))
     }
 
     /// The accessor method `is_delete` returns an Option for the delete Key.
     pub fn is_delete(&self) -> bool {
-        self.eq(&Key::Char(279151126))
+        self.eq(&Key::Char(DELETE))
     }
 
     /// The accessor method `is_backspace` returns an Option for the backspace Key.
     pub fn is_backspace(&self) -> bool {
-        self.eq(&Key::Char(127))
+        self.eq(&Key::Char(BACKSPACE))
     }
 
     /// The accessor method `is_escape` returns an Option for the delete Key.
     pub fn is_escape(&self) -> bool {
-        self.eq(&Key::Char(27))
+        self.eq(&Key::Char(ESCAPE))
     }
 
     /// The accessor method `is_end` returns an Option for the delete Key.
     pub fn is_end(&self) -> bool {
-        self.eq(&Key::Char(279152126))
+        self.eq(&Key::Char(END))
     }
 
     /// The accessor method `is_home` returns an Option for the delete Key.
     pub fn is_home(&self) -> bool {
-        self.eq(&Key::Char(279149126))
+        self.eq(&Key::Char(HOME))
     }
 
     /// The accessor method `is_pageup` returns an Option for the Page Up Key.
     pub fn is_pageup(&self) -> bool {
-        self.eq(&Key::Char(279153126))
+        self.eq(&Key::Char(PAGE_UP))
     }
 
     /// The accessor method `is_pagedown` returns an Option for the Page Down Key.
     pub fn is_pagedown(&self) -> bool {
-        self.eq(&Key::Char(279154126))
+        self.eq(&Key::Char(PAGE_DOWN))
     }
 
     pub fn is_c0(&self) -> bool {
@@ -227,16 +269,16 @@ impl Key {
     }
 
     pub fn is_horizontal_tabulation(&self) -> bool {
-        self.eq(&Key::Char(9))
+        self.eq(&Key::Char(TABULATION))
     }
 
     /// The accessor method `is_enter` returns an Option for the Enter Key.
     pub fn is_enter(&self) -> bool {
-        self.eq(&Key::Char(10))
+        self.eq(&Key::Char(ENTER))
     }
 
     pub fn is_line_feed(&self) -> bool {
-        self.eq(&Key::Char(10))
+        self.eq(&Key::Char(ENTER))
     }
 
     pub fn is_vertical_tabulation(&self) -> bool {
