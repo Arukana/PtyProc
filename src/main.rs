@@ -13,7 +13,8 @@ fn main() {
         None,
         None,
         None,
-        ).unwrap();
+        None,
+    ).unwrap();
     while let Some(event) = shell.next() {
         if let Some(ref text) = event.is_input_slice() {
             shell.write(text).unwrap();

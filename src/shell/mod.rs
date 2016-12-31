@@ -41,16 +41,18 @@ impl Shell {
       repeat: Option<i64>,
       interval: Option<i64>,
       command: Option<&'static str>,
+      windows: Option<Winszed>,
   ) -> Result<Self> {
       unsafe {
-        let winsz: Winszed = Winszed::default();
+        let winsz: Winszed = windows.unwrap_or_default();
         libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
         match pty::Fork::from_ptmx() {
               Err(cause) => Err(ShellError::ForkFail(cause)),
               Ok(fork) => match fork {
-                  pty::Fork::Child(ref slave) =>
-                    { libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
-                      slave.exec(command.unwrap_or("/bin/zsh")) },
+                  pty::Fork::Child(ref slave) => {
+                      libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
+                      slave.exec(command.unwrap_or("/bin/zsh"))
+                  },
                   pty::Fork::Parent(pid, master) => {
                       mem::forget(fork);
                       Ok(Shell {
