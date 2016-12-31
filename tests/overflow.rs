@@ -15,6 +15,7 @@ fn test_overflow() {
             None,
             None,
             Some("/bin/bash"),
+            None,
         ).unwrap();
 
         env::set_var("HOME", "/tmp");
