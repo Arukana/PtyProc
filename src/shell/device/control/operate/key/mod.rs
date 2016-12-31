@@ -167,7 +167,7 @@ impl Key {
 
     pub fn is_utf8(&self) -> Option<char> {
         match *self {
-            Key::Char(e) if e.shr(&32u64).ne(&0) => unsafe {
+            Key::Char(e) if e.shr(&32u64).eq(&0) => unsafe {
                 Some(char::from_u32_unchecked(e as u32))
             },
             _ => None,
