@@ -40,6 +40,7 @@ fn test_proc_next()
         None,
         None,
         Some("/bin/bash"),
+        None,
     ).unwrap();
 
     shell.set_window_size_with(&SIZE);
