@@ -127,14 +127,7 @@ impl Display {
         let mut screen: Vec<libc::c_uchar> = Vec::new();
         self.screen.get_ref().iter().all(|control: &Character| unsafe {
             let buf: [u8; 4] = mem::transmute::<char, [u8; 4]>(control.get_glyph());
-            let mut len = 0;
-            {0..4}.all(|_|
-            { if !buf[len].eq(&0)
-              { len += 1;
-                true }
-              else
-              { false }});
-            screen.extend_from_slice(&buf[..len]);
+            screen.extend_from_slice(&buf[..1]);
             true
         });
         screen
@@ -1071,7 +1064,7 @@ impl Write for Display {
                     m |= (u3 as u32 & 0x3F) << 6;
                     m |= u4 as u32 & 0x3F;
                     self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
-                  _ => Ok(0), }}
+                  _ => self.write(next), }}
               else if (u1 & 0b11110000) == 0b11100000
               { match next
                 { &[u2, u3, ref next..] =>
@@ -1080,7 +1073,7 @@ impl Write for Display {
                     m |= (u2 as u32 & 0x3F) << 6;
                     m |= u3 as u32 & 0x3F;
                     self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
-                  _ => Ok(0), }}
+                  _ => self.write(next), }}
               else if (u1 & 0b11100000) == 0b11000000
               { match next
                 { &[u2, ref next..] =>
@@ -1088,9 +1081,9 @@ impl Write for Display {
                     m |= (u1 as u32 & 0x3F) << 6;
                     m |= u2 as u32 & 0x3F;
                     self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
-                  _ => Ok(0), }}
+                  _ => self.write(next), }}
               else
-              { Ok(0) }
+              { self.write(next) }
             },
         }
     }

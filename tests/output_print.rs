@@ -114,11 +114,11 @@ fn test_unicode_prints()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
 
-  // Print "Léopard
+  // Print "L€opard
   //        "
-  assert_eq!(display.write(b"L\xE9opard\n\r").ok(), Some(7usize));
+  assert_eq!(display.write(b"L\xE2\x82\xACopard\n\r").ok(), Some(7usize));
   assert_eq!(display.into_bytes(),
-      vec![b'L', b'\xE9', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
+      vec![b'L', b'\xAC', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
@@ -130,7 +130,7 @@ fn test_unicode_prints()
   // Print "hey!"
   assert_eq!(display.write(b"hey!").ok(), Some(4usize));
   assert_eq!(display.into_bytes(),
-      vec![b'L', b'\xE9', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
+      vec![b'L', b'\xAC', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
            b'h', b'e', b'y', b'!', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
@@ -142,7 +142,7 @@ fn test_unicode_prints()
   // Goto::(8, 7), then Print "A"
   assert_eq!(display.write(b"\x1B[8;9HA").ok(), Some(1usize));
   assert_eq!(display.into_bytes(),
-      vec![b'L', b'\xE9', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
+      vec![b'L', b'\xAC', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
            b'h', b'e', b'y', b'!', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
