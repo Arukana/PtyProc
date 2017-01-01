@@ -668,7 +668,7 @@ impl fmt::Display for Display
         disp.push('\n');
         true
         });
-    write!(f, "{}", disp) }}
+    write!(f, "{}", &disp[..disp.len().checked_sub(1).unwrap_or_default()]) }}
 
 impl Write for Display {
     /// The method `write` from trait `io::Write` inserts a new list of terms
