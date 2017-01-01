@@ -44,8 +44,7 @@ impl Shell {
       windows: Option<Winszed>,
   ) -> Result<Self> {
       unsafe {
-        let winsz: Winszed = windows.unwrap_or_default();
-        libc::ioctl(0, libc::TIOCGWINSZ, &winsz);
+        let winsz: Winszed = windows.unwrap_or_else(|| Winszed::new(libc::STDIN_FILENO).unwrap());
         match pty::Fork::from_ptmx() {
               Err(cause) => Err(ShellError::ForkFail(cause)),
               Ok(fork) => match fork {
@@ -61,7 +60,7 @@ impl Shell {
                           speudo: master,
                           device: Device::from_speudo(master, libc::getpid()),
                           state: ShellState::new(repeat, interval),
-                          screen: Display::new(libc::STDOUT_FILENO).unwrap(),
+                          screen: Display::from_winszed(winsz),
                       })
                   },
               }

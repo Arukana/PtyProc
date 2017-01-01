@@ -658,9 +658,16 @@ impl<'a> IntoIterator for &'a Display {
 impl fmt::Display for Display
 { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
   { let mut disp: String = String::new();
-    self.into_iter().all(|character|
-    { disp.push_str(format!("{}", character).as_str());
+      let width: usize = self.size.get_col() as usize;
+    self.into_iter().as_slice()
+        .chunks(width)
+        .all(|characters| {
+        characters.iter().all(|character| {
+     disp.push_str(format!("{}", character).as_str());
       true });
+        disp.push('\n');
+        true
+        });
     write!(f, "{}", disp) }}
 
 impl Write for Display {
