@@ -66,6 +66,16 @@ impl Winszed {
         &mut self.ws_row
     }
 
+    /// The accessor function `get_xpixel` returns the horizontal size.
+    pub fn get_xpixel(&self) -> libc::c_uint {
+        self.ws_xpixel as libc::c_uint
+    }
+
+    /// The accessor function `get_ypixel` returns the vertical size.
+    pub fn get_ypixel(&self) -> libc::c_uint {
+        self.ws_ypixel as libc::c_uint
+    }
+
     /// The method `from_winsized` changes the window size.
     #[allow(dead_code)]
     pub fn from_winsized(fd: libc::c_int, winsize: &Winszed) -> Result<()> {
