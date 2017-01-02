@@ -661,10 +661,17 @@ impl<'a> IntoIterator for &'a Display {
 impl fmt::Display for Display
 { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
   { let mut disp: String = String::new();
-    self.into_iter().all(|character|
-    { disp.push_str(format!("{}", character).as_str());
+      let width: usize = self.size.get_col() as usize;
+    self.into_iter().as_slice()
+        .chunks(width)
+        .all(|characters| {
+        characters.iter().all(|character| {
+     disp.push_str(format!("{}", character).as_str());
       true });
-    write!(f, "{}", disp) }}
+        disp.push('\n');
+        true
+        });
+    write!(f, "{}", &disp[..disp.len().checked_sub(1).unwrap_or_default()]) }}
 
 impl Write for Display {
     /// The method `write` from trait `io::Write` inserts a new list of terms
