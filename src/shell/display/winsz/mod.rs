@@ -36,12 +36,18 @@ impl Winszed {
 
     /// The accessor function `get_row` returns the number of rows.
     pub fn get_row(&self) -> libc::size_t {
-        self.ws_row as libc::size_t
+      if self.ws_col.gt(&0)
+      { self.ws_row as libc::size_t }
+      else
+      { 1 }
     }
 
     /// The accessor function `get_col` returns the number of columns.
     pub fn get_col(&self) -> libc::size_t {
-        self.ws_col as libc::size_t
+      if self.ws_col.gt(&0)
+      { self.ws_col as libc::size_t }
+      else
+      { 1 }
     }
 
     /// The accessor function `get_irow` returns the number of rows.
