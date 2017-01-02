@@ -677,7 +677,8 @@ impl Write for Display {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match buf {
+      if self.size.get_row().gt(&0).bitand(self.size.get_col().gt(&0))
+      { match buf {
             &[] => 
               { if self.show_cursor
                 { self.color_cursor(); }
@@ -1095,7 +1096,9 @@ impl Write for Display {
               else
               { self.write(next) }
             },
-        }
+        }}
+        else
+        { Ok(0) }
     }
 
     fn flush(&mut self) -> io::Result<()> {
