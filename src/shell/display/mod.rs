@@ -227,8 +227,8 @@ impl Display {
             else
             { size.ws_col as usize - 1 };
             let y = self.oob.1;
-            self.goto_coord(x, y); }}
-          self.size = *size;
+            self.goto_coord(x, y); }
+          self.size = *size; }
       
     }
 
