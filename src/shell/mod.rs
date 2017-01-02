@@ -77,14 +77,15 @@ impl Shell {
         &self.screen
     }
 
-    /// The mutator method `set_window_size` redimentionnes the window
-    /// with a argument size.
-    pub fn set_window_size_with(&mut self, size: &Winszed) {
-        self.screen.set_window_size(size);
-        unsafe {
-            libc::ioctl(self.speudo.as_raw_fd(), libc::TIOCSWINSZ, size);
-            libc::kill(self.pid, libc::SIGWINCH);
-        }
+    /// The mutator method `write_screen` set a buffer to the display
+    /// without needing to print it
+    pub fn write_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.screen.write(buf)
+    }
+
+    /// The accessor method `get_window_size` returns the window size.
+    pub fn get_window_size(&self) -> &Winszed {
+        self.screen.get_window_size()
     }
 
     /// The mutator method `set_window_size` redimentionnes the window
@@ -95,10 +96,14 @@ impl Shell {
         }
     }
 
-    /// The mutator method `write_screen` set a buffer to the display
-    /// without needing to print it
-    pub fn write_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.screen.write(buf)
+    /// The mutator method `set_window_size` redimentionnes the window
+    /// with a argument size.
+    pub fn set_window_size_with(&mut self, size: &Winszed) {
+        self.screen.set_window_size(size);
+        unsafe {
+            libc::ioctl(self.speudo.as_raw_fd(), libc::TIOCSWINSZ, size);
+            libc::kill(self.pid, libc::SIGWINCH);
+        }
     }
 }
 
