@@ -154,7 +154,8 @@ impl Display {
     }
 
     pub fn resize_with(&mut self, size: &Winszed) {
-        if self.size.ws_row < size.ws_row
+      if size.ws_row.gt(&0).bitand(size.ws_col.gt(&0))
+      { if self.size.ws_row < size.ws_row
           { {self.size.ws_row..size.ws_row}.all(|i|
             { self.newline.push((self.size.get_col() - 1, i as usize));
               true });
@@ -226,7 +227,7 @@ impl Display {
             else
             { size.ws_col as usize - 1 };
             let y = self.oob.1;
-            self.goto_coord(x, y); }
+            self.goto_coord(x, y); }}
           self.size = *size;
       
     }
@@ -526,10 +527,12 @@ impl Display {
         self.scroll_up(x);
         self.goto_begin_row();
         { let pos = self.screen.position();
-          self.goto(pos - 1); }}
+          if pos.gt(&0)
+          { self.goto(pos - 1); }}}
       else
       { let pos = self.screen.position();
-        self.goto(pos - 1); }
+        if pos.gt(&0)
+        { self.goto(pos - 1); }}
       self.screen.write_with_color(first, self.collection).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
 
     pub fn catch_numbers<'a>(&self, mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
@@ -674,7 +677,8 @@ impl Write for Display {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match buf {
+      if self.size.get_row().gt(&0).bitand(self.size.get_col().gt(&0))
+      { match buf {
             &[] => 
               { if self.show_cursor
                 { self.color_cursor(); }
@@ -1092,7 +1096,9 @@ impl Write for Display {
               else
               { self.write(next) }
             },
-        }
+        }}
+        else
+        { Ok(0) }
     }
 
     fn flush(&mut self) -> io::Result<()> {

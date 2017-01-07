@@ -274,8 +274,9 @@ println!("");*/
                       coucou.write(&get[..]).unwrap(); }},
                 None => {}, }}
 
-            else if (&buf[..len]).iter().position(|&i| (i & 0b11110000 == 0b11110000) || (i & 0b11100000 == 0b11100000) || (i & 0b11000000 == 0b11000000)).is_some()
+            else if len.ge(&3) && (&buf[..len]).iter().position(|&i| (i & 0b11110000 == 0b11110000) || (i & 0b11100000 == 0b11100000) || (i & 0b11000000 == 0b11000000)).is_some()
             { let mut hs = &buf[len-3..len];
+              self.buffer.1 = 3;
 
               let mut coucou: &mut [u8] = self.buffer.deref_mut();
               if hs[2] & 0b11000000 == 0b11000000 || hs[2] & 0b11100000 == 0b11100000 || hs[2] & 0b11110000 == 0b11110000
