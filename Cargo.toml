@@ -1,11 +1,12 @@
 [package]
 name = "pty-proc"
-version = "0.0.1"
+version = "0.1.0"
 authors = [
   "adjivas <adjivas@users.noreply.github.com>",
   "Jeremy PEPIN <jpepin@student.42.fr>"
 ]
 keywords = ["pty", "shell", "mode", "proc"]
+license = "GPL-3.0"
 
 [[bin]]
 name = "pty-proc"
