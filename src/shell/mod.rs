@@ -40,7 +40,7 @@ impl Shell {
   pub fn new (
       repeat: Option<i64>,
       interval: Option<i64>,
-      command: Option<&'static str>,
+      command: Option<&str>,
       windows: Option<Winszed>,
   ) -> Result<Self> {
       unsafe {
