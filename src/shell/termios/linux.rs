@@ -7,9 +7,9 @@ use std::mem;
 pub use super::err::{TermiosError, Result};
 
 pub struct Termios {
-  fd: libc::c_int,
+  pub fd: libc::c_int,
   /// Save the original configuration of terminal.
-  config: libc::termios,
+  pub config: libc::termios,
 }
 
 impl Termios {

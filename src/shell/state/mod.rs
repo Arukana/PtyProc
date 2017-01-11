@@ -35,7 +35,7 @@ fn catch_numbers<'a>(mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::si
     _ =>
       { (acc, buf) }, }}
 
-#[derive(Copy, Clone)]
+#[derive(Default, Copy, Clone)]
 pub struct ShellState {
     /// The time limit required for a repetition.
     repeat: libc::c_long,
