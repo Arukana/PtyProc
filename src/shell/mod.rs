@@ -148,20 +148,3 @@ impl Drop for Shell {
         }
     }
 }
-
-impl Default for Shell {
-    fn default() -> Shell {
-        unsafe {
-            let master: pty::Master = mem::zeroed();
-
-            Shell {
-                pid: 0,
-                config: mem::zeroed(),
-                speudo: master,
-                device: Device::from_speudo(master, 0),
-                state: ShellState::default(),
-                screen: Display::default(),
-            }
-        }
-    }
-}
