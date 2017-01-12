@@ -658,6 +658,26 @@ impl<'a> IntoIterator for &'a Display {
     }
 }
 
+impl Default for Display {
+    fn default() -> Display {
+        Display {
+            save_position: (0, 0),
+            save_terminal: None,
+            show_cursor: false,
+            mouse_handle: (false, false, false, false),
+            ss_mod: false,
+            newline: Vec::new(),
+            region: (0, 0),
+            collection: Character::default(),
+            oob: (0, 0),
+            line_wrap: false,
+            size: Winszed::default(),
+            screen: Cursor::new(Vec::new()),
+            bell: 0,
+        }
+    }
+}
+
 impl fmt::Display for Display
 { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
   { let mut disp: String = String::new();
