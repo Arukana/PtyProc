@@ -12,7 +12,7 @@ use ::libc;
 use self::attribute::Attribute;
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct Character {
     /// Attribute.
     attribute: libc::c_uchar,
