@@ -1,7 +1,6 @@
 pub mod attribute;
 pub mod color;
 
-use std::io::{self, Write};
 use std::ops::BitAnd;
 use std::ops::Not;
 use std::fmt;
@@ -167,8 +166,8 @@ impl From<char> for Character {
     fn from(glyph: char) -> Character {
         Character {
            attribute: 0,
-           foreground: color::Black,
-           background: color::White,
+           foreground: color::BLACK,
+           background: color::WHITE,
            glyph: glyph as libc::c_uint,
         }
     }

@@ -231,7 +231,7 @@ impl Key {
 
     pub fn is_c0(&self) -> bool {
         match *self {
-            Key::Char(e @ 0...31) => true,
+            Key::Char(e @ 0...31) => e.eq(&e),
             _ => false,
         }
     }
@@ -367,7 +367,7 @@ impl Key {
 
     pub fn is_c1(&self) -> bool {
         match *self {
-            Key::Char(e @ 128...159) => true,
+            Key::Char(e @ 128...159) => e.eq(&e),
             _ => false,
         }
     }

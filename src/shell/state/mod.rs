@@ -234,12 +234,8 @@ impl ShellState {
     /// The mutator method `set_output` update the both `out_text`
     /// and `out_screen` variable.
     pub fn set_output(&mut self, out_screen: &mut Display, entry: Option<(Out, libc::size_t)>) {
-        if let Some((mut buf, len)) = entry {
+        if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
-
-/*print!("BUF::");
-{0..len}.all(|i| { print!(" {} {} |", if buf[i] > 32 { buf[i] as char } else { ' ' }, buf[i]); true});
-println!("");*/
 
             let mut tmp = [0u8; 596];
             let seeker = self.buffer.1;
@@ -254,10 +250,9 @@ println!("");*/
               else
               { let mut buffer: &mut [u8] = &mut tmp[..];
                 buffer.write(&buf[..len]).unwrap(); }
-            { let buffer: &[u8] = &tmp[..]; }
             }
 
-            out_screen.write(&tmp[..len + self.buffer.1]);
+            let _ = out_screen.write(&tmp[..len + self.buffer.1]);
 
             { let hey: &mut [u8] = self.buffer.deref_mut();
               { let mut buffer: &mut [u8] = &mut hey[..];
@@ -275,7 +270,7 @@ println!("");*/
                 None => {}, }}
 
             else if len.ge(&3) && (&buf[..len]).iter().position(|&i| (i & 0b11110000 == 0b11110000) || (i & 0b11100000 == 0b11100000) || (i & 0b11000000 == 0b11000000)).is_some()
-            { let mut hs = &buf[len-3..len];
+            { let hs = &buf[len-3..len];
               self.buffer.1 = 3;
 
               let mut coucou: &mut [u8] = self.buffer.deref_mut();

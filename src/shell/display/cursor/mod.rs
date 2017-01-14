@@ -1,10 +1,6 @@
-use ::std;
-use ::libc;
-
-use std::io::{self, Write};
+use std::io::{self};
 
 use super::character::Character;
-use super::character::attribute::Attribute;
 
 #[derive(Debug, Clone)]
 pub struct Cursor<T> {

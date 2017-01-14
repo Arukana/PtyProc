@@ -14,7 +14,6 @@
 #![cfg_attr(not(any(feature = "lints", feature = "nightly")), deny())]
 #![deny(
     unused_import_braces,
-    blacklisted_name,
 )]
 
 #[macro_use(chan_select)] extern crate chan;

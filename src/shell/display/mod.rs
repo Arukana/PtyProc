@@ -3,7 +3,7 @@ pub mod winsz;
 pub mod cursor;
 pub mod character;
 
-use std::ops::{BitOr, BitAnd, Add, Sub, Mul, Not};
+use std::ops::{BitAnd, Add, Sub, Mul, Not};
 use std::io::{self, Write};
 use std::fmt;
 use std::str;
@@ -185,7 +185,7 @@ impl Display {
             { Some(get) =>
                 { if self.oob.1.ge(&(size.ws_row as usize))
                   { let x = self.size.get_col() - 1;
-                    self.goto_coord(x, (size.ws_row as usize) - 1); }
+                    let _ = self.goto_coord(x, (size.ws_row as usize) - 1); }
                   match self.size.row_by_col().checked_sub(get)
                   { Some(start) => { self.screen.get_mut().drain(start..); },
                     None => {}, }},
@@ -207,7 +207,7 @@ impl Display {
             self.size = *size;
             let x = self.oob.0;
             let y = self.oob.1;
-            self.goto_coord(x, y); }
+            let _ = self.goto_coord(x, y); }
           else if self.size.ws_col > size.ws_col
           { let col = self.size.ws_col;
             let row = size.ws_row;
@@ -227,7 +227,7 @@ impl Display {
             else
             { size.ws_col as usize - 1 };
             let y = self.oob.1;
-            self.goto_coord(x, y); }}
+            let _ = self.goto_coord(x, y); }}
           self.size = *size;
       
     }
@@ -247,7 +247,7 @@ impl Display {
 
     /// The method `goto_home` moves the cursor to the top left of the output screen.
     pub fn goto_home(&mut self) -> io::Result<libc::size_t>
-    { self.goto(0);
+    { let _ = self.goto(0);
       self.oob = (0, 0);
       Ok(0) }
 
@@ -256,12 +256,12 @@ impl Display {
     { let col = self.size.get_col();
       let pos = self.screen.position();
       if self.oob.1 >= mv
-      { self.goto(pos.sub(&((col.mul(&mv)))));
+      { let _ = self.goto(pos.sub(&((col.mul(&mv)))));
         self.oob.1 = self.oob.1.sub(&mv); }
       else
       { self.oob.1 = 0;
         let x = self.oob.0;
-        self.goto_coord(x, 0); }
+        let _ = self.goto_coord(x, 0); }
       Ok(0) }
 
     /// The method `goto_down` moves the cursor down.
@@ -270,12 +270,12 @@ impl Display {
       let col = self.size.get_col();
       let pos = self.screen.position();
       if self.oob.1 + mv <= row - 1
-      { self.goto(pos.add(&(col.mul(&mv))));
+      { let _ = self.goto(pos.add(&(col.mul(&mv))));
         self.oob.1 = self.oob.1.add(&mv); }
       else
       { self.oob.1 = row - 1;
         let x = self.oob.0;
-        self.goto_coord(x, row - 1); }
+        let _ = self.goto_coord(x, row - 1); }
       Ok(0) }
 
     /// The method `goto_right` moves the cursor to its right.
@@ -283,32 +283,31 @@ impl Display {
     { let col = self.size.get_col();
       let pos = self.screen.position();
       if self.oob.0 + mv <= col - 1
-      { self.goto(pos.add(&mv));
+      { let _ = self.goto(pos.add(&mv));
         self.oob.0 = self.oob.0.add(&mv); }
       else
-      { self.goto_end_row(); }
+      { let _ = self.goto_end_row(); }
       Ok(0) }
 
     pub fn goto_left(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
-    { let col = self.size.get_col();
-      let pos = self.screen.position();
+    { let pos = self.screen.position();
       if self.oob.0 >= mv
-      { self.goto(pos.sub(&mv));
+      { let _ = self.goto(pos.sub(&mv));
         self.oob.0 = self.oob.0.sub(&mv); }
       else
-      { self.goto_begin_row(); }
+      { let _ = self.goto_begin_row(); }
       Ok(0) }
 
     /// The method `goto_begin_row` moves the cursor to the beginning of the row
     pub fn goto_begin_row(&mut self)
     { let y = self.oob.1;
-      self.goto_coord(0, y); }
+      let _ = self.goto_coord(0, y); }
 
     /// The method `goto_end_row` moves the cursor to the end of the row
     pub fn goto_end_row(&mut self)
     { let x = self.size.get_col() - 1;
       let y = self.oob.1;
-      self.goto_coord(x, y); }
+      let _ = self.goto_coord(x, y); }
 
     /// The method `goto_coord` moves the cursor to the given coordinates
     pub fn goto_coord(&mut self, x: libc::size_t, y: libc::size_t)
@@ -328,7 +327,7 @@ impl Display {
       else
       { self.oob.1 = row - 1;
         r = row - 1; }
-      self.goto(c + (r * col)); }
+      let _ = self.goto(c + (r * col)); }
 
     /// The method `scroll_down` append an empty line on bottom of the screen
     /// (the cursor doesn't move)
@@ -391,16 +390,15 @@ impl Display {
     /// If no coordinates were safe, cursor moves to the top left of the output screen
     pub fn restore_position(&mut self)
     { let (x, y) = self.save_position;
-      self.goto_coord(x, y); }
+      let _ = self.goto_coord(x, y); }
 
     /// The method `insert_empty_line` insert an empty line on the right of the cursor
     /// (the cursor doesn't move)
     pub fn insert_empty_line(&mut self, mv: libc::size_t)
-    { let mut col = self.size.get_col();
+    { let col = self.size.get_col();
       let region = self.region;
       let pos = self.screen.position();
       let collection = self.collection;
-      let oob = self.oob;
       let coucou = self.screen.get_mut();
       {0..(col * mv)}.all(|_|
       { (*coucou).insert(pos, collection);
@@ -499,18 +497,15 @@ impl Display {
 
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
-    { let pos = self.screen.position();
-      if self.oob.1.lt(&(self.region.1.sub(&1)))
-      { self.goto_down(1); }
+    { if self.oob.1.lt(&(self.region.1.sub(&1)))
+      { let _ = self.goto_down(1); }
       else if self.oob.1.eq(&(self.region.1.sub(&1)))
       { let x = self.region.0;
         self.scroll_up(x); }}
 
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: char, next: &[u8]) -> io::Result<usize>
-    { let wrap = self.line_wrap;
-      let row = self.size.get_row();
-      let col = self.size.get_col();
+    { let col = self.size.get_col();
       if self.show_cursor
       { self.clear_cursor(); }
       if self.oob.0 < col - 1
@@ -525,14 +520,14 @@ impl Display {
       else if self.oob.1.eq(&(self.region.1.sub(&1)))
       { let x = self.region.0;
         self.scroll_up(x);
-        self.goto_begin_row();
+        let _ = self.goto_begin_row();
         { let pos = self.screen.position();
           if pos.gt(&0)
-          { self.goto(pos - 1); }}}
+          { let _ = self.goto(pos - 1); }}}
       else
       { let pos = self.screen.position();
         if pos.gt(&0)
-        { self.goto(pos - 1); }}
+        { let _ = self.goto(pos - 1); }}
       self.screen.write_with_color(first, self.collection).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
 
     pub fn catch_numbers<'a>(&self, mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
@@ -588,10 +583,10 @@ impl Display {
         { self.size = save_terminal.size;
           flag_resize = true; }}
       if flag_resize
-      { self.resize(); }
+      { let _ = self.resize(); }
       self.save_terminal = None;
       let (x, y) = self.oob;
-      self.goto_coord(x, y); }
+      let _ = self.goto_coord(x, y); }
 
     /// The method `erase_chars` erases couple of chars in the current line from the cursor.
     pub fn erase_chars(&mut self, mv: libc::size_t)
@@ -601,7 +596,7 @@ impl Display {
         None => self.size.row_by_col() - 1, };
       let coucou = self.screen.get_mut();
       let collection = self.collection;
-      {0..mv}.all(|i|
+      {0..mv}.all(|_|
       { (*coucou).insert(border, collection);
         (*coucou).remove(pos);
         true }); }
@@ -614,7 +609,7 @@ impl Display {
         None => self.size.row_by_col() - 1, };
       let coucou = self.screen.get_mut();
       let collection = self.collection;
-      {0..mv}.all(|i|
+      {0..mv}.all(|_|
       { (*coucou).insert(pos, collection);
         (*coucou).remove(border);
         true }); }
@@ -809,40 +804,40 @@ impl Write for Display {
             &[b'\x1B', b'[', b'd', ref next..] |
             &[b'\x1B', b'[', b'H', ref next..] |
             &[b'\x1B', b'[', b'f', ref next..] =>
-              { self.goto_home();
+              { let _ = self.goto_home();
                 self.write(next) },
             &[b'\x1B', b'[', b'A', ref next..] |
             &[b'\x1B', b'[', b'm', b'A', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'A', ref next..] =>
-              { self.goto_up(1);
+              { let _ = self.goto_up(1);
                 self.write(next) },
             &[b'A', b'\x08'] =>
-              { self.goto_up(1);
+              { let _ = self.goto_up(1);
                 Ok(0) },
             &[b'\x1B', b'[', b'B', ref next..] |
             &[b'\x1B', b'[', b'm', b'B', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'B', ref next..] =>
-              { self.goto_down(1);
+              { let _ = self.goto_down(1);
                 self.write(next) },
             &[b'B', b'\x08'] =>
-              { self.goto_down(1);
+              { let _ = self.goto_down(1);
                 Ok(0) },
             &[b'\x1B', b'[', b'C', ref next..] |
             &[b'\x1B', b'[', b'm', b'C', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'C', ref next..] =>
-              { self.goto_right(1);
+              { let _ = self.goto_right(1);
                 self.write(next) },
             &[b'C', b'\x08'] =>
-              { self.goto_right(1);
+              { let _ = self.goto_right(1);
                 Ok(0) },
             &[b'\x1B', b'[', b'D', ref next..] |
             &[b'\x1B', b'[', b'm', b'D', b'\x08', ref next..] |
             &[b'\x1B', b'O', b'D', ref next..] |
             &[b'\x08', ref next..] =>
-              { self.goto_left(1);
+              { let _ = self.goto_left(1);
                 self.write(next) },
             &[b'D', b'\x08'] =>
-              { self.goto_left(1);
+              { let _ = self.goto_left(1);
                 Ok(0) },
 
             //--------- POSITION SAVE ----------
@@ -897,40 +892,40 @@ impl Write for Display {
             &[b'\x1B', b'(', ref next..] |
             &[b'\x1B', b'?', ref next..] |
             &[b'\x1B', ref next..] =>
-            { let (mut bonjour, coucou) =
+            { let (bonjour, coucou) =
               { self.catch_numbers(Vec::new(), next) };
               match coucou
               { //------------- n GOTO ------------------
                 &[b'A', ref next..] =>
                   { if bonjour.len() == 1
-                    { self.goto_up(bonjour[0]); }
+                    { let _ = self.goto_up(bonjour[0]); }
                     self.write(next) },
                 &[b'B', ref next..] =>
                   { if bonjour.len() == 1
-                    { self.goto_down(bonjour[0]); }
+                    { let _ = self.goto_down(bonjour[0]); }
                     self.write(next) },
                 &[b'C', ref next..] =>
                   { if bonjour.len() == 1
-                    { self.goto_right(bonjour[0]); }
+                    { let _ = self.goto_right(bonjour[0]); }
                     self.write(next) },
                 &[b'D', ref next..] =>
                   { if bonjour.len() == 1
-                    { self.goto_left(bonjour[0]); }
+                    { let _ = self.goto_left(bonjour[0]); }
                     self.write(next) },
                 &[b'G', ref next..] =>
                   { if bonjour.len() == 1 && self.size.get_col() >= bonjour[0]
                     { let y = self.oob.1;
-                      self.goto_coord(bonjour[0] - 1, y); }
+                      let _ = self.goto_coord(bonjour[0] - 1, y); }
                     self.write(next) },
                 &[b'd', ref next..] =>
                   { if bonjour.len() == 1 && self.size.get_row() >= bonjour[0]
                     { let x = self.oob.0;
-                      self.goto_coord(x, bonjour[0] - 1); }
+                      let _ = self.goto_coord(x, bonjour[0] - 1); }
                     self.write(next) },
                 &[b'H', ref next..] |
                 &[b'f', ref next..] =>
                   { if bonjour.len() == 2 && bonjour[0] > 0 && bonjour[1] > 0
-                    { self.goto_coord(bonjour[1] - 1, bonjour[0] - 1); }
+                    { let _ = self.goto_coord(bonjour[1] - 1, bonjour[0] - 1); }
                     self.write(next) },
 
                 //-------------- ERASE ----------------
@@ -1016,26 +1011,26 @@ impl Write for Display {
                           28 => { self.collection.sub_attribute(Attribute::Hidden); },
 
                           //Foreground colors
-                          30 => { self.collection.set_foreground(color::Black); },
-                          31 => { self.collection.set_foreground(color::Red); },
-                          32 => { self.collection.set_foreground(color::Green); },
-                          33 => { self.collection.set_foreground(color::Yellow); },
-                          34 => { self.collection.set_foreground(color::Blue); },
-                          35 => { self.collection.set_foreground(color::Magenta); },
-                          36 => { self.collection.set_foreground(color::Cyan); },
-                          37 => { self.collection.set_foreground(color::White); },
-                          39 => { self.collection.set_foreground(color::Black); },
+                          30 => { self.collection.set_foreground(color::BLACK); },
+                          31 => { self.collection.set_foreground(color::RED); },
+                          32 => { self.collection.set_foreground(color::GREEN); },
+                          33 => { self.collection.set_foreground(color::YELLOW); },
+                          34 => { self.collection.set_foreground(color::BLUE); },
+                          35 => { self.collection.set_foreground(color::MAGENTA); },
+                          36 => { self.collection.set_foreground(color::CYAN); },
+                          37 => { self.collection.set_foreground(color::WHITE); },
+                          39 => { self.collection.set_foreground(color::BLACK); },
 
                           //Background colors
-                          40 => { self.collection.set_background(color::Black); },
-                          41 => { self.collection.set_background(color::Red); },
-                          42 => { self.collection.set_background(color::Green); },
-                          43 => { self.collection.set_background(color::Yellow); },
-                          44 => { self.collection.set_background(color::Blue); },
-                          45 => { self.collection.set_background(color::Magenta); },
-                          46 => { self.collection.set_background(color::Cyan); },
-                          47 => { self.collection.set_background(color::White); },
-                          49 => { self.collection.set_background(color::White); },
+                          40 => { self.collection.set_background(color::BLACK); },
+                          41 => { self.collection.set_background(color::RED); },
+                          42 => { self.collection.set_background(color::GREEN); },
+                          43 => { self.collection.set_background(color::YELLOW); },
+                          44 => { self.collection.set_background(color::BLUE); },
+                          45 => { self.collection.set_background(color::MAGENTA); },
+                          46 => { self.collection.set_background(color::CYAN); },
+                          47 => { self.collection.set_background(color::WHITE); },
+                          49 => { self.collection.set_background(color::WHITE); },
 
                           _ => {}, }
                         true }); }
@@ -1064,10 +1059,10 @@ impl Write for Display {
             &[b'\x0A', ref next..] |
             &[b'\x0D', b'\x0A', ref next..] =>
               { self.print_enter();
-                self.goto_begin_row();
+                let _ = self.goto_begin_row();
                 self.write(next) },
             &[b'\x0D', ref next..] =>
-              { self.goto_begin_row();
+              { let _ = self.goto_begin_row();
                 self.write(next) },
 
             &[b'\x09', ref next..] =>
@@ -1080,7 +1075,7 @@ impl Write for Display {
                 { (*coucou).insert(pos, Character::default());
                   (*coucou).remove(resize.1 * col);
                   true }); }
-              self.goto_right(tab_width);
+              let _ = self.goto_right(tab_width);
               self.write(next) },
 
             &[u1, ref next..] =>
