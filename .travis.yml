@@ -41,7 +41,7 @@ script:
   - cargo build --features "signal idle"
   - cargo build --features "signal idle keyboard-time"
   - cargo build --features "signal idle task"
-  - cargo build --features "signal idle task keyboard-time""
+  - cargo build --features "signal idle task keyboard-time"
 #  - cargo test -- winsz
 #  - cargo test
 #  - cargo test --features task -- --nocapture
