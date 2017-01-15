@@ -7,6 +7,13 @@ git clone https://github.com/Arukana/PtyProc.git PtyProc && cd PtyProc
 cargo build
 ```
 
+#### Features
+* mouse?
+* signal
+* idle
+* task
+* keyboard-time
+
 #### Knowledge
 * [modes](https://en.wikipedia.org/wiki/Computer_terminal#Modes)
 * [speudotty](https://en.wikipedia.org/wiki/Pseudoterminal)

@@ -1,15 +1,20 @@
+#[cfg(feature = "keyboard-time")]
 pub const DEFAULT_REPEAT: libc::c_long = 1_000i64;
+#[cfg(feature = "keyboard-time")]
 pub const DEFAULT_INTERVAL: libc::c_long = 1_000i64;
 mod buf;
 
+#[cfg(feature = "keyboard-time")]
+use std::ops::{Add, Sub};
+use std::ops::{BitAnd, Not, DerefMut};
 use std::fmt;
 use std::mem;
 use std::io::Write;
 use std::ops::BitOr;
-use std::ops::{Add, Sub, BitAnd, Not, DerefMut};
 
-use ::libc;
+#[cfg(feature = "keyboard-time")]
 use ::time;
+use ::libc;
 
 pub use super::device::In;
 
@@ -38,8 +43,10 @@ fn catch_numbers<'a>(mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::si
 #[derive(Default, Copy, Clone)]
 pub struct ShellState {
     /// The time limit required for a repetition.
+    #[cfg(feature = "keyboard-time")]
     repeat: libc::c_long,
     /// The time limit required for a repetition.
+    #[cfg(feature = "keyboard-time")]
     interval: libc::c_long,
     /// Update.
     idle: Option<()>,
@@ -48,10 +55,13 @@ pub struct ShellState {
     /// The pressed character.
     in_down: Option<Control>,
     /// The released character.
+    #[cfg(feature = "keyboard-time")]
     in_up: Option<Control>,
     /// The number of the repetition.
+    #[cfg(feature = "keyboard-time")]
     in_repeat: Option<libc::size_t>,
     /// The segment intervals.
+    #[cfg(feature = "keyboard-time")]
     in_interval: Option<time::Tm>,
     /// The output of last text //printed.
     out_last: Option<(Out, libc::size_t)>,
@@ -61,9 +71,59 @@ pub struct ShellState {
 }
 
 impl ShellState {
+    /// The constructor method `new` returns a empty ShellState.
+    #[cfg(all(not(feature = "keyboard-time"), not(feature = "task")))]
+    pub fn new (
+        _: Option<libc::c_long>,
+        _: Option<libc::c_long>,
+    ) -> Self {
+        ShellState {
+            idle: None,
+            sig: None,
+            in_down: None,
+            out_last: None,
+            buffer: Buf([0; 100], 0),
+        }
+    }
 
     /// The constructor method `new` returns a empty ShellState.
-    #[cfg(feature = "task")]
+    #[cfg(all(not(feature = "keyboard-time"), feature = "task", not(feature = "keyboard-time")))]
+    pub fn new (
+        _: Option<libc::c_long>,
+        _: Option<libc::c_long>,
+    ) -> Self {
+        ShellState {
+            idle: None,
+            sig: None,
+            in_down: None,
+            out_last: None,
+            buffer: Buf([0; 100], 0),
+            task: None,
+        }
+    }
+
+    /// The constructor method `new` returns a empty ShellState.
+    #[cfg(all(feature = "keyboard-time", not(feature = "task"), feature = "keyboard-time"))]
+    pub fn new (
+        repeat: Option<libc::c_long>,
+        interval: Option<libc::c_long>,
+    ) -> Self {
+        ShellState {
+            repeat: repeat.unwrap_or(DEFAULT_REPEAT),
+            interval: interval.unwrap_or(DEFAULT_INTERVAL),
+            idle: None,
+            sig: None,
+            in_down: None,
+            in_up: None,
+            in_repeat: None,
+            in_interval: None,
+            out_last: None,
+            buffer: Buf([0; 100], 0),
+        }
+    }
+
+    /// The constructor method `new` returns a empty ShellState.
+    #[cfg(all(feature = "keyboard-time", feature = "task"))]
     pub fn new (
         repeat: Option<libc::c_long>,
         interval: Option<libc::c_long>,
@@ -83,26 +143,6 @@ impl ShellState {
         }
     }
 
-    /// The constructor method `new` returns a empty ShellState.
-    #[cfg(not(feature = "task"))]
-    pub fn new (
-        repeat: Option<libc::c_long>,
-        interval: Option<libc::c_long>,
-    ) -> Self {
-        ShellState {
-            repeat: repeat.unwrap_or(DEFAULT_REPEAT),
-            interval: interval.unwrap_or(DEFAULT_INTERVAL),
-            idle: None,
-            sig: None,
-            in_down: None,
-            in_up: None,
-            in_repeat: None,
-            in_interval: None,
-            out_last: None,
-            buffer: Buf([0; 100], 0),
-        }
-    }
-
     pub fn set_input_keyown(&mut self, key: char) {
         let mut buf: In = In::default();
         unsafe {
@@ -119,22 +159,26 @@ impl ShellState {
     }
 
     /// The mutator method `set_repeat` change the time limit of repetition.
+    #[cfg(feature = "keyboard-time")]
     pub fn set_repeat(&mut self, repeat: libc::c_long) {
         self.repeat = repeat;
     }
 
     /// The mutator method `set_interval` change the interval.
+    #[cfg(feature = "keyboard-time")]
     pub fn set_interval(&mut self, interval: libc::c_long) {
         self.interval = interval;
     }
 
     /// The mutator method `set_idle` update the idle event status.
+    #[cfg(feature = "idle")]
     pub fn set_idle(&mut self, entry: Option<()>) {
         self.idle = entry;
     }
 
     /// The mutator method `set_signal` update the signal
     /// and can resize the Display interface.
+    #[cfg(feature = "signal")]
     pub fn set_signal(&mut self, signal: Option<libc::c_int>) {
         self.sig = signal;
     }
@@ -204,9 +248,17 @@ impl ShellState {
                 buf[2] = ss;
                 down = Some(Control::new(buf, 3));
             }}
+           self.in_down = down;
+           self.set_input_time();
+    }
 
-        self.in_down = down;
-        if let Some(after) = down {
+    #[cfg(not(feature = "keyboard-time"))]
+    fn set_input_time(&self) {
+    }
+
+    #[cfg(feature = "keyboard-time")]
+    fn set_input_time(&mut self) {
+        if let Some(after) = self.in_down {
             if let Some(before) = self.in_up {
                 if before.eq(&after).bitand(
                     before.as_time().add(
@@ -293,11 +345,13 @@ impl ShellState {
     }
 
     /// The accessor method `is_idle` returns the Idle event.
+    #[cfg(feature = "idle")]
     pub fn is_idle(&self) -> Option<()> {
         self.idle
     }
 
     /// The accessor method `is_signal` returns the Signal event.
+    #[cfg(feature = "signal")]
     pub fn is_signal(&self) -> Option<libc::c_int> {
         self.sig
     }
@@ -323,6 +377,7 @@ impl ShellState {
 
     /// The accessor method `is_input_keyrepeat` returns the number's repetition
     /// of the Key.
+    #[cfg(feature = "keyboard-time")]
     pub fn is_input_keyrepeat(&self) -> Option<libc::size_t> {
         if let Some(_) = self.in_up {
             self.in_repeat
@@ -333,6 +388,7 @@ impl ShellState {
 
     /// The accessor method `is_input_keyinterval` returns the number's of repetition
     /// between a range of the interval.
+    #[cfg(feature = "keyboard-time")]
     pub fn is_input_keyinterval(&self) -> Option<i64> {
         if let (Some(first), Some(last)) = (self.in_interval, self.in_down) {
             Some(
@@ -393,21 +449,10 @@ impl ShellState {
 
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
-    #[cfg(feature = "task")]
     pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
-        self.set_task(event.is_task());
-        self.set_idle(event.is_idle());
-        self.set_signal(event.is_signal());
-        self.set_output(out_screen, event.is_out_text());
-        self.set_input(out_screen, event.is_input());
-    }
-
-    /// The method `with_device` updates the state from
-    /// the event DeviceState interface.
-    #[cfg(not(feature = "task"))]
-    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
-        self.set_idle(event.is_idle());
-        self.set_signal(event.is_signal());
+        #[cfg(feature = "task")] self.set_task(event.is_task());
+        #[cfg(feature = "idle")] self.set_idle(event.is_idle());
+        #[cfg(feature = "signal")]self.set_signal(event.is_signal());
         self.set_output(out_screen, event.is_out_text());
         self.set_input(out_screen, event.is_input());
     }

@@ -19,7 +19,10 @@ doctest = false
 
 [features]
 default       = []
+signal        = []
+idle          = []
 task          = []
+keyboard-time = []
 lints         = ["clippy", "nightly"]
 nightly       = [] # for building with nightly and unstable features
 unstable      = [] # for building with unstable features on stable Rust

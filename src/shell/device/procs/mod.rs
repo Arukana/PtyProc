@@ -9,14 +9,14 @@ mod ffi;
 
 #[cfg(feature = "task")]
 use std::io::Write;
-use std::ops::{Not, BitAnd};
+use std::ops::Not;
 
 pub use self::err::{ProcError, Result};
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
-pub use self::linux::*;
+pub use self::linux::Proc;
 #[cfg(target_os = "macos")]
-pub use self::macos::*;
+pub use self::macos::Proc;
 
 pub type BufProc = (libc::pid_t, [libc::c_uchar; 32]);
 
@@ -55,8 +55,7 @@ impl Proc {
             let mut source: [libc::c_uchar; 32] = [b'\0'; 32];
             {
                 let mut buffer: &mut [libc::c_uchar] = &mut source[..];
-
-                buffer.write(name.as_bytes());
+                let _ = buffer.write(name.as_bytes());
             }
             Some((pid, source))
         })

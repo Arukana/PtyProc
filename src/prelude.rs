@@ -1,5 +1,5 @@
 #[cfg(feature = "task")]
-pub use ::shell::device::task::{Proc, ProcError, BufProc};
+pub use ::shell::device::procs::{Proc, ProcError, BufProc};
 pub use ::shell::{Shell, ShellError, ShellState};
 pub use ::shell::device::control::operate::key::Key;
 pub use ::shell::device::control::operate::mouse::Mouse;
@@ -9,5 +9,7 @@ pub use ::shell::device::{In, Out};
 pub use ::shell::display::Display;
 pub use ::shell::display::winsz::Winszed;
 pub use ::shell::display::character::Character;
+#[cfg(feature = "keyboard-time")]
 pub use ::shell::state::DEFAULT_REPEAT as REPEAT;
+#[cfg(feature = "keyboard-time")]
 pub use ::shell::state::DEFAULT_INTERVAL as INTERVAL;

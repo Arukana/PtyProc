@@ -1,137 +1,60 @@
-#[cfg(feature = "task")]
-pub mod task;
 pub mod control;
 mod state;
 mod input;
 mod output;
 mod spawn;
 
-use ::chan;
 use ::libc;
-use ::pty::prelude as pty;
-
-use std::thread;
 
 pub use self::state::DeviceState;
 
 pub use self::input::In;
 pub use self::output::Out;
 
-#[cfg(feature = "task")]
-pub use self::task::BufProc;
-
+#[cfg(feature = "signal")]
 pub type Sig = libc::c_int;
 
-/// The struct `Device` is the input/output terminal interface.
+#[cfg(all(not(feature = "task"), not(feature = "idle"), not(feature = "signal")))]
+mod notask_noidle_nosig;
+#[cfg(all(not(feature = "task"), not(feature = "idle"), not(feature = "signal")))]
+pub use self::notask_noidle_nosig::Device;
 
-#[derive(Clone)]
-pub struct Device {
-    #[cfg(feature = "task")] task: chan::Receiver<BufProc>,
-    input: chan::Receiver<(In, libc::size_t)>,
-    output: chan::Receiver<(Out, libc::size_t)>,
-    signal: chan::Receiver<libc::c_int>,
-}
+#[cfg(all(not(feature = "task"), not(feature = "idle"), feature = "signal"))]
+mod notask_noidle_sig;
+#[cfg(all(not(feature = "task"), not(feature = "idle"), feature = "signal"))]
+pub use self::notask_noidle_sig::Device;
 
-#[cfg(feature = "task")]
-impl Device {
+#[cfg(all(not(feature = "task"), feature = "idle", not(feature = "signal")))]
+mod notask_idle_nosig;
+#[cfg(all(not(feature = "task"), feature = "idle", not(feature = "signal")))]
+pub use self::notask_idle_nosig::Device;
 
-    /// The constructor method `new` returns a Device interface iterable.
-    fn new (
-        task: chan::Receiver<BufProc>,
-        input: chan::Receiver<(In, libc::size_t)>,
-        output: chan::Receiver<(Out, libc::size_t)>,
-        signal: chan::Receiver<libc::c_int>,
-    ) -> Self {
-        Device {
-            task: task,
-            input: input,
-            output: output,
-            signal: signal,
-        }
-    }
+#[cfg(all(not(feature = "task"), feature = "idle", feature = "signal"))]
+mod notask_idle_sig;
+#[cfg(all(not(feature = "task"), feature = "idle", feature = "signal"))]
+pub use self::notask_idle_sig::Device;
 
-    pub fn from_speudo(master: pty::Master, pid: libc::pid_t) -> Self {
-        let (tx_task, rx_task) = chan::sync(0);
-        let (tx_out, rx_out) = chan::sync(0);
-        let (tx_in, rx_in) = chan::sync(0);
-        let (tx_sig, rx_sig) = chan::sync(0);
+#[cfg(all(feature = "task", not(feature = "idle"), not(feature = "signal")))]
+mod task_noidle_nosig;
+#[cfg(all(feature = "task", not(feature = "idle"), not(feature = "signal")))]
+pub use self::task_noidle_nosig::Device;
 
-        thread::spawn(move || spawn::input(tx_in));
-        thread::spawn(move || spawn::task(tx_task, pid));
-        thread::spawn(move || spawn::output(tx_out, master));
-        thread::spawn(move || spawn::signal(tx_sig));
-        Device::new(rx_task, rx_in, rx_out, rx_sig)
-    }
-}
+#[cfg(all(feature = "task", not(feature = "idle"), feature = "signal"))]
+mod task_noidle_sig;
+#[cfg(all(feature = "task", not(feature = "idle"), feature = "signal"))]
+pub use self::task_noidle_sig::Device;
 
-#[cfg(not(feature = "task"))]
-impl Device {
+#[cfg(all(feature = "task", feature = "idle", not(feature = "signal")))]
+mod task_idle_nosig;
+#[cfg(all(feature = "task", feature = "idle", not(feature = "signal")))]
+pub use self::task_idle_nosig::Device;
 
-    /// The constructor method `new` returns a Device interface iterable.
-    fn new (
-        input: chan::Receiver<(In, libc::size_t)>,
-        output: chan::Receiver<(Out, libc::size_t)>,
-        signal: chan::Receiver<libc::c_int>,
-    ) -> Self {
-        Device {
-            input: input,
-            output: output,
-            signal: signal,
-        }
-    }
+#[cfg(all(feature = "task", feature = "idle", feature = "signal"))]
+mod task_idle_sig;
+#[cfg(all(feature = "task", feature = "idle", feature = "signal"))]
+pub use self::task_idle_sig::Device;
 
-    pub fn from_speudo(master: pty::Master, _: libc::pid_t) -> Self {
-        let (tx_out, rx_out) = chan::sync(0);
-        let (tx_in, rx_in) = chan::sync(0);
-        let (tx_sig, rx_sig) = chan::sync(0);
-
-        thread::spawn(move || spawn::input(tx_in));
-        thread::spawn(move || spawn::output(tx_out, master));
-        thread::spawn(move || spawn::signal(tx_sig));
-        Device::new(rx_in, rx_out, rx_sig)
-    }
-}
-
-impl Iterator for Device {
-    type Item = DeviceState;
-
-    #[cfg(feature = "task")]
-    fn next(&mut self) -> Option<DeviceState> {
-        let ref task: chan::Receiver<BufProc> = self.task;
-        let ref signal: chan::Receiver<Sig> = self.signal;
-        let ref input: chan::Receiver<(In, libc::size_t)> = self.input;
-        let ref output: chan::Receiver<(Out, libc::size_t)> = self.output;
-
-        chan_select! {
-            default => return Some(DeviceState::from_idle()),
-            task.recv() -> val => return val.and_then(|name| Some(DeviceState::Proc(name))),
-            signal.recv() -> val => return val.and_then(|sig| Some(DeviceState::from_sig(sig))),
-            input.recv() -> val => return val.and_then(|(buf, len)| Some(DeviceState::from_in(buf, len))),
-            output.recv() -> val => return match val {
-                Some((buf, len @ 1 ... 4096)) => Some(
-                    DeviceState::from_out(buf, len)
-                ),
-                _ => None,
-            },
-        }
-    }
-
-    #[cfg(not(feature = "task"))]
-    fn next(&mut self) -> Option<DeviceState> {
-        let ref signal: chan::Receiver<Sig> = self.signal;
-        let ref input: chan::Receiver<(In, libc::size_t)> = self.input;
-        let ref output: chan::Receiver<(Out, libc::size_t)> = self.output;
-
-        chan_select! {
-            default => return Some(DeviceState::from_idle()),
-            signal.recv() -> val => return val.and_then(|sig| Some(DeviceState::from_sig(sig))),
-            input.recv() -> val => return val.and_then(|(buf, len)| Some(DeviceState::from_in(buf, len))),
-            output.recv() -> val => return match val {
-                Some((buf, len @ 1 ... 4096)) => Some(
-                    DeviceState::from_out(buf, len)
-                ),
-                _ => None,
-            },
-        }
-    }
-}
+#[cfg(any(feature = "task"))]
+pub mod procs;
+#[cfg(any(feature = "task"))]
+pub use self::procs::{Proc, BufProc};

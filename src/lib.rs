@@ -1,7 +1,7 @@
 #![feature(slice_patterns)]
 #![feature(advanced_slice_patterns)]
-#![feature(integer_atomics)]
 #![feature(range_contains)]
+#![feature(integer_atomics)]
 
 #![crate_type= "lib"]
 #![cfg_attr(feature = "nightly", feature(plugin))]

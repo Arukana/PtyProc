@@ -2,8 +2,9 @@ pub mod operate;
 
 use std::{fmt, str};
 
-use ::libc;
+#[cfg(feature = "keyboard-time")]
 use ::time;
+use ::libc;
 
 pub use super::In;
 pub use self::operate::key::Key;
@@ -17,6 +18,7 @@ pub struct Control {
     /// Length.
     len: libc::size_t,
     /// Time where the control was pressed.
+    #[cfg(feature = "keyboard-time")]
     time: time::Tm,
     /// Operation.
     operate: Operate,
@@ -24,6 +26,17 @@ pub struct Control {
 
 impl Control {
     /// The constructor method `new` returns a Control's event from Device.
+    #[cfg(not(feature = "keyboard-time"))] 
+    pub fn new(buf: In, len: libc::size_t) -> Self {
+        Control {
+            buf: buf,
+            len: len,
+            operate: Operate::new(buf, len),
+        }
+    }
+
+    /// The constructor method `new` returns a Control's event from Device.
+    #[cfg(feature = "keyboard-time")] 
     pub fn new(buf: In, len: libc::size_t) -> Self {
         Control {
             buf: buf,
@@ -46,6 +59,7 @@ impl Control {
     }
 
     /// The accessor method `as_time` returns the Time.
+    #[cfg(feature = "keyboard-time")]
     pub fn as_time(&self) -> time::Tm {
         self.time
     }
