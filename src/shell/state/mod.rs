@@ -237,6 +237,10 @@ impl ShellState {
         if let Some((buf, len)) = entry {
             self.out_last = Some((buf, len));
 
+/*print!("BUF::");
+{0..len}.all(|i| { print!(" {} {} |", if buf[i] > 32 { buf[i] as char } else { ' ' }, buf[i]); true});
+println!("");*/
+
             let mut tmp = [0u8; 596];
             let seeker = self.buffer.1;
             { let hey: &mut [u8] = self.buffer.deref_mut();

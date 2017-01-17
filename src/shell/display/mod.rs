@@ -808,6 +808,7 @@ impl Write for Display {
                 self.write(next) },
             &[b'\x1B', b'[', b'A', ref next..] |
             &[b'\x1B', b'[', b'm', b'A', b'\x08', ref next..] |
+            &[b'\x1B', b'M', ref next..] |
             &[b'\x1B', b'O', b'A', ref next..] =>
               { let _ = self.goto_up(1);
                 self.write(next) },
@@ -816,6 +817,7 @@ impl Write for Display {
                 Ok(0) },
             &[b'\x1B', b'[', b'B', ref next..] |
             &[b'\x1B', b'[', b'm', b'B', b'\x08', ref next..] |
+            &[b'\x1B', b'D', ref next..] |
             &[b'\x1B', b'O', b'B', ref next..] =>
               { let _ = self.goto_down(1);
                 self.write(next) },
@@ -851,14 +853,13 @@ impl Write for Display {
                 self.write(next) },
 
             //------------- SCROLL ---------------
-            &[b'\x1B', b'[', b'M', ref next..] |
-            &[b'\x1B', b'M', ref next..] =>
+            &[b'\x1B', b'[', b'M', ref next..] =>
               { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
                 { let x = self.oob.1;
-                  if !self.ss_mod
-                  { self.scroll_up(x); }
+                /*  if !self.ss_mod
+                  {*/ self.scroll_up(x);/* }
                   else
-                  { self.scroll_down(x); }}
+                  { self.scroll_down(x); }*/}
                 self.write(next) },
             &[b'\x1B', b'[', b'S', ref next..] |
             &[b'\x1B', b'S', ref next..] =>
@@ -869,7 +870,7 @@ impl Write for Display {
             &[b'\x1B', b'L', ref next..] =>
               { if self.oob.1.ge(&self.region.0).bitand(self.oob.1.lt(&self.region.1))
                 { let x = self.oob.1;
-                  self.scroll_down(x); }
+                  self.scroll_up(x); }
                 self.write(next) },
             &[b'\x1B', b'[', b'T', ref next..] |
             &[b'\x1B', b'T', ref next..] =>
