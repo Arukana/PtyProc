@@ -22,7 +22,6 @@ fn main() {
         }
         if let Some(()) = event.is_output_screen() {
             print!("\x1B[H{}", shell);
-           // print!("{}", shell);
         }
     }
 }
