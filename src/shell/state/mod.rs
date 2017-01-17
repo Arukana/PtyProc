@@ -50,7 +50,7 @@ pub struct ShellState {
     /// The released character.
     in_up: Option<Control>,
     /// The number of the repetition.
-    in_repeat: Option<libc::size_t>,
+    in_repeat: Option<libc::c_ulong>,
     /// The segment intervals.
     in_interval: Option<time::Tm>,
     /// The output of last text //printed.
@@ -327,7 +327,7 @@ println!("");*/
 
     /// The accessor method `is_input_keyrepeat` returns the number's repetition
     /// of the Key.
-    pub fn is_input_keyrepeat(&self) -> Option<libc::size_t> {
+    pub fn is_input_keyrepeat(&self) -> Option<libc::c_ulong> {
         if let Some(_) = self.in_up {
             self.in_repeat
         } else {
@@ -337,7 +337,7 @@ println!("");*/
 
     /// The accessor method `is_input_keyinterval` returns the number's of repetition
     /// between a range of the interval.
-    pub fn is_input_keyinterval(&self) -> Option<i64> {
+    pub fn is_input_keyinterval(&self) -> Option<libc::c_longlong> {
         if let (Some(first), Some(last)) = (self.in_interval, self.in_down) {
             Some(
                 first.sub(last.as_time()).num_milliseconds().abs()/self.interval
