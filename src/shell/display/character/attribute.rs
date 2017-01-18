@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[repr(u8)]
+#[repr(u32)]
 #[derive(Clone, Copy, Debug)]
 pub enum Attribute {
     None = 0x00,
