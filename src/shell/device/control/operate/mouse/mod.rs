@@ -4,120 +4,121 @@ pub use self::err::{MouseError, Result};
 
 /// Note that the button "Command" is like the function button
 /// between Ctrl and Alt on Azerty keyboards
-#[derive(Clone, Copy, Debug)]
+#[repr(u32)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum Mouse {
    /// The left mouse button is pressed.
-   Left = 0isize,
+   Left = 0,
    /// The right mouse button is pressed.
-   Right = 1isize,
+   Right = 1,
    /// The mouse wheel button is pressed.
-   Wheel = 2isize,
+   Wheel = 2,
    /// The mouse wheel is going up.
-   WheelUp = 64isize,
+   WheelUp = 64,
    /// The mouse wheel is going down.
-   WheelDown = 65isize,
+   WheelDown = 65,
    /// The left mouse button is held while moving pointer.
-   LeftDrag = 32isize,
+   LeftDrag = 32,
    /// The wheel mouse button is held while moving pointer.
-   WheelDrag = 33isize,
+   WheelDrag = 33,
    /// The right mouse button is held while moving pointer.
-   RightDrag = 34isize,
+   RightDrag = 34,
    /// The left mouse button is pressed while helding Shift.
-   ShiftLeft = 4isize,
+   ShiftLeft = 4,
    /// The wheel mouse button is pressed while helding Shift.
-   ShiftWheel = 5isize,
+   ShiftWheel = 5,
    /// The right mouse button is pressed while helding Shift.
-   ShiftRight = 6isize,
+   ShiftRight = 6,
    /// The left mouse button and Shift are held while moving pointer.
-   ShiftLeftDrag = 36isize,
+   ShiftLeftDrag = 36,
    /// The wheel mouse button and Shift are held while moving pointer.
-   ShiftWheelDrag = 37isize,
+   ShiftWheelDrag = 37,
    /// The right mouse button and Shift are held while moving pointer.
-   ShiftRightDrag = 38isize,
+   ShiftRightDrag = 38,
    /// The left mouse button is pressed while helding Ctrl
-   CtrlLeft = 16isize,
+   CtrlLeft = 16,
    /// The wheel mouse button is pressed while helding Ctrl
-   CtrlWheel = 17isize,
+   CtrlWheel = 17,
    /// The right mouse button is pressed while helding Ctrl
-   CtrlRight = 18isize,
+   CtrlRight = 18,
    /// The mouse wheel is going up while helding Ctrl
-   CtrlWheelUp = 80isize,
+   CtrlWheelUp = 80,
    /// The mouse wheel is going down while helding Ctrl
-   CtrlWheelDown = 81isize,
+   CtrlWheelDown = 81,
    /// The left mouse button and Ctrl are held while moving pointer
-   CtrlLeftDrag = 48isize,
+   CtrlLeftDrag = 48,
    /// The wheel mouse button and Ctrl are held while moving pointer
-   CtrlWheelDrag = 49isize,
+   CtrlWheelDrag = 49,
    /// The right mouse button and Ctrl are held while moving pointer
-   CtrlRightDrag = 50isize,
+   CtrlRightDrag = 50,
    /// The left mouse button is pressed while Ctrl and Shift are held
-   ShiftCtrlLeft = 20isize,
+   ShiftCtrlLeft = 20,
    /// The wheel mouse button is pressed while Ctrl and Shift are held
-   ShiftCtrlWheel = 21isize,
+   ShiftCtrlWheel = 21,
    /// The right mouse button is pressed while Ctrl and Shift are held
-   ShiftCtrlRight = 22isize,
+   ShiftCtrlRight = 22,
    /// The left mouse button, Ctrl and Shift are held while moving pointer
-   ShiftCtrlLeftDrag = 52isize,
+   ShiftCtrlLeftDrag = 52,
    /// The wheel mouse button, Ctrl and Shift are held while moving pointer
-   ShiftCtrlWheelDrag = 53isize,
+   ShiftCtrlWheelDrag = 53,
    /// The right mouse button, Ctrl and Shift are held while moving pointer
-   ShiftCtrlRightDrag = 54isize,
+   ShiftCtrlRightDrag = 54,
    /// The left mouse button is pressed while helding Command
-   CmdLeft = 8isize,
+   CmdLeft = 8,
    /// The wheel mouse button is pressed while helding Command
-   CmdWheel = 9isize,
+   CmdWheel = 9,
    /// The right mouse button is pressed while helding Command
-   CmdRight = 10isize,
+   CmdRight = 10,
    /// The mouse wheel is going up while helding Command
-   CmdWheelUp = 72isize,
+   CmdWheelUp = 72,
    /// The mouse wheel is going down while helding Command
-   CmdWheelDown = 73isize,
+   CmdWheelDown = 73,
    /// The left mouse button and Command are held while moving pointer
-   CmdLeftDrag = 40isize,
+   CmdLeftDrag = 40,
    /// The wheel mouse button and Command are held while moving pointer
-   CmdWheelDrag = 41isize,
+   CmdWheelDrag = 41,
    /// The right mouse button and Command are held while moving pointer
-   CmdRightDrag = 42isize,
+   CmdRightDrag = 42,
    /// The left mouse button is pressed while helding Command and Shift
-   CmdShiftLeft = 12isize,
+   CmdShiftLeft = 12,
    /// The wheel mouse button is pressed while helding Command and Shift
-   CmdShiftWheel = 13isize,
+   CmdShiftWheel = 13,
    /// The right mouse button is pressed while helding Command and Shift
-   CmdShiftRight = 14isize,
+   CmdShiftRight = 14,
    /// The left mouse button, Shift and Command are held while moving pointer
-   CmdShiftLeftDrag = 44isize,
+   CmdShiftLeftDrag = 44,
    /// The wheel mouse button, Shift and Command are held while moving pointer
-   CmdShiftWheelDrag = 45isize,
+   CmdShiftWheelDrag = 45,
    /// The right mouse button, Shift and Command are held while moving pointer
-   CmdShiftRightDrag = 46isize,
+   CmdShiftRightDrag = 46,
    /// The left mouse button is pressed while helding Command and Ctrl
-   CmdCtrlLeft = 24isize,
+   CmdCtrlLeft = 24,
    /// The wheel mouse button is pressed while helding Command and Ctrl
-   CmdCtrlWheel = 25isize,
+   CmdCtrlWheel = 25,
    /// The right mouse button is pressed while helding Command and Ctrl
-   CmdCtrlRight = 26isize,
+   CmdCtrlRight = 26,
    /// The mouse wheel is going up while helding Command and Ctrl
-   CmdCtrlWheelUp = 88isize,
+   CmdCtrlWheelUp = 88,
    /// The mouse wheel is going down while helding Command and Ctrl
-   CmdCtrlWheelDown = 89isize,
+   CmdCtrlWheelDown = 89,
    /// The left mouse button, Ctrl and Command are held while moving pointer
-   CmdCtrlLeftDrag = 56isize,
+   CmdCtrlLeftDrag = 56,
    /// The wheel mouse button, Ctrl and Command are held while moving pointer
-   CmdCtrlWheelDrag = 57isize,
+   CmdCtrlWheelDrag = 57,
    /// The right mouse button, Ctrl and Command are held while moving pointer
-   CmdCtrlRightDrag = 58isize,
+   CmdCtrlRightDrag = 58,
    /// The left mouse button is pressed while helding Command, Shift and Ctrl
-   CmdShiftCtrlLeft = 28isize,
+   CmdShiftCtrlLeft = 28,
    /// The wheel mouse button is pressed while helding Command, Shift and Ctrl
-   CmdShiftCtrlWheel = 29isize,
+   CmdShiftCtrlWheel = 29,
    /// The right mouse button is pressed while helding Command, Shift and Ctrl
-   CmdShiftCtrlRight = 30isize,
+   CmdShiftCtrlRight = 30,
    /// The left mouse button, Ctrl, Shift and Command are held while moving pointer
-   CmdShiftCtrlLeftDrag = 60isize,
+   CmdShiftCtrlLeftDrag = 60,
    /// The wheel mouse button, Ctrl, Shift and Command are held while moving pointer
-   CmdShiftCtrlWheelDrag = 61isize,
+   CmdShiftCtrlWheelDrag = 61,
    /// The right mouse button, Ctrl, Shift and Command are held while moving pointer
-   CmdShiftCtrlRightDrag = 62isize,
+   CmdShiftCtrlRightDrag = 62,
 }
 
 impl Mouse {
