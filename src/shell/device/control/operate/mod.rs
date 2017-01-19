@@ -14,7 +14,7 @@ pub use self::err::{OperateError, Result};
 #[derive(Clone, Copy, Debug)]
 pub enum Operate {
     /// The mouse operate.
-    Mouse(Mouse, libc::c_ushort, libc::c_ushort),
+    Mouse(Mouse, bool, libc::c_ushort, libc::c_ushort),
     /// The key operate.
     Key(Key),
 }
@@ -32,8 +32,7 @@ impl Operate {
     /// The constructor method `from_mouse` returns evaluated a mouse input.
     pub fn from_mouse(buf: &In) -> Result<Self> {
         match buf {
-            &In([b'\x1B', b'[', b'<', action, b';', ref coordinate.., b'm']) |
-            &In([b'\x1B', b'[', b'<', action, b';', ref coordinate.., b'M']) => {
+            &In([b'\x1B', b'[', b'<', action, b';', ref coordinate.., m @ b'M'...b'm']) => {
                 match Mouse::new(action) {
                     Ok(cmd) => {
                         coordinate.iter().position(|&sep| sep.eq(&b';')).map(|index: usize| unsafe {
@@ -43,7 +42,7 @@ impl Operate {
                                 u16::from_str_radix(str::from_utf8_unchecked(term_x), 10),
                                 u16::from_str_radix(str::from_utf8_unchecked(term_y), 10)
                             ) {
-                                Ok(Operate::Mouse(cmd, x, y))
+                                Ok(Operate::Mouse(cmd, m.eq(&b'M'), x, y))
                             } else {
                                 Err(OperateError::FromStrFail)
                             }
@@ -57,9 +56,9 @@ impl Operate {
     }
 
     /// The accessor method `is_mouse` returns a Option for the Mouse Operate.
-    pub fn is_mouse(&self) -> Option<(Mouse, libc::c_ushort, libc::c_ushort)> {
+    pub fn is_mouse(&self) -> Option<(Mouse, bool, libc::c_ushort, libc::c_ushort)> {
         match *self {
-            Operate::Mouse(mouse, x, y) => Some((mouse, x, y)),
+            Operate::Mouse(mouse, release, x, y) => Some((mouse, release, x, y)),
             Operate::Key(_) => None,
         }
     }
@@ -68,7 +67,7 @@ impl Operate {
     pub fn is_key(&self) -> Option<Key> {
         match *self {
             Operate::Key(key) => Some(key),
-            Operate::Mouse(_, _, _) => None,
+            _ => None,
         }
     }
 }

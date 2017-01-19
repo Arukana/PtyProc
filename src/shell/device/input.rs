@@ -6,6 +6,12 @@ use ::libc;
 
 pub struct In(pub [libc::c_uchar; 496]);
 
+impl In {
+    pub fn as_slice(&self) -> &[libc::c_uchar; 496] {
+        &self.0
+    }
+}
+
 impl Default for In {
     fn default() -> In {
         unsafe {
