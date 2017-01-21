@@ -148,6 +148,7 @@ impl ShellState {
               { &[b'\x1B', b'[', b'<', ref next..] =>
                   { let (bonjour, coucou) =
                     { catch_numbers(Vec::new(), next) };
+println!("BONJOUR::{:?}", bonjour);
                     match coucou
                     { &[b'M', ..] =>
                       { if out_screen.mouse().3 == false && bonjour[0] > 2
@@ -183,7 +184,8 @@ impl ShellState {
                         }
                         else if out_screen.mouse().0 == true
                         { down = None; }},
-                      _ => {}, }},
+                      _ => {}, }
+println!("DOWN::{:?}", down); },
                _ => {}, }},
           _ => {}, };
           if out_screen.ss()
