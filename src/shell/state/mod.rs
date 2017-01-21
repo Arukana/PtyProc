@@ -148,12 +148,9 @@ impl ShellState {
               { &[b'\x1B', b'[', b'<', ref next..] =>
                   { let (bonjour, coucou) =
                     { catch_numbers(Vec::new(), next) };
-println!("BONJOUR::{:?}", bonjour);
                     match coucou
                     { &[b'M', ..] =>
-                      { 
-println!("IS PRESS");
-if out_screen.mouse().3 == false && bonjour[0] > 2
+                      { if out_screen.mouse().3 == false && bonjour[0] > 2
                         { down = None; }
                         else if out_screen.mouse().3 == false && out_screen.mouse().0 == false && out_screen.mouse().1 == false
                         { down = None; }
@@ -171,9 +168,7 @@ if out_screen.mouse().3 == false && bonjour[0] > 2
                         else if out_screen.mouse().3 == false && out_screen.mouse().0 == true
                         { down = None; }},
                       &[b'm', ..] =>
-                      {
-println!("IS RELEASE");
-if out_screen.mouse().0 == false && out_screen.mouse().1 == false
+                      { if out_screen.mouse().0 == false && out_screen.mouse().1 == false
                         { down = None; }
                         else if out_screen.mouse().1 == true && out_screen.mouse().3 == false && bonjour[0] <= 2 {
                             let mut buf: In = In::default();
@@ -188,8 +183,7 @@ if out_screen.mouse().0 == false && out_screen.mouse().1 == false
                         }
                         else if out_screen.mouse().0 == true
                         { down = None; }},
-                      _ => {}, }
-println!("DOWN::{:?}", down); },
+                      _ => {}, }},
                _ => {}, }},
           _ => {}, };
           if out_screen.ss()
