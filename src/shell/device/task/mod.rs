@@ -58,6 +58,7 @@ impl Proc {
 
                 buffer.write(name.as_bytes());
             }
+println!("SOURCE::{:?}", source);
             Some((pid, source))
         })
     }
