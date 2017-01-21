@@ -385,6 +385,7 @@ impl ShellState {
     #[cfg(feature = "task")]
     pub fn is_task(&self) -> Option<&BufProc> {
         if let Some(ref task) = self.task {
+println!("TASK!");
             Some(task)
         } else {
             None
