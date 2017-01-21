@@ -78,6 +78,8 @@ impl Key {
         match &buf[..len] {
             /// Enter.
             &[b'\n'] | &[b'\r'] | &[b'\n', b'\r'] => Key::Char(ENTER),
+            /// BackSpace.
+            &[b'\x7f'] => Key::Char(BACKSPACE),
             /// Up.
             &[b'\x1B', b'[', b'A'] => Key::Char(UP),
             /// Down.
