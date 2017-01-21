@@ -1085,7 +1085,10 @@ impl Write for Display {
 
             &[u1, ref next..] =>
             { if u1 & 0b10000000 == 0
-              { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, 0, 0, 0]) }, next) }
+              { if u1 > 0	
+								{ self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, 0, 0, 0]) }, next) }
+								else
+								{ self.print_char(unsafe { mem::transmute::<[u8; 4], char>([b' ', 0, 0, 0]) }, next) }}
               else if (u1 & 0b11111000) == 0b11110000
               { match next
                 { &[u2, u3, u4, ref next..] =>
