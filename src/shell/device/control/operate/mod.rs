@@ -22,7 +22,7 @@ pub enum Operate {
 impl Operate {
     /// The constructor method `new` returns evaluated Operate.
     pub fn new(buf: In, len: libc::size_t) -> Self {
-        if let Ok(opt) = Operate::from_mouse(&buf) {
+        if let Ok(opt) = Operate::from_mouse(&buf, len) {
             opt
         } else {
             Operate::Key(Key::new(buf, len))
@@ -30,14 +30,14 @@ impl Operate {
     }
 
     /// The constructor method `from_mouse` returns evaluated a mouse input.
-    pub fn from_mouse(buf: &In) -> Result<Self> {
+    pub fn from_mouse(buf: &In, len: usize) -> Result<Self> {
         match buf {
             &In([b'\x1B', b'[', b'<', action, b';', ref coordinate.., m @ b'M'...b'm']) => {
                 match Mouse::new(action) {
                     Ok(cmd) => {
                         coordinate.iter().position(|&sep| sep.eq(&b';')).map(|index: usize| unsafe {
                             let (term_x, term_y): (&[u8], &[u8]) = coordinate.split_at(index);
-                            let term_y: &[u8] = &term_y[1..{term_y.len()}];
+                            let term_y: &[u8] = &term_y[1..len];
                             if let (Ok(x), Ok(y)) = (
                                 u16::from_str_radix(str::from_utf8_unchecked(term_x), 10),
                                 u16::from_str_radix(str::from_utf8_unchecked(term_y), 10)
