@@ -1,6 +1,6 @@
 pub mod operate;
 
-use std::{fmt, str};
+use std::{fmt, str, mem};
 
 use ::libc;
 use ::time;
@@ -10,7 +10,7 @@ pub use self::operate::key::Key;
 pub use self::operate::mouse::Mouse;
 use self::operate::Operate;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct Control {
     /// Buffer.
     buf: In,
@@ -30,6 +30,12 @@ impl Control {
             len: len,
             time: time::now(),
             operate: Operate::new(buf, len),
+        }
+    }
+
+    pub fn clear(&mut self) {
+        unsafe {
+            self.buf = mem::zeroed();
         }
     }
 
@@ -76,6 +82,14 @@ impl Control {
     /// the Mouse interface.
     pub fn is_mouse(&self) -> Option<(Mouse, bool, libc::c_ushort, libc::c_ushort)> {
         self.operate.is_mouse()
+    }
+}
+
+impl fmt::Debug for Control {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Control {{ buf: {:?}, operate: {:?} }}",
+            &self.buf[..self.len], self.operate
+        )
     }
 }
 
