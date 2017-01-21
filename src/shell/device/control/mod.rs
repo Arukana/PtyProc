@@ -33,12 +33,6 @@ impl Control {
         }
     }
 
-    pub fn clear(&mut self) {
-        unsafe {
-            self.buf = mem::zeroed();
-        }
-    }
-
     pub fn ss_mod(&mut self, ss: libc::c_uchar) {
         self.buf = In::default();
         self.buf[0] = b'\x1B';
