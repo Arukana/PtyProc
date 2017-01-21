@@ -31,27 +31,40 @@ impl Operate {
 
     /// The constructor method `from_mouse` returns evaluated a mouse input.
     pub fn from_mouse(buf: &[u8]) -> Result<Self> {
-        match buf {
-            &[b'\x1B', b'[', b'<', action, b';', ref coordinate.., m @ b'M'...b'm'] => {
-                match Mouse::new(action) {
-                    Ok(cmd) => {
-                        coordinate.iter().position(|&sep| sep.eq(&b';')).map(|index: usize| unsafe {
-                            let (term_x, term_y): (&[u8], &[u8]) = coordinate.split_at(index);
-                            let term_y: &[u8] = &term_y[1..term_y.len()];
-                            if let (Ok(x), Ok(y)) = (
-                                u16::from_str_radix(str::from_utf8_unchecked(term_x), 10),
-                                u16::from_str_radix(str::from_utf8_unchecked(term_y), 10)
-                            ) {
-                                Ok(Operate::Mouse(cmd, m.eq(&b'M'), x, y))
-                            } else {
-                                Err(OperateError::FromStrFail)
-                            }
-                        }).unwrap_or(Err(OperateError::PositionNotFound))
-                    },
-                    Err(why) => Err(OperateError::MouseFail(why)),
-                }
+        let start: Option<(u8, &[u8])> = match buf {
+            &[b'\x1B', b'[', b'<', action1 @ b'0'...b'9', action2 @ b'0'...b'9', b';', ref next..] => {
+                Some(((action1 - 48) * 10 + action2 - 48, next))
             },
-            _ => Err(OperateError::NotMouse),
+            &[b'\x1B', b'[', b'<', action @ b'0'...b'9', b';', ref next..] => {
+                Some((action - 48, next))
+            },
+            _ => None,
+        };
+        if let Some((action, next)) = start {
+            match next {
+                &[ref coordinate.., m @ b'M'...b'm'] => {
+                    match Mouse::new(action) {
+                        Ok(cmd) => {
+                            coordinate.iter().position(|&sep| sep.eq(&b';')).map(|index: usize| unsafe {
+                                let (term_x, term_y): (&[u8], &[u8]) = coordinate.split_at(index);
+                                let term_y: &[u8] = &term_y[1..term_y.len()];
+                                if let (Ok(x), Ok(y)) = (
+                                    u16::from_str_radix(str::from_utf8_unchecked(term_x), 10),
+                                    u16::from_str_radix(str::from_utf8_unchecked(term_y), 10)
+                                ) {
+                                    Ok(Operate::Mouse(cmd, m.eq(&b'M'), x, y))
+                                } else {
+                                    Err(OperateError::FromStrFail)
+                                }
+                            }).unwrap_or(Err(OperateError::PositionNotFound))
+                        },
+                        Err(why) => Err(OperateError::MouseFail(why)),
+                    }
+                },
+                _ => Err(OperateError::NotMouse),
+            }
+        } else {
+            Err(OperateError::NotMouse)
         }
     }
 
