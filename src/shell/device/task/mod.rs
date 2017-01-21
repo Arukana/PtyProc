@@ -58,7 +58,6 @@ impl Proc {
 
                 buffer.write(name.as_bytes());
             }
-println!("SOURCE::{:?}", source);
             Some((pid, source))
         })
     }
@@ -108,8 +107,7 @@ impl Iterator for Proc
     self.with_list_process().unwrap();
     let new_pid = self.current_pid();
     if self.running_pid != new_pid && new_pid > 1
-{ println!("PID! OLD::{}, NEW::{}", self.running_pid, new_pid);
-    	self.running_pid = new_pid;
+   { self.running_pid = new_pid;
       self.get_name(self.running_pid) }
     else
     { None }}}
