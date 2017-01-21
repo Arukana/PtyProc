@@ -1,6 +1,6 @@
 pub mod operate;
 
-use std::{fmt, str, mem};
+use std::{fmt, str};
 
 use ::libc;
 use ::time;
