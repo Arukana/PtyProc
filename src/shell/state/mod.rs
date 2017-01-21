@@ -151,7 +151,9 @@ impl ShellState {
 println!("BONJOUR::{:?}", bonjour);
                     match coucou
                     { &[b'M', ..] =>
-                      { if out_screen.mouse().3 == false && bonjour[0] > 2
+                      { 
+println!("IS PRESS");
+if out_screen.mouse().3 == false && bonjour[0] > 2
                         { down = None; }
                         else if out_screen.mouse().3 == false && out_screen.mouse().0 == false && out_screen.mouse().1 == false
                         { down = None; }
@@ -169,7 +171,9 @@ println!("BONJOUR::{:?}", bonjour);
                         else if out_screen.mouse().3 == false && out_screen.mouse().0 == true
                         { down = None; }},
                       &[b'm', ..] =>
-                      { if out_screen.mouse().0 == false && out_screen.mouse().1 == false
+                      {
+println!("IS RELEASE");
+if out_screen.mouse().0 == false && out_screen.mouse().1 == false
                         { down = None; }
                         else if out_screen.mouse().1 == true && out_screen.mouse().3 == false && bonjour[0] <= 2 {
                             let mut buf: In = In::default();
