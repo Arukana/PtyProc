@@ -48,7 +48,7 @@ impl Proc {
 
     /// The accessor method `get_name` returns the name of
     /// the process according to the pid.
-    pub fn get_name(&self, pid: libc::pid_t)-> Option<BufProc> {
+    pub fn get_name(&self, pid: libc::pid_t)-> Option<&BufProc> {
         self.list.iter().find(
             |&&(ref current_pid, _, _, _)| pid.eq(current_pid)
         ).and_then(|&(_, _, _, ref name): &(_, _, _, String)| {
@@ -59,7 +59,7 @@ impl Proc {
                 buffer.write(name.as_bytes());
             }
 println!("SOURCE::{:?}", source);
-            Some((pid, source))
+            Some(&(pid, source))
         })
     }
 
@@ -103,7 +103,7 @@ println!("SOURCE::{:?}", source);
 impl Iterator for Proc
 { type Item = BufProc;
 
-  fn next(&mut self) -> Option<BufProc>
+  fn next(&mut self) -> Option<&BufProc>
   { self.list.clear();
     self.with_list_process().unwrap();
     let new_pid = self.current_pid();
