@@ -30,5 +30,4 @@ env:
 script:
   - travis-cargo --only nightly build
   - travis-cargo --only nightly test
-  - travis-cargo --only nightly test -- --features winsz
   - travis-cargo --only nightly test -- --features task
