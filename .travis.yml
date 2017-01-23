@@ -19,10 +19,12 @@ before_script:
   - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/Library/Python/2.7/bin:$PATH
 script:
   - |
-      travis-cargo --only nightly build
-      travis-cargo --only nightly test
-      travis-cargo --only nightly bench
+      travis-cargo build
+      travis-cargo test
+      travis-cargo bench
+      travis-cargo doc -- --no-deps
 after_success:
+  - echo "<meta http-equiv=refresh content=0;url=[CRATE NAME]/index.html>" >> target/doc/index.html
   - travis-cargo --only nightly doc-upload 
 env:
   global:
