@@ -25,7 +25,7 @@ script:
       travis-cargo bench
       travis-cargo doc -- --no-deps
 after_success:
-  - echo "<meta http-equiv=refresh content=0;url=[CRATE NAME]/index.html>" >> target/doc/index.html
+  - touch target/doc/index.html
   - travis-cargo --only nightly doc-upload 
 env:
   global:
