@@ -19,6 +19,22 @@ before_script:
   - pip install 'travis-cargo<0.2' --user && export PATH=$HOME/Library/Python/2.7/bin:$PATH
 script:
   - |
+      cargo build --verbose
+      cargo build --features "keyboard-time"
+      cargo build --features "task"
+      cargo build --features "task keyboard-time"
+      cargo build --features "idle"
+      cargo build --features "idle keyboard-time"
+      cargo build --features "idle task"
+      cargo build --features "idle task keyboard-time"
+      cargo build --features "signal"
+      cargo build --features "signal keyboard-time"
+      cargo build --features "signal task"
+      cargo build --features "signal task keyboard-time"
+      cargo build --features "signal idle"
+      cargo build --features "signal idle keyboard-time"
+      cargo build --features "signal idle task"
+      cargo build --features "signal idle task keyboard-time"
       travis-cargo build -- --verbose
       travis-cargo test
       travis-cargo test -- --features task
@@ -28,5 +44,5 @@ after_success:
   - touch target/doc/index.html
   - travis-cargo --only nightly doc-upload 
 env:
-  global:
-    - TRAVIS_CARGO_NIGHTLY_FEATURE="nightly"
+    global:
+      - TRAVIS_CARGO_NIGHTLY_FEATURE="nightly"
