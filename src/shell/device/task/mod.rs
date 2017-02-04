@@ -9,7 +9,8 @@ mod ffi;
 
 #[cfg(feature = "task")]
 use std::io::Write;
-use std::ops::{Not, BitAnd};
+#[cfg(feature = "task")]
+use std::ops::Not;
 
 pub use self::err::{ProcError, Result};
 
@@ -56,7 +57,7 @@ impl Proc {
             {
                 let mut buffer: &mut [libc::c_uchar] = &mut source[..];
 
-                buffer.write(name.as_bytes());
+                let _ = buffer.write(name.as_bytes());
             }
             Some((pid, source))
         })

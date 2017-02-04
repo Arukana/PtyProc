@@ -3,8 +3,6 @@ use super::task::{Proc, BufProc};
 pub use super::{In, Out, Sig};
 
 use std::io::{self, Read};
-#[cfg(feature = "task")]
-use std::{thread, time};
 
 use ::chan;
 use ::libc;

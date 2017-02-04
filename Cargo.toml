@@ -19,6 +19,7 @@ doctest = false
 
 [features]
 default       = []
+idle          = []
 task          = []
 signal        = []
 lints         = ["clippy", "nightly"]
