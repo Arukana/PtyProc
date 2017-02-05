@@ -19,7 +19,7 @@ pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 use self::display::Display;
 
-use self::display::winsz::Winszed;
+pub use self::display::winsz::Winszed;
 
 /// The struct `Shell` is the speudo terminal interface.
 
@@ -104,6 +104,7 @@ impl Shell {
     /// The mutator method `set_window_size` redimentionnes the window
     /// with a argument size.
     pub fn set_window_size_with(&mut self, size: &Winszed) {
+        println!("{:?}", size);
         self.screen.set_window_size(size);
         unsafe {
             libc::ioctl(self.speudo.as_raw_fd(), libc::TIOCSWINSZ, size);
@@ -118,11 +119,17 @@ impl Iterator for Shell {
     fn next(&mut self) -> Option<ShellState> {
         match self.device.next() {
             None => None,
+            #[cfg(feature = "auto-resize")]
             Some(event) => {
                 self.state.clone_from(&mut self.screen, event);
-                if self.state.is_signal_resized().is_some() {
-                    self.set_window_size();
+                if let Some(size) = self.state.is_resized() {
+                    self.set_window_size_with(&size);
                 }
+                Some(self.state)
+            },
+            #[cfg(not(feature = "auto-resize"))]
+            Some(event) => {
+                self.state.clone_from(&mut self.screen, event);
                 Some(self.state)
             },
         }

@@ -16,6 +16,7 @@ pub use super::device::In;
 use super::display::Display;
 use super::device::control::Control;
 
+pub use super::display::winsz::Winszed;
 #[cfg(feature = "task")]
 pub use super::device::BufProc;
 pub use super::device::{Out, DeviceState};
@@ -39,12 +40,11 @@ fn catch_numbers<'a>(mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::si
 pub struct ShellState {
     /// The time limit required for a repetition.
     repeat: libc::c_long,
+    size: Option<Winszed>,
     /// The time limit required for a repetition.
     interval: libc::c_long,
     /// Update.
     idle: Option<()>,
-    /// Signal.
-    sig: Option<libc::c_int>,
     /// The pressed character.
     in_down: Option<Control>,
     /// The released character.
@@ -63,43 +63,38 @@ pub struct ShellState {
 impl ShellState {
 
     /// The constructor method `new` returns a empty ShellState.
-    #[cfg(feature = "task")]
     pub fn new (
         repeat: Option<libc::c_long>,
         interval: Option<libc::c_long>,
     ) -> Self {
-        ShellState {
-            repeat: repeat.unwrap_or(DEFAULT_REPEAT),
-            interval: interval.unwrap_or(DEFAULT_INTERVAL),
-            idle: None,
-            sig: None,
-            in_down: None,
-            in_up: None,
-            in_repeat: None,
-            in_interval: None,
-            out_last: None,
-            buffer: Buf([0; 100], 0),
-            task: None,
-        }
-    }
-
-    /// The constructor method `new` returns a empty ShellState.
-    #[cfg(not(feature = "task"))]
-    pub fn new (
-        repeat: Option<libc::c_long>,
-        interval: Option<libc::c_long>,
-    ) -> Self {
-        ShellState {
-            repeat: repeat.unwrap_or(DEFAULT_REPEAT),
-            interval: interval.unwrap_or(DEFAULT_INTERVAL),
-            idle: None,
-            sig: None,
-            in_down: None,
-            in_up: None,
-            in_repeat: None,
-            in_interval: None,
-            out_last: None,
-            buffer: Buf([0; 100], 0),
+        match () {
+            #[cfg(feature = "task")]
+            () => ShellState {
+                repeat: repeat.unwrap_or(DEFAULT_REPEAT),
+                interval: interval.unwrap_or(DEFAULT_INTERVAL),
+                idle: None,
+                in_down: None,
+                in_up: None,
+                in_repeat: None,
+                in_interval: None,
+                out_last: None,
+                buffer: Buf([0; 100], 0),
+                task: None,
+                size: None,
+            },
+            #[cfg(not(feature = "task"))]
+            () => ShellState {
+                repeat: repeat.unwrap_or(DEFAULT_REPEAT),
+                interval: interval.unwrap_or(DEFAULT_INTERVAL),
+                idle: None,
+                in_down: None,
+                in_up: None,
+                in_repeat: None,
+                in_interval: None,
+                out_last: None,
+                buffer: Buf([0; 100], 0),
+                size: None,
+            },
         }
     }
 
@@ -131,12 +126,6 @@ impl ShellState {
     /// The mutator method `set_idle` update the idle event status.
     pub fn set_idle(&mut self, entry: Option<()>) {
         self.idle = entry;
-    }
-
-    /// The mutator method `set_signal` update the signal
-    /// and can resize the Display interface.
-    pub fn set_signal(&mut self, signal: Option<libc::c_int>) {
-        self.sig = signal;
     }
 
     /// The mutator method `set_input` update the `in_text`
@@ -297,21 +286,6 @@ impl ShellState {
         self.idle
     }
 
-    /// The accessor method `is_signal` returns the Signal event.
-    pub fn is_signal(&self) -> Option<libc::c_int> {
-        self.sig
-    }
-
-    /// The accessor method `is_signal_resized` returns the Option for
-    /// the WINCH Signal event.
-    pub fn is_signal_resized(&self) -> Option<()> {
-        if let Some(libc::SIGWINCH) = self.sig {
-            Some(())
-        } else {
-            None
-        }
-    }
-
     /// The accessor method `is_input_keydown` returns the pressed Key event.
     pub fn is_input_keydown(&self) -> Option<Key> {
         if let Some(ref control) = self.in_down {
@@ -372,9 +346,7 @@ impl ShellState {
 
     /// The accessor method `is_output_screen` returns the Output screen event.
     pub fn is_output_screen(&self) -> Option<()> {
-        if self.is_output_last().is_some().bitor(
-            self.is_signal_resized().is_some()
-        ) {
+        if self.is_output_last().is_some() {
             Some(())
         } else {
             None
@@ -391,25 +363,61 @@ impl ShellState {
         }
     }
 
+    #[cfg(feature = "auto-resize")]
+    pub fn is_resized(&self) -> Option<Winszed> {
+        self.size
+    }
+
+    #[cfg(feature = "auto-resize")]
+    fn set_resized(&mut self, out_screen: &mut Display) {
+        match Winszed::new(libc::STDIN_FILENO) {
+            Ok(size) if size.ne(&out_screen.get_window_size()) => {
+                self.size = Some(size);
+            },
+            _ => {
+                self.size = None;
+            },
+        }
+    }
+
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
-    #[cfg(feature = "task")]
+    #[cfg(all(feature = "task", not(feature = "auto-resize")))]
     pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_task(event.is_task());
         self.set_idle(event.is_idle());
-        self.set_signal(event.is_signal());
         self.set_output(out_screen, event.is_out_text());
         self.set_input(out_screen, event.is_input());
     }
 
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
-    #[cfg(not(feature = "task"))]
+    #[cfg(all(not(feature = "task"), not(feature = "auto-resize")))]
     pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_idle(event.is_idle());
-        self.set_signal(event.is_signal());
         self.set_output(out_screen, event.is_out_text());
         self.set_input(out_screen, event.is_input());
+    }
+
+    /// The method `with_device` updates the state from
+    /// the event DeviceState interface.
+    #[cfg(all(feature = "task", feature = "auto-resize"))]
+    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
+        self.set_task(event.is_task());
+        self.set_idle(event.is_idle());
+        self.set_output(out_screen, event.is_out_text());
+        self.set_input(out_screen, event.is_input());
+        self.set_resized(out_screen);
+    }
+
+    /// The method `with_device` updates the state from
+    /// the event DeviceState interface.
+    #[cfg(all(not(feature = "task"), feature = "auto-resize"))]
+    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
+        self.set_idle(event.is_idle());
+        self.set_output(out_screen, event.is_out_text());
+        self.set_input(out_screen, event.is_input());
+        self.set_resized(out_screen);
     }
 }
 
@@ -418,7 +426,7 @@ impl fmt::Debug for ShellState {
     #[cfg(feature = "task")]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
-            "ShellState {{ task: {:?}, idle: {:?}, signal: {:?}, input: {:?}, output: {:?} }}",
+            "ShellState {{ task: {:?}, idle: {:?}, input: {:?}, output: {:?} }}",
                self.task, self.idle, self.sig, self.in_down, self.out_last.is_some()
         )
     }
@@ -426,8 +434,8 @@ impl fmt::Debug for ShellState {
     #[cfg(not(feature = "task"))]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
-          "ShellState {{ idle: {:?}, signal: {:?}, input: {:?}, output: {:?}}}",
-               self.idle, self.sig, self.in_down, self.out_last.is_some()
+          "ShellState {{ idle: {:?}, input: {:?}, output: {:?}}}",
+               self.idle, self.in_down, self.out_last.is_some()
         )
     }
 }

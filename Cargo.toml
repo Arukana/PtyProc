@@ -18,7 +18,8 @@ test = false
 doctest = false
 
 [features]
-default       = []
+default       = ["auto-resize"]
+auto-resize   = []
 idle          = []
 task          = []
 lints         = ["clippy", "nightly"]

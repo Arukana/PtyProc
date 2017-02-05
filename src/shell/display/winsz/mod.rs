@@ -1,6 +1,6 @@
 mod err;
 
-use std::ops::Mul;
+use std::ops::{BitAnd, Mul};
 
 use ::libc;
 pub use self::err::{WinszedError, Result};
@@ -8,7 +8,7 @@ pub use self::err::{WinszedError, Result};
 /// The enum `Winszed` is the size of the tty window.
 
 #[repr(C)]
-#[derive(PartialEq, Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub struct Winszed {
     /// Rows, in characters.
     pub ws_row: libc::c_ushort,
@@ -18,6 +18,14 @@ pub struct Winszed {
     pub ws_xpixel: libc::c_ushort,
     /// Vertical size, pixels.
     pub ws_ypixel: libc::c_ushort, 
+}
+
+impl PartialEq for Winszed {
+    fn eq(&self, other: &Winszed) -> bool {
+        self.ws_row.eq(&other.ws_row).bitand(
+            self.ws_col.eq(&other.ws_col)
+        )
+    }
 }
 
 impl Winszed {
