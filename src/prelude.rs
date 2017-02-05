@@ -11,3 +11,4 @@ pub use ::shell::display::winsz::Winszed;
 pub use ::shell::display::character::Character;
 pub use ::shell::state::DEFAULT_REPEAT as REPEAT;
 pub use ::shell::state::DEFAULT_INTERVAL as INTERVAL;
+pub use ::pty::prelude::Master;
