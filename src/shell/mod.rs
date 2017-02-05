@@ -72,6 +72,11 @@ impl Shell {
         self.pid
     }
 
+    /// The accessor method `get_speudo` returns the master interface.
+    pub fn get_speudo(&self) -> &pty::Master {
+        &self.speudo
+    }
+
     /// The accessor method `get_screen` returns a reference on the Display interface.
     pub fn get_screen(&self) -> &Display {
         &self.screen
