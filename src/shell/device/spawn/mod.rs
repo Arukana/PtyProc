@@ -32,30 +32,3 @@ pub fn output(tx_out: chan::Sender<(Out, libc::size_t)>, mut master: pty::Master
         tx_out.send((bytes, read));
     }
 }
-
-#[cfg(feature = "signal")]
-pub fn signal(tx_sig: chan::Sender<libc::c_int>) {
-    use std::sync::atomic::{AtomicI32, ATOMIC_I32_INIT, Ordering};
-    use std::time::Duration;
-    use std::ops::Div;
-    use std::thread;
-
-    static GOT_SIGNAL: AtomicI32 = ATOMIC_I32_INIT;
-
-    unsafe fn event(sig: Sig) {
-        GOT_SIGNAL.store(sig, Ordering::Release);
-    }
-    let duration: Duration = Duration::from_secs(1).div(2);
-    unsafe {
-        libc::signal(libc::SIGWINCH, event as libc::sighandler_t);
-        loop {
-            match GOT_SIGNAL.load(Ordering::Relaxed) {
-                0 => thread::sleep(duration),
-                sig => {
-                    GOT_SIGNAL.store(0, Ordering::Release);
-                    tx_sig.send(sig);
-                },
-            }
-        }
-    }
-}

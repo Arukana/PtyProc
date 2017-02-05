@@ -29,7 +29,6 @@ pub struct Device {
     input: chan::Receiver<(In, libc::size_t)>,
     output: chan::Receiver<(Out, libc::size_t)>,
     #[cfg(feature = "task")] task: chan::Receiver<BufProc>,
-    #[cfg(feature = "signal")] signal: chan::Receiver<libc::c_int>,
 }
 
 impl Device {
@@ -43,14 +42,14 @@ impl Device {
         thread::spawn(move || spawn::input(tx_in));
         thread::spawn(move || spawn::output(tx_out, master));
         match () {
-            #[cfg(all(not(feature = "task"), not(feature = "signal")))]
+            #[cfg(not(feature = "task"))]
             () => {
                 Device {
                     input: rx_in,
                     output: rx_out,
                 }
             },
-            #[cfg(all(feature = "task", not(feature = "signal")))]
+            #[cfg(feature = "task")]
             () => {
                 let (tx_task, rx_task) = chan::sync(0);
 
@@ -59,31 +58,6 @@ impl Device {
                     input: rx_in,
                     output: rx_out,
                     task: rx_task,
-                }
-            },
-            #[cfg(all(not(feature = "task"), feature = "signal"))]
-            () => {
-                let (tx_sig, rx_sig) = chan::sync(0);
-
-                thread::spawn(move || spawn::signal(tx_sig));
-                Device {
-                    input: rx_in,
-                    output: rx_out,
-                    signal: rx_sig,
-                }
-            },
-            #[cfg(all(feature = "task", feature = "signal"))]
-            () => {
-                let (tx_task, rx_task) = chan::sync(0);
-                let (tx_sig, rx_sig) = chan::sync(0);
-
-                thread::spawn(move || spawn::task(tx_task, pid));
-                thread::spawn(move || spawn::signal(tx_sig));
-                Device {
-                    input: rx_in,
-                    output: rx_out,
-                    task: rx_task,
-                    signal: rx_sig,
                 }
             },
         }
@@ -98,7 +72,7 @@ impl Iterator for Device {
         let ref output: chan::Receiver<(Out, libc::size_t)> = self.output;
 
         match () {
-            #[cfg(all(not(feature = "task"), not(feature = "idle"), not(feature = "signal")))]
+            #[cfg(all(not(feature = "task"), not(feature = "idle")))]
             () => chan_select! {
                 input.recv() -> val => return val.and_then(|(buf, len)| Some(DeviceState::from_in(buf, len))),
                 output.recv() -> val => return match val {
@@ -108,21 +82,7 @@ impl Iterator for Device {
                     _ => None,
                 },
             },
-            #[cfg(all(not(feature = "task"), not(feature = "idle"), feature = "signal"))]
-            () => {
-                let ref signal: chan::Receiver<Sig> = self.signal;
-                chan_select! {
-                    signal.recv() -> val => return val.and_then(|sig| Some(DeviceState::from_sig(sig))),
-                    input.recv() -> val => return val.and_then(|(buf, len)| Some(DeviceState::from_in(buf, len))),
-                    output.recv() -> val => return match val {
-                        Some((buf, len @ 1 ... 4096)) => Some(
-                            DeviceState::from_out(buf, len)
-                        ),
-                        _ => None,
-                    },
-                }
-            },
-            #[cfg(all(not(feature = "task"), feature = "idle", not(feature = "signal")))]
+            #[cfg(all(not(feature = "task"), feature = "idle"))]
             () => chan_select! {
                 default => return Some(DeviceState::from_idle()),
                 input.recv() -> val => return val.and_then(|(buf, len)| Some(DeviceState::from_in(buf, len))),
@@ -133,22 +93,7 @@ impl Iterator for Device {
                     _ => None,
                 },
             },
-            #[cfg(all(not(feature = "task"), feature = "idle", feature = "signal"))]
-            () => {
-                let ref signal: chan::Receiver<Sig> = self.signal;
-                chan_select! {
-                    default => return Some(DeviceState::from_idle()),
-                    signal.recv() -> val => return val.and_then(|sig| Some(DeviceState::from_sig(sig))),
-                    input.recv() -> val => return val.and_then(|(buf, len)| Some(DeviceState::from_in(buf, len))),
-                    output.recv() -> val => return match val {
-                        Some((buf, len @ 1 ... 4096)) => Some(
-                            DeviceState::from_out(buf, len)
-                        ),
-                        _ => None,
-                    },
-                }
-            },
-            #[cfg(all(feature = "task", not(feature = "idle"), not(feature = "signal")))]
+            #[cfg(all(feature = "task", not(feature = "idle")))]
             () => {
                 let ref task: chan::Receiver<BufProc> = self.task;
                 chan_select! {
@@ -162,45 +107,12 @@ impl Iterator for Device {
                     },
                 }
             },
-            #[cfg(all(feature = "task", not(feature = "idle"), feature = "signal"))]
-            () => {
-                let ref task: chan::Receiver<BufProc> = self.task;
-                let ref signal: chan::Receiver<Sig> = self.signal;
-                chan_select! {
-                    signal.recv() -> val => return val.and_then(|sig| Some(DeviceState::from_sig(sig))),
-                    task.recv() -> val => return val.and_then(|name| Some(DeviceState::Proc(name))),
-                    input.recv() -> val => return val.and_then(|(buf, len)| Some(DeviceState::from_in(buf, len))),
-                    output.recv() -> val => return match val {
-                        Some((buf, len @ 1 ... 4096)) => Some(
-                            DeviceState::from_out(buf, len)
-                        ),
-                        _ => None,
-                    },
-                }
-            },
-            #[cfg(all(feature = "task", feature = "idle", not(feature = "signal")))]
+            #[cfg(all(feature = "task", feature = "idle"))]
             () => {
                 let ref task: chan::Receiver<BufProc> = self.task;
                 chan_select! {
                     default => return Some(DeviceState::from_idle()),
                     task.recv() -> val => return val.and_then(|name| Some(DeviceState::Proc(name))),
-                    input.recv() -> val => return val.and_then(|(buf, len)| Some(DeviceState::from_in(buf, len))),
-                    output.recv() -> val => return match val {
-                        Some((buf, len @ 1 ... 4096)) => Some(
-                            DeviceState::from_out(buf, len)
-                        ),
-                        _ => None,
-                    },
-                }
-            },
-            #[cfg(all(feature = "task", feature = "idle", feature = "signal"))]
-            () => {
-                let ref task: chan::Receiver<BufProc> = self.task;
-                let ref signal: chan::Receiver<Sig> = self.signal;
-                chan_select! {
-                    default => return Some(DeviceState::from_idle()),
-                    task.recv() -> val => return val.and_then(|name| Some(DeviceState::Proc(name))),
-                    signal.recv() -> val => return val.and_then(|sig| Some(DeviceState::from_sig(sig))),
                     input.recv() -> val => return val.and_then(|(buf, len)| Some(DeviceState::from_in(buf, len))),
                     output.recv() -> val => return match val {
                         Some((buf, len @ 1 ... 4096)) => Some(

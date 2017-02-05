@@ -21,7 +21,6 @@ doctest = false
 default       = []
 idle          = []
 task          = []
-signal        = []
 lints         = ["clippy", "nightly"]
 nightly       = [] # for building with nightly and unstable features
 unstable      = [] # for building with unstable features on stable Rust

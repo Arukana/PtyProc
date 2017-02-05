@@ -5,8 +5,6 @@
 #![crate_type= "lib"]
 #![cfg_attr(feature = "nightly", feature(plugin))]
 
-#![cfg_attr(feature = "signal", feature(integer_atomics))]
-
 #![feature(plugin)]
 #![cfg_attr(feature = "clippy", plugin(clippy(conf_file="clippy.toml")))]
 
