@@ -104,7 +104,6 @@ impl Shell {
     /// The mutator method `set_window_size` redimentionnes the window
     /// with a argument size.
     pub fn set_window_size_with(&mut self, size: &Winszed) {
-        println!("{:?}", size);
         self.screen.set_window_size(size);
         unsafe {
             libc::ioctl(self.speudo.as_raw_fd(), libc::TIOCSWINSZ, size);
