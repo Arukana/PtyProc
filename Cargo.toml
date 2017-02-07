@@ -34,9 +34,6 @@ version       = "0.2"
 [dependencies.time]
 version       = "0.1"
 
-[dependencies.chan]
-version       = "0.1.18"
-
 [dependencies.errno]
 version       = "0.1"
 

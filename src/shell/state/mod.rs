@@ -383,7 +383,7 @@ impl ShellState {
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
     #[cfg(all(feature = "task", not(feature = "auto-resize")))]
-    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
+    pub fn update_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_task(event.is_task());
         self.set_idle(event.is_idle());
         self.set_output(out_screen, event.is_out_text());
@@ -393,7 +393,7 @@ impl ShellState {
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
     #[cfg(all(not(feature = "task"), not(feature = "auto-resize")))]
-    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
+    pub fn update_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_idle(event.is_idle());
         self.set_output(out_screen, event.is_out_text());
         self.set_input(out_screen, event.is_input());
@@ -402,7 +402,7 @@ impl ShellState {
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
     #[cfg(all(feature = "task", feature = "auto-resize"))]
-    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
+    pub fn update_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_task(event.is_task());
         self.set_idle(event.is_idle());
         self.set_output(out_screen, event.is_out_text());
@@ -413,7 +413,7 @@ impl ShellState {
     /// The method `with_device` updates the state from
     /// the event DeviceState interface.
     #[cfg(all(not(feature = "task"), feature = "auto-resize"))]
-    pub fn clone_from(&mut self, out_screen: &mut Display, event: DeviceState) {
+    pub fn update_from(&mut self, out_screen: &mut Display, event: DeviceState) {
         self.set_idle(event.is_idle());
         self.set_output(out_screen, event.is_out_text());
         self.set_input(out_screen, event.is_input());
@@ -427,7 +427,7 @@ impl fmt::Debug for ShellState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f,
             "ShellState {{ task: {:?}, idle: {:?}, input: {:?}, output: {:?} }}",
-               self.task, self.idle, self.sig, self.in_down, self.out_last.is_some()
+               self.task, self.idle, self.in_down, self.out_last.is_some()
         )
     }
 

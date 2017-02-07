@@ -121,7 +121,7 @@ impl Iterator for Shell {
             None => None,
             #[cfg(feature = "auto-resize")]
             Some(event) => {
-                self.state.clone_from(&mut self.screen, event);
+                self.state.update_from(&mut self.screen, event);
                 if let Some(size) = self.state.is_resized() {
                     self.set_window_size_with(&size);
                 }
@@ -129,7 +129,7 @@ impl Iterator for Shell {
             },
             #[cfg(not(feature = "auto-resize"))]
             Some(event) => {
-                self.state.clone_from(&mut self.screen, event);
+                self.state.update_from(&mut self.screen, event);
                 Some(self.state)
             },
         }

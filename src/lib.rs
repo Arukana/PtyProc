@@ -15,7 +15,6 @@
     unused_import_braces,
 )]
 
-#[macro_use(chan_select)] extern crate chan;
 extern crate pty;
 extern crate libc;
 extern crate time;
