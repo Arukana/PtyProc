@@ -44,28 +44,35 @@ impl Shell {
       windows: Option<Winszed>,
   ) -> Result<Self> {
       unsafe {
-        let winsz: Winszed = windows.unwrap_or_else(|| Winszed::new(libc::STDIN_FILENO).unwrap());
-        match pty::Fork::from_ptmx() {
-              Err(cause) => Err(ShellError::ForkFail(cause)),
-              Ok(fork) => match fork {
-                  pty::Fork::Child(ref slave) => {
-                      libc::ioctl(0, libc::TIOCSWINSZ, &winsz);
-                      slave.exec(command.unwrap_or("/bin/zsh"))
-                  },
-                  pty::Fork::Parent(pid, master) => {
-                      mem::forget(fork);
-                      Ok(Shell {
-                          pid: pid,
-                          config: Termios::default(),
-                          speudo: master,
-                          device: Device::from_speudo(master, libc::getpid()),
-                          state: ShellState::new(repeat, interval),
-                          screen: Display::from_winszed(winsz),
-                      })
-                  },
-              }
-          }
-      }}
+            let winsz: Winszed =
+                windows.and_then(|winsz| {
+                    let _ = Winszed::from_winsized(libc::STDIN_FILENO, &winsz);
+                    Some(winsz)
+                })
+                .or_else(|| Winszed::new(libc::STDIN_FILENO).ok())
+                .unwrap_or_default();
+            match pty::Fork::from_ptmx() {
+                Err(cause) => Err(ShellError::ForkFail(cause)),
+                Ok(fork) => match fork {
+                    pty::Fork::Child(ref slave) => {
+                        libc::ioctl(libc::STDIN_FILENO, libc::TIOCSWINSZ, &winsz);
+                        slave.exec(command.unwrap_or("/bin/zsh"))
+                    },
+                    pty::Fork::Parent(pid, master) => {
+                        mem::forget(fork);
+                        Ok(Shell {
+                            pid: pid,
+                            config: Termios::default(),
+                            speudo: master,
+                            device: Device::from_speudo(master, libc::getpid()),
+                            state: ShellState::new(repeat, interval),
+                            screen: Display::from_winszed(winsz),
+                        })
+                    },
+                }
+            }
+        }
+    }
 
     /// The accessor method `get_pid` returns the pid from the master.
     pub fn get_pid(&self) -> libc::pid_t {

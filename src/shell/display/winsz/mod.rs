@@ -20,14 +20,6 @@ pub struct Winszed {
     pub ws_ypixel: libc::c_ushort, 
 }
 
-impl PartialEq for Winszed {
-    fn eq(&self, other: &Winszed) -> bool {
-        self.ws_row.eq(&other.ws_row).bitand(
-            self.ws_col.eq(&other.ws_col)
-        )
-    }
-}
-
 impl Winszed {
 
     /// The constructor method `new` returns the window size.
@@ -93,5 +85,13 @@ impl Winszed {
                 _ => Ok(()),
             }
         }
+    }
+}
+
+impl PartialEq for Winszed {
+    fn eq(&self, other: &Winszed) -> bool {
+        self.ws_row.eq(&other.ws_row).bitand(
+            self.ws_col.eq(&other.ws_col)
+        )
     }
 }
