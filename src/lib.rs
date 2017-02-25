@@ -22,5 +22,6 @@ extern crate errno;
 
 #[macro_use] mod macros;
 mod child;
+pub mod parent;
 pub mod shell;
 pub mod prelude;

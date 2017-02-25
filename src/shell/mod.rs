@@ -18,11 +18,13 @@ use self::termios::Termios;
 pub use self::state::ShellState;
 pub use self::err::{ShellError, Result};
 use self::display::Display;
-
 pub use self::display::winsz::Winszed;
+
+pub use super::parent::Parent;
 
 /// The struct `Shell` is the speudo terminal interface.
 
+#[derive(Debug)]
 pub struct Shell {
     pid: libc::pid_t,
     #[allow(dead_code)]
@@ -74,35 +76,37 @@ impl Shell {
         }
     }
 
-    /// The accessor method `get_pid` returns the pid from the master.
-    pub fn get_pid(&self) -> libc::pid_t {
-        self.pid
-    }
-
-    /// The accessor method `get_speudo` returns the master interface.
-    pub fn get_speudo(&self) -> &pty::Master {
-        &self.speudo
-    }
-
-    /// The accessor method `get_screen` returns a reference on the Display interface.
-    pub fn get_screen(&self) -> &Display {
-        &self.screen
-    }
-
     /// The mutator method `write_screen` set a buffer to the display
     /// without needing to print it
     pub fn write_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.screen.write(buf)
     }
+}
+
+impl Parent for Shell {
+    /// The accessor method `get_pid` returns the pid from the master.
+    fn get_pid(&self) -> libc::pid_t {
+        self.pid
+    }
+
+    /// The accessor method `get_speudo` returns the master interface.
+    fn get_speudo(&self) -> &pty::Master {
+        &self.speudo
+    }
+
+    /// The accessor method `get_screen` returns a reference on the Display interface.
+    fn get_screen(&self) -> &Display {
+        &self.screen
+    }
 
     /// The accessor method `get_window_size` returns the window size.
-    pub fn get_window_size(&self) -> &Winszed {
+    fn get_window_size(&self) -> &Winszed {
         self.screen.get_window_size()
     }
 
     /// The mutator method `set_window_size` redimentionnes the window
     /// with a default size.
-    pub fn set_window_size(&mut self) {
+    fn set_window_size(&mut self) {
         if let Ok(size) = Winszed::new(libc::STDOUT_FILENO) {
             self.set_window_size_with(&size);
         }
@@ -110,7 +114,7 @@ impl Shell {
 
     /// The mutator method `set_window_size` redimentionnes the window
     /// with a argument size.
-    pub fn set_window_size_with(&mut self, size: &Winszed) {
+    fn set_window_size_with(&mut self, size: &Winszed) {
         self.screen.set_window_size(size);
         unsafe {
             libc::ioctl(self.speudo.as_raw_fd(), libc::TIOCSWINSZ, size);
