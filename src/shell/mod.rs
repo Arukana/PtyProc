@@ -10,7 +10,7 @@ use std::mem;
 use std::fmt;
 
 use ::libc;
-use ::fork::Child;
+use ::child::Child;
 use ::pty::prelude as pty;
 
 use self::device::Device;

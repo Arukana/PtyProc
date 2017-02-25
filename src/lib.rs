@@ -21,6 +21,6 @@ extern crate time;
 extern crate errno;
 
 #[macro_use] mod macros;
-mod fork;
+mod child;
 pub mod shell;
 pub mod prelude;
