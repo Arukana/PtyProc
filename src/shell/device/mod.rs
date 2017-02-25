@@ -29,6 +29,7 @@ pub type Sig = libc::c_int;
 
 /// The struct `Device` is the input/output terminal interface.
 
+#[derive(Debug)]
 pub struct Device {
     delay: time::Duration,
     input: mpsc::Receiver<(In, libc::size_t)>,
