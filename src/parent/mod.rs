@@ -8,7 +8,7 @@ use super::shell::display::winsz::Winszed;
 use super::shell::display::Display;
 use super::shell::state::ShellState;
 
-pub trait Parent : Default + Iterator<Item=ShellState> + io::Write + fmt::Display + fmt::Debug + Drop + Sized {
+pub trait Parent : Default + Iterator<Item=ShellState> + io::Write + fmt::Display + fmt::Debug + Drop {
     fn write_screen(&mut self, buf: &[u8]) -> io::Result<usize>;
     fn get_pid(&self) -> libc::pid_t; 
     fn get_speudo(&self) -> &pty::Master;
