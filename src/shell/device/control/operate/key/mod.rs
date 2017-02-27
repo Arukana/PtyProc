@@ -291,6 +291,71 @@ impl Key {
     }
 }
 
+impl From<u32> for Key {
+    fn from(code: u32) -> Self {
+        match code {
+            /// Enter.
+            13 => Key::Char(ENTER),
+            /// BackSpace.
+            127 => Key::Char(BACKSPACE),
+            /// Up.
+            63232 => Key::Char(UP),
+            /// Down.
+            63233 => Key::Char(DOWN),
+            /// Right.
+            63235 => Key::Char(RIGHT),
+            /// Left.
+            63234 => Key::Char(LEFT),
+            /// End.
+            63275 => Key::Char(END),
+            /// Home.
+            63273 => Key::Char(HOME),
+            /// Delete.
+            63272 => Key::Char(DELETE),
+            /// Page Up.
+            63276 => Key::Char(PAGE_UP),
+            /// Page Down.
+            63277 => Key::Char(PAGE_DOWN),
+            /// Function 1.
+            63236 => Key::Char(FUNCTION_1),
+            /// Function 2.
+            63237 => Key::Char(FUNCTION_2),
+            /// Function 3.
+            63238 => Key::Char(FUNCTION_3),
+            /// Function 4.
+            63239 => Key::Char(FUNCTION_4),
+            /// Function 5.
+            63240 => Key::Char(FUNCTION_5),
+            /// Function 6.
+            63241 => Key::Char(FUNCTION_6),
+            /// Function 7.
+            63242 => Key::Char(FUNCTION_7),
+            /// Function 8.
+            63243 => Key::Char(FUNCTION_8),
+            /// Function 9.
+            63244 => Key::Char(FUNCTION_9),
+            /// Function 10.
+            63245 => Key::Char(FUNCTION_10),
+            /// Function 11.
+            63246 => Key::Char(FUNCTION_11),
+            /// Function 12.
+            63247 => Key::Char(FUNCTION_12),
+            _ => unsafe {
+                let buf = mem::transmute::<u32, [u8; 4]>(code);
+                match buf {
+                    [u1 @ b'\xF0' ... b'\xF4', u2 @ b'\x8F' ... b'\x90',
+                      u3 @ b'\x80' ... b'\xBF', u4 @ b'\x80' ... b'\xBF'] => Key::from_utf8([u1, u2, u3, u4]),
+                    [u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0',
+                      u3 @ b'\x80' ... b'\xBF', _] => Key::from_utf8([u1, u2, u3, b'\x00']),
+                    [u1 @ b'\xC2' ... b'\xDF', u2 @ b'\x80' ... b'\xBF',
+                     _, _] => Key::from_utf8([u1, u2, b'\x00', b'\x00']),
+                    [u1, _, _, _] => Key::from_utf8([u1, b'\x00', b'\x00', b'\x00']),
+                }
+            },
+        }
+    }
+}
+
 impl From<(In, libc::size_t)> for Key {
     /// The constructor method `new` returns a parsed Key.
     fn from((buf, len): (In, libc::size_t)) -> Self {
