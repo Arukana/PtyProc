@@ -73,90 +73,6 @@ pub enum Key {
 }
 
 impl Key {
-    /// The constructor method `new` returns a parsed Key.
-    pub fn new(buf: In, len: libc::size_t) -> Self {
-        match &buf[..len] {
-            /// Enter.
-            &[b'\n'] | &[b'\r'] | &[b'\n', b'\r'] => Key::Char(ENTER),
-            /// BackSpace.
-            &[b'\x7f'] => Key::Char(BACKSPACE),
-            /// Up.
-            &[b'\x1B', b'[', b'A'] => Key::Char(UP),
-            /// Down.
-            &[b'\x1B', b'[', b'B'] => Key::Char(DOWN),
-            /// Right.
-            &[b'\x1B', b'[', b'C'] => Key::Char(RIGHT),
-            /// Left.
-            &[b'\x1B', b'[', b'D'] => Key::Char(LEFT),
-            /// End.
-            &[b'\x1B', b'[', b'F'] => Key::Char(END),
-            /// Home.
-            &[b'\x1B', b'[', b'1', b'~'] => Key::Char(HOME),
-            /// Delete.
-            &[b'\x1B', b'[', b'3', b'~'] => Key::Char(DELETE),
-            /// Page Up.
-            &[b'\x1B', b'[', b'5', b'~'] => Key::Char(PAGE_UP),
-            /// Page Down.
-            &[b'\x1B', b'[', b'6', b'~'] => Key::Char(PAGE_DOWN),
-            /// Alt Up.
-            &[b'\x1B', b'[', b'1', b';', b'9', b'A'] => Key::Char(ALT_UP),
-            //// Alt Down.
-            &[b'\x1B', b'[', b'1', b';', b'9', b'B'] => Key::Char(ALT_DOWN),
-            /// Alt Right.
-            &[b'\x1B', b'[', b'1', b';', b'9', b'C'] => Key::Char(ALT_RIGHT),
-            /// Alt Left.
-            &[b'\x1B', b'[', b'1', b';', b'9', b'D'] => Key::Char(ALT_LEFT),
-            /// Function 1.
-            &[b'\x1B', b'O', b'P'] => Key::Char(FUNCTION_1),
-            /// Function 2.
-            &[b'\x1B', b'O', b'Q'] => Key::Char(FUNCTION_2),
-            /// Function 3.
-            &[b'\x1B', b'O', b'R'] => Key::Char(FUNCTION_3),
-            /// Function 4.
-            &[b'\x1B', b'O', b'S'] => Key::Char(FUNCTION_4),
-            /// Function 5.
-            &[b'\x1B', b'[', b'1', b'5', b'~'] => Key::Char(FUNCTION_5),
-            /// Function 6.
-            &[b'\x1B', b'[', b'1', b'7', b'~'] => Key::Char(FUNCTION_6),
-            /// Function 7.
-            &[b'\x1B', b'[', b'1', b'8', b'~'] => Key::Char(FUNCTION_7),
-            /// Function 8.
-            &[b'\x1B', b'[', b'1', b'9', b'~'] => Key::Char(FUNCTION_8),
-            /// Function 9.
-            &[b'\x1B', b'[', b'2', b'0', b'~'] => Key::Char(FUNCTION_9),
-            /// Function 10.
-            &[b'\x1B', b'[', b'2', b'1', b'~'] => Key::Char(FUNCTION_10),
-            /// Function 11.
-            &[b'\x1B', b'[', b'2', b'3', b'~'] => Key::Char(FUNCTION_11),
-            /// Function 12.
-            &[b'\x1B', b'[', b'2', b'4', b'~'] => Key::Char(FUNCTION_12),
-            /// Function 13.
-            &[b'\x1B', b'[', b'2', b'5', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'P'] => Key::Char(FUNCTION_13),
-            /// Function 14.
-            &[b'\x1B', b'[', b'2', b'6', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'Q'] => Key::Char(FUNCTION_14),
-            /// Function 15.
-            &[b'\x1B', b'[', b'2', b'8', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'R'] => Key::Char(FUNCTION_15),
-            /// Function 16.
-            &[b'\x1B', b'[', b'2', b'9', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'S'] => Key::Char(FUNCTION_16),
-            /// Function 17.
-            &[b'\x1B', b'[', b'3', b'1', b'~'] => Key::Char(FUNCTION_17),
-            /// Function 18.
-            &[b'\x1B', b'[', b'3', b'2', b'~'] => Key::Char(FUNCTION_18),
-            /// Function 19.
-            &[b'\x1B', b'[', b'3', b'3', b'~'] => Key::Char(FUNCTION_19),
-
-            &[u1 @ b'\xF0' ... b'\xF4',
-              u2 @ b'\x8F' ... b'\x90',
-              u3 @ b'\x80' ... b'\xBF',
-              u4 @ b'\x80' ... b'\xBF'] => Key::from_utf8([u1, u2, u3, u4]),
-            &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0',
-              u3 @ b'\x80' ... b'\xBF'] => Key::from_utf8([u1, u2, u3, b'\x00']),
-            &[u1 @ b'\xC2' ... b'\xDF',
-              u2 @ b'\x80' ... b'\xBF'] => Key::from_utf8([u1, u2, b'\x00', b'\x00']),
-            &[u1] => Key::from_utf8([u1, b'\x00', b'\x00', b'\x00']),
-            _ => Key::Str(buf),
-        }
-    }
 
     /// The constructor method `from_utf8` returns a UTF-8 parsed Key.
     pub fn from_utf8(buf: [libc::c_uchar; 4]) -> Self {
@@ -371,6 +287,93 @@ impl Key {
         match *self {
             Key::Char(e @ 128...159) => e.eq(&e),
             _ => false,
+        }
+    }
+}
+
+impl From<(In, libc::size_t)> for Key {
+    /// The constructor method `new` returns a parsed Key.
+    fn from((buf, len): (In, libc::size_t)) -> Self {
+        match &buf[..len] {
+            /// Enter.
+            &[b'\n'] | &[b'\r'] | &[b'\n', b'\r'] => Key::Char(ENTER),
+            /// BackSpace.
+            &[b'\x7f'] => Key::Char(BACKSPACE),
+            /// Up.
+            &[b'\x1B', b'[', b'A'] => Key::Char(UP),
+            /// Down.
+            &[b'\x1B', b'[', b'B'] => Key::Char(DOWN),
+            /// Right.
+            &[b'\x1B', b'[', b'C'] => Key::Char(RIGHT),
+            /// Left.
+            &[b'\x1B', b'[', b'D'] => Key::Char(LEFT),
+            /// End.
+            &[b'\x1B', b'[', b'F'] => Key::Char(END),
+            /// Home.
+            &[b'\x1B', b'[', b'1', b'~'] => Key::Char(HOME),
+            /// Delete.
+            &[b'\x1B', b'[', b'3', b'~'] => Key::Char(DELETE),
+            /// Page Up.
+            &[b'\x1B', b'[', b'5', b'~'] => Key::Char(PAGE_UP),
+            /// Page Down.
+            &[b'\x1B', b'[', b'6', b'~'] => Key::Char(PAGE_DOWN),
+            /// Alt Up.
+            &[b'\x1B', b'[', b'1', b';', b'9', b'A'] => Key::Char(ALT_UP),
+            //// Alt Down.
+            &[b'\x1B', b'[', b'1', b';', b'9', b'B'] => Key::Char(ALT_DOWN),
+            /// Alt Right.
+            &[b'\x1B', b'[', b'1', b';', b'9', b'C'] => Key::Char(ALT_RIGHT),
+            /// Alt Left.
+            &[b'\x1B', b'[', b'1', b';', b'9', b'D'] => Key::Char(ALT_LEFT),
+            /// Function 1.
+            &[b'\x1B', b'O', b'P'] => Key::Char(FUNCTION_1),
+            /// Function 2.
+            &[b'\x1B', b'O', b'Q'] => Key::Char(FUNCTION_2),
+            /// Function 3.
+            &[b'\x1B', b'O', b'R'] => Key::Char(FUNCTION_3),
+            /// Function 4.
+            &[b'\x1B', b'O', b'S'] => Key::Char(FUNCTION_4),
+            /// Function 5.
+            &[b'\x1B', b'[', b'1', b'5', b'~'] => Key::Char(FUNCTION_5),
+            /// Function 6.
+            &[b'\x1B', b'[', b'1', b'7', b'~'] => Key::Char(FUNCTION_6),
+            /// Function 7.
+            &[b'\x1B', b'[', b'1', b'8', b'~'] => Key::Char(FUNCTION_7),
+            /// Function 8.
+            &[b'\x1B', b'[', b'1', b'9', b'~'] => Key::Char(FUNCTION_8),
+            /// Function 9.
+            &[b'\x1B', b'[', b'2', b'0', b'~'] => Key::Char(FUNCTION_9),
+            /// Function 10.
+            &[b'\x1B', b'[', b'2', b'1', b'~'] => Key::Char(FUNCTION_10),
+            /// Function 11.
+            &[b'\x1B', b'[', b'2', b'3', b'~'] => Key::Char(FUNCTION_11),
+            /// Function 12.
+            &[b'\x1B', b'[', b'2', b'4', b'~'] => Key::Char(FUNCTION_12),
+            /// Function 13.
+            &[b'\x1B', b'[', b'2', b'5', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'P'] => Key::Char(FUNCTION_13),
+            /// Function 14.
+            &[b'\x1B', b'[', b'2', b'6', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'Q'] => Key::Char(FUNCTION_14),
+            /// Function 15.
+            &[b'\x1B', b'[', b'2', b'8', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'R'] => Key::Char(FUNCTION_15),
+            /// Function 16.
+            &[b'\x1B', b'[', b'2', b'9', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'S'] => Key::Char(FUNCTION_16),
+            /// Function 17.
+            &[b'\x1B', b'[', b'3', b'1', b'~'] => Key::Char(FUNCTION_17),
+            /// Function 18.
+            &[b'\x1B', b'[', b'3', b'2', b'~'] => Key::Char(FUNCTION_18),
+            /// Function 19.
+            &[b'\x1B', b'[', b'3', b'3', b'~'] => Key::Char(FUNCTION_19),
+
+            &[u1 @ b'\xF0' ... b'\xF4',
+              u2 @ b'\x8F' ... b'\x90',
+              u3 @ b'\x80' ... b'\xBF',
+              u4 @ b'\x80' ... b'\xBF'] => Key::from_utf8([u1, u2, u3, u4]),
+            &[u1 @ b'\xE0' ... b'\xF0', u2 @ b'\x90' ... b'\xA0',
+              u3 @ b'\x80' ... b'\xBF'] => Key::from_utf8([u1, u2, u3, b'\x00']),
+            &[u1 @ b'\xC2' ... b'\xDF',
+              u2 @ b'\x80' ... b'\xBF'] => Key::from_utf8([u1, u2, b'\x00', b'\x00']),
+            &[u1] => Key::from_utf8([u1, b'\x00', b'\x00', b'\x00']),
+            _ => Key::Str(buf),
         }
     }
 }

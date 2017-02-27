@@ -25,7 +25,7 @@ impl Operate {
         if let Ok(opt) = Operate::from_mouse(&buf[..len]) {
             opt
         } else {
-            Operate::Key(Key::new(buf, len))
+            Operate::Key(Key::from((buf, len)))
         }
     }
 
