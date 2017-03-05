@@ -75,15 +75,15 @@ impl Shell {
             }
         }
     }
+
+    /// The mutator method `add_screen` set a buffer to the display
+    /// without needing to print it
+    pub fn add_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.screen.write(buf)
+    }
 }
 
 impl Parent for Shell {
-
-    /// The mutator method `write_screen` set a buffer to the display
-    /// without needing to print it
-    fn write_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.screen.write(buf)
-    }
 
     /// The accessor method `get_pid` returns the pid from the master.
     fn get_pid(&self) -> libc::pid_t {
