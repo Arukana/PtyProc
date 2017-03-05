@@ -122,6 +122,24 @@ impl Parent for Shell {
             libc::kill(self.pid, libc::SIGWINCH);
         }
     }
+
+    fn next(&mut self, event: state::DeviceState) -> ShellState {
+        match () {
+            #[cfg(feature = "auto-resize")]
+            () => {
+                self.state.update_from(&mut self.screen, event);
+                if let Some(size) = self.state.is_resized() {
+                    self.set_window_size_with(&size);
+                }
+                self.state
+            },
+            #[cfg(not(feature = "auto-resize"))]
+            () => {
+                self.state.update_from(&mut self.screen, event);
+                self.state
+            },
+        }
+    }
 }
 
 impl Iterator for Shell {

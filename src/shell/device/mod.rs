@@ -1,7 +1,7 @@
 #[cfg(feature = "task")]
 pub mod task;
 pub mod control;
-mod state;
+pub mod state;
 mod input;
 mod output;
 mod spawn;

@@ -1,10 +1,10 @@
 extern crate pty_proc;
 extern crate libc;
 
-use pty_proc::prelude as shell;
-
 use std::io::Write;
 use std::str;
+
+use pty_proc::prelude as shell;
 
 fn main() {
     print!("\x1B[?25l\x1B[H\x1B[2J");
@@ -15,7 +15,7 @@ fn main() {
         None,
         None,
     ).unwrap();
-    while let Some(event) = shell.next() {
+    while let Some(event) = <shell::Shell as Iterator>::next(&mut shell) {
         if let Some(ref text) = event.is_input_slice() {
             shell.write(text).unwrap();
             shell.flush().unwrap();
