@@ -75,12 +75,6 @@ impl Shell {
             }
         }
     }
-
-    /// The mutator method `add_screen` set a buffer to the display
-    /// without needing to print it
-    pub fn add_screen(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.screen.write(buf)
-    }
 }
 
 impl Parent for Shell {
@@ -123,6 +117,14 @@ impl Parent for Shell {
         }
     }
 
+    /// The mutator method `write` set a buffer to the display
+    /// without needing to print it
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.screen.write(buf)
+    }
+
+    /// The mutator method `next` updates the event and returns
+    /// the new state.
     fn next(&mut self, event: state::DeviceState) -> ShellState {
         match () {
             #[cfg(feature = "auto-resize")]

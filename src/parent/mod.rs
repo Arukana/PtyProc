@@ -16,5 +16,6 @@ pub trait Parent : Iterator<Item=ShellState> + io::Write + fmt::Display + fmt::D
     fn get_window_size(&self) -> &Winszed;
     fn set_window_size(&mut self);
     fn set_window_size_with(&mut self, size: &Winszed);
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize>;
     fn next(&mut self, event: DeviceState) -> ShellState;
 }
