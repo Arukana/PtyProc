@@ -1,7 +1,7 @@
 use std::ops::Shr;
 use std::mem;
 use std::char;
-use std::io::{self, Write};
+use std::io::Write;
 
 use ::libc;
 
@@ -290,83 +290,18 @@ impl Key {
             _ => false,
         }
     }
-}
 
-impl io::Read for Key {
-    fn read(&mut self, mut buf: &mut [u8]) -> io::Result<usize> {
+    pub fn as_input(&self) -> (In, libc::size_t) {
         match *self {
-            /// Enter.
-            Key::Char(ENTER) => buf.write(&[b'\n', b'\r']),
-            /// BackSpace.
-            Key::Char(BACKSPACE) => buf.write(&[b'\x7f']),
-            /// Up.
-            Key::Char(UP) => buf.write(&[b'\x1B', b'[', b'A']),
-            /// Down.
-            Key::Char(DOWN) => buf.write(&[b'\x1B', b'[', b'B']),
-            /// Right.
-            Key::Char(RIGHT) => buf.write(&[b'\x1B', b'[', b'C']),
-            /// Left.
-            Key::Char(LEFT) => buf.write(&[b'\x1B', b'[', b'D']),
-            /// End.
-            Key::Char(END) => buf.write(&[b'\x1B', b'[', b'F']),
-            /// Home.
-            Key::Char(HOME) => buf.write(&[b'\x1B', b'[', b'1', b'~']),
-            /// Delete.
-            Key::Char(DELETE) => buf.write(&[b'\x1B', b'[', b'3', b'~']),
-            /// Page Up.
-            Key::Char(PAGE_UP) => buf.write(&[b'\x1B', b'[', b'5', b'~']),
-            /// Page Down.
-            Key::Char(PAGE_DOWN) => buf.write(&[b'\x1B', b'[', b'6', b'~']),
-            /// Alt Up.
-            Key::Char(ALT_UP) => buf.write(&[b'\x1B', b'[', b'1', b';', b'9', b'A']),
-            //// Alt Down.
-            Key::Char(ALT_DOWN) => buf.write(&[b'\x1B', b'[', b'1', b';', b'9', b'B']),
-            /// Alt Right.
-            Key::Char(ALT_RIGHT) => buf.write(&[b'\x1B', b'[', b'1', b';', b'9', b'C']),
-            /// Alt Left.
-            Key::Char(ALT_LEFT) => buf.write(&[b'\x1B', b'[', b'1', b';', b'9', b'D']),
-            /// Function 1.
-            Key::Char(FUNCTION_1) => buf.write(&[b'\x1B', b'O', b'P']),
-            /// Function 2.
-            Key::Char(FUNCTION_2) => buf.write(&[b'\x1B', b'O', b'Q']),
-            /// Function 3.
-            Key::Char(FUNCTION_3) => buf.write(&[b'\x1B', b'O', b'R']),
-            /// Function 4.
-            Key::Char(FUNCTION_4) => buf.write(&[b'\x1B', b'O', b'S']),
-            /// Function 5.
-            Key::Char(FUNCTION_5) => buf.write(&[b'\x1B', b'[', b'1', b'5', b'~']),
-            /// Function 6.
-            Key::Char(FUNCTION_6) => buf.write(&[b'\x1B', b'[', b'1', b'7', b'~']),
-            /// Function 7.
-            Key::Char(FUNCTION_7) => buf.write(&[b'\x1B', b'[', b'1', b'8', b'~']),
-            /// Function 8.
-            Key::Char(FUNCTION_8) => buf.write(&[b'\x1B', b'[', b'1', b'9', b'~']),
-            /// Function 9.
-            Key::Char(FUNCTION_9) => buf.write(&[b'\x1B', b'[', b'2', b'0', b'~']),
-            /// Function 10.
-            Key::Char(FUNCTION_10) => buf.write(&[b'\x1B', b'[', b'2', b'1', b'~']),
-            /// Function 11.
-            Key::Char(FUNCTION_11) => buf.write(&[b'\x1B', b'[', b'2', b'3', b'~']),
-            /// Function 12.
-            Key::Char(FUNCTION_12) => buf.write(&[b'\x1B', b'[', b'2', b'4', b'~']),
-            /// Function 13.
-            Key::Char(FUNCTION_13) => buf.write(&[b'\x1B', b'[', b'2', b'5', b'~']),
-            /// Function 14.
-            Key::Char(FUNCTION_14) => buf.write(&[b'\x1B', b'[', b'2', b'6', b'~']),
-            /// Function 15.
-            Key::Char(FUNCTION_15) => buf.write(&[b'\x1B', b'[', b'2', b'8', b'~']),
-            /// Function 16.
-            Key::Char(FUNCTION_16) => buf.write(&[b'\x1B', b'[', b'2', b'9', b'~']),
-            /// Function 17.
-            Key::Char(FUNCTION_17) => buf.write(&[b'\x1B', b'[', b'3', b'1', b'~']),
-            /// Function 18.
-            Key::Char(FUNCTION_18) => buf.write(&[b'\x1B', b'[', b'3', b'2', b'~']),
-            /// Function 19.
-            Key::Char(FUNCTION_19) => buf.write(&[b'\x1B', b'[', b'3', b'3', b'~']),
-            Key::Str(input) => buf.write(&input.as_slice()[..]),
-            Key::Char(code) => unsafe {
-                let code = mem::transmute::<u64, [u8; 8]>(code);
-                buf.write(&code[..])
+            Key::Char(key) => unsafe {
+                let mut input: In = In::default();
+                let buf: [u8; 8] = mem::transmute::<u64, [u8; 8]>(key);
+                let _ = input.write(&buf[..]);
+
+                (input, input.iter().position(|c| c.eq(&b'\0')).unwrap_or_default())
+            },
+            Key::Str(input) => {
+                (input, input.iter().position(|c| c.eq(&b'\0')).unwrap_or_default())
             },
         }
     }

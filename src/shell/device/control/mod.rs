@@ -12,10 +12,8 @@ use self::operate::Operate;
 
 #[derive(Clone, Copy)]
 pub struct Control {
-    /// Buffer.
-    buf: In,
-    /// Length.
-    len: libc::size_t,
+    /// Buffer, Length.
+    input: (In, libc::size_t),
     /// Time where the control was pressed.
     time: time::Tm,
     /// Operation.
@@ -26,36 +24,30 @@ impl Control {
     /// The constructor method `new` returns a Control's event from Device.
     pub fn new(buf: In, len: libc::size_t) -> Self {
         Control {
-            buf: buf,
-            len: len,
+            input: (buf, len),
             time: time::now(),
             operate: Operate::new(buf, len),
         }
     }
 
     pub fn ss_mod(&mut self, ss: libc::c_uchar) {
-        self.buf = In::default();
-        self.buf[0] = b'\x1B';
-        self.buf[1] = b'O';
-        self.buf[2] = ss;
-    } 
+        let (ref mut buf, ref mut len) = self.input;
+        buf[0] = b'\x1B';
+        buf[1] = b'O';
+        buf[2] = ss;
+        *len = 3;
+    }
 
     /// The accessor method `as_slice` returns the Control Event.
     pub fn as_slice(&self) -> &[libc::c_uchar] {
-        &self.buf[..self.len]
+        let (ref buf, len) = self.input;
+
+        &buf[..len]
     }
 
     /// The accessor method `as_time` returns the Time.
     pub fn as_time(&self) -> time::Tm {
         self.time
-    }
-
-    pub fn is_unicode(&self) -> Option<&[libc::c_uchar]> {
-        if self.operate.is_key().is_some() {
-            Some(self.as_slice())
-        } else {
-            None
-        }
     }
 
     /// The accessor method `is_enter` returns an Option for the Enter Key.
@@ -81,9 +73,7 @@ impl Control {
 
 impl fmt::Debug for Control {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Control {{ buf: {:?}, operate: {:?} }}",
-            &self.buf[..self.len], self.operate
-        )
+        write!(f, "Control {{ operate: {:?} }}", self.operate)
     }
 }
 
@@ -97,6 +87,16 @@ impl fmt::Display for Control {
 
 impl PartialEq for Control {
     fn eq(&self, rhs: &Control) -> bool {
-        self.buf.eq(&rhs.buf)
+        self.input.eq(&rhs.input)
+    }
+}
+
+impl From<Operate> for Control {
+    fn from(operate: Operate) -> Control {
+        Control {
+            input: operate.as_input(),
+            time: time::now(),
+            operate: operate,
+        }
     }
 }
