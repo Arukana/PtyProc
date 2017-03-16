@@ -66,7 +66,7 @@ impl Control {
 
     /// The accessor method `is_mouse` returns an Option for
     /// the Mouse interface.
-    pub fn is_mouse(&self) -> Option<(Mouse, bool, libc::c_ushort, libc::c_ushort)> {
+    pub fn is_mouse(&self) -> Option<Mouse> {
         self.operate.is_mouse()
     }
 }

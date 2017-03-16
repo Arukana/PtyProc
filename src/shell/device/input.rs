@@ -1,6 +1,6 @@
 use std::ops::{Index, IndexMut, RangeTo, Deref, DerefMut};
 use std::{fmt, mem};
-use std::io;
+use std::io::{self, Write};
 
 use ::libc;
 
@@ -74,7 +74,7 @@ impl Clone for In {
 
 impl fmt::Debug for In {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", String::from_utf8_lossy(&self.0) )
+        write!(f, "{:?}", &self.0[..8] )
     }
 }
 
@@ -85,5 +85,14 @@ impl io::Write for In {
 
     fn flush(&mut self) -> io::Result<()> {
         self.deref_mut().flush()
+    }
+}
+
+impl <'a> From<&'a [u8]> for In {
+    fn from(src: &'a [u8]) -> In {
+        let mut buf: In = In::default();
+
+        let _ = buf.write(src);
+        buf
     }
 }

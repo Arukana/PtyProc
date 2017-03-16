@@ -318,7 +318,7 @@ impl ShellState {
     }
 
     /// The accessor method `is_input_mouse` returns the pressed Mouse event.
-    pub fn is_input_mouse(&self) -> Option<(Mouse, bool, libc::c_ushort, libc::c_ushort)> {
+    pub fn is_input_mouse(&self) -> Option<Mouse> {
         if let Some(ref control) = self.in_down {
             control.is_mouse()
         } else {
