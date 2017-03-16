@@ -4,6 +4,7 @@ pub use ::shell::{Shell, ShellError, ShellState};
 pub use ::shell::state::DeviceState;
 pub use ::shell::device::control::operate::key::Key;
 pub use ::shell::device::control::operate::mouse::Mouse;
+pub use ::shell::device::control::operate::mouse::code::Code;
 pub use ::shell::device::control::operate::Operate;
 pub use ::shell::device::control::Control;
 pub use ::shell::device::{In, Out};
