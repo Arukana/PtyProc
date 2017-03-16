@@ -13,10 +13,10 @@ use self::code::Code;
 #[repr(C)]
 #[derive(Default, Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub struct Mouse {
-    code: Code,
-    pressed: bool,
-    x: libc::c_ushort,
-    y: libc::c_ushort,
+    pub code: Code,
+    pub pressed: bool,
+    pub x: libc::c_ushort,
+    pub y: libc::c_ushort,
 }
 
 impl Mouse {
