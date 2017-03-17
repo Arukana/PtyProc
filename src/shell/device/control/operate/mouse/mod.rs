@@ -68,14 +68,16 @@ impl Mouse {
         let _ = input.as_mut()[..].as_mut().write(&[b'\x1B', b'[', b'<']);
         let _ = input.as_mut()[length..].as_mut().write(x);
         length += x.len();
-        if self.pressed { 
+        let _ = input.as_mut()[length..].as_mut().write(&[b';']);
+        length += 1;
+        let _ = input.as_mut()[length..].as_mut().write(y);
+        length += y.len();
+        if self.pressed {
             let _ = input.as_mut()[length..].as_mut().write(&[b'M']);
         } else {
             let _ = input.as_mut()[length..].as_mut().write(&[b'm']);
         }
         length += 1;
-        let _ = input.as_mut()[length..].as_mut().write(y);
-        length += y.len();
         (input, length)
     }
 }
