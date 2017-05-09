@@ -7,6 +7,7 @@ authors = [
 ]
 keywords = ["pty", "shell", "mode", "proc"]
 license = "GPL-3.0"
+build = "build.rs"
 
 [[bin]]
 name = "pty-proc"
@@ -43,3 +44,6 @@ version       = "0.2"
 [dependencies.clippy]
 version       = "*"
 optional      = true
+
+[build-dependencies.mml]
+version = "0.1"

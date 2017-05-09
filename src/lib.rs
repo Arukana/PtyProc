@@ -15,6 +15,8 @@
     unused_import_braces,
 )]
 
+//! ![uml](ml.svg)
+
 extern crate pty;
 extern crate libc;
 extern crate time;

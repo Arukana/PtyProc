@@ -10,7 +10,7 @@ use std::mem;
 use std::fmt;
 
 use ::libc;
-use ::child::Child;
+use ::child::exec;
 use ::pty::prelude as pty;
 
 use self::device::Device;
@@ -56,9 +56,9 @@ impl Shell {
             match pty::Fork::from_ptmx() {
                 Err(cause) => Err(ShellError::ForkFail(cause)),
                 Ok(fork) => match fork {
-                    pty::Fork::Child(ref slave) => {
+                    pty::Fork::Child(_) => {
                         libc::ioctl(libc::STDIN_FILENO, libc::TIOCSWINSZ, &winsz);
-                        slave.exec(command.unwrap_or("/bin/zsh"))
+                        exec(command.unwrap_or("/bin/bash"))
                     },
                     pty::Fork::Parent(pid, master) => {
                         mem::forget(fork);
