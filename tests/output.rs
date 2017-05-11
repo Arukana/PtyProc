@@ -99,7 +99,6 @@ fn test_scroll()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
   assert_eq!(display.get_newline(), &vec![(9, 2), (9, 3), (9, 4), (9, 5),
                                        (9, 6), (9, 7)]);
-
 }
 
 #[test]

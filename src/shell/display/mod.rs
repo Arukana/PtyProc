@@ -24,14 +24,14 @@ pub struct Table {
     pub show_cursor: bool,
     pub mouse_handle: (bool, bool, bool, bool),
     pub ss_mod: bool,
-    pub newline: Vec<(libc::size_t, libc::size_t)>,
     pub region: (libc::size_t, libc::size_t),
     pub collection: Character,
     pub oob: (libc::size_t, libc::size_t),
     pub line_wrap: bool,
     pub size: Winszed,
-    pub screen: Cursor<Vec<Character>>,
     pub bell: libc::size_t,
+    pub screen: Cursor<Vec<Character>>,
+    pub newline: Vec<(libc::size_t, libc::size_t)>,
 }
 
 #[derive(Debug, Clone)]

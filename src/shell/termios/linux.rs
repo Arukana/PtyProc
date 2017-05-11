@@ -5,7 +5,7 @@ use std::ops::BitOr;
 use std::mem;
 use std::fmt;
 
-pub use super::err::{TermiosError, Result};
+pub use super::err::TermiosError;
 
 pub struct Termios {
     pub fd: libc::c_int,
@@ -16,7 +16,7 @@ pub struct Termios {
 impl Termios {
 
     /// The constructor method `new` setups the terminal.
-    pub fn new(fd: libc::c_int) -> Result<Self> {
+    pub fn new(fd: libc::c_int) -> Result<Self, TermiosError> {
         unsafe {
             let config: libc::termios = mem::zeroed();
 
@@ -32,7 +32,7 @@ impl Termios {
         }
     }
 
-    fn enter_raw_mode(&self) -> Result<()> {
+    fn enter_raw_mode(&self) -> Result<(), TermiosError> {
         unsafe {
             let mut new_termios: libc::termios = mem::zeroed();
 
@@ -59,11 +59,7 @@ impl Termios {
 
 impl Default for Termios {
     fn default() -> Termios {
-        Termios::new(
-            libc::STDOUT_FILENO
-            ).expect(
-                &format!("{}", ::errno::errno())
-                )
+        Termios::new(libc::STDOUT_FILENO).expect(&format!("{}", ::errno::errno()))
     }
 }
 
@@ -76,9 +72,8 @@ impl fmt::Debug for Termios {
 impl Drop for Termios {
     fn drop(&mut self) {
         unsafe {
-            if io::stdout().write(super::SPEC_MOUSE_OFF).is_err().bitor(
-                libc::ioctl(self.fd, 0x00005402, &self.config).eq(&-1)
-                ) {
+            if io::stdout().write(super::SPEC_MOUSE_OFF).is_err()
+                           .bitor(libc::ioctl(self.fd, 0x00005402, &self.config).eq(&-1)) {
                 panic!("{}", ::errno::errno());
             }
         }
