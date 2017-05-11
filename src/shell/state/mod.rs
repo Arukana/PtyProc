@@ -139,11 +139,11 @@ impl ShellState {
                     { catch_numbers(Vec::new(), next) };
                     match coucou
                     { &[b'M', ..] =>
-                      { if out_screen.mouse().3 == false && bonjour[0] > 2
+                      { if out_screen.get_mouse().3 == false && bonjour[0] > 2
                         { down = None; }
-                        else if out_screen.mouse().3 == false && out_screen.mouse().0 == false && out_screen.mouse().1 == false
+                        else if out_screen.get_mouse().3 == false && out_screen.get_mouse().0 == false && out_screen.get_mouse().1 == false
                         { down = None; }
-                        else if out_screen.mouse().3 == false && (out_screen.mouse().1 == true || out_screen.mouse().0 == true) && bonjour[0] == 0 {
+                        else if out_screen.get_mouse().3 == false && (out_screen.get_mouse().1 == true || out_screen.get_mouse().0 == true) && bonjour[0] == 0 {
                             let mut buf: In = In::default();
 
                             buf[0] = b'\x1B';
@@ -154,12 +154,12 @@ impl ShellState {
                             buf[5] = bonjour[2] as u8 + 32;
                             down = Some(Control::new(buf, 6));
                         }
-                        else if out_screen.mouse().3 == false && out_screen.mouse().0 == true
+                        else if out_screen.get_mouse().3 == false && out_screen.get_mouse().0 == true
                         { down = None; }},
                       &[b'm', ..] =>
-                      { if out_screen.mouse().0 == false && out_screen.mouse().1 == false
+                      { if out_screen.get_mouse().0 == false && out_screen.get_mouse().1 == false
                         { down = None; }
-                        else if out_screen.mouse().1 == true && out_screen.mouse().3 == false && bonjour[0] <= 2 {
+                        else if out_screen.get_mouse().1 == true && out_screen.get_mouse().3 == false && bonjour[0] <= 2 {
                             let mut buf: In = In::default();
 
                             buf[0] = b'\x1B';
@@ -170,12 +170,12 @@ impl ShellState {
                             buf[5] = bonjour[2] as u8 + 32;
                             down = Some(Control::new(buf, 6));
                         }
-                        else if out_screen.mouse().0 == true
+                        else if out_screen.get_mouse().0 == true
                         { down = None; }},
                       _ => {}, }},
                _ => {}, }},
           _ => {}, };
-          if out_screen.ss()
+          if out_screen.get_ss()
           { let ss: libc::c_uchar = match down
             { Some(after) =>
               { match after.as_slice()

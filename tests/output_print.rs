@@ -65,7 +65,7 @@ fn test_enter()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(9, 0), (9, 1), (9, 2), (9, 3),
+  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 1), (9, 2), (9, 3),
                                        (9, 4), (9, 5), (9, 6), (9, 7)]);
 
   // Print "bonjour
@@ -80,7 +80,7 @@ fn test_enter()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(9, 0), (9, 1), (9, 2), (9, 3),
+  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 1), (9, 2), (9, 3),
                                        (9, 4), (9, 5), (9, 6), (9, 7)]);
 
   // Print "hello lorem ipsum
@@ -95,7 +95,7 @@ fn test_enter()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(9, 0), (9, 1), (9, 3), (9, 4), 
+  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 1), (9, 3), (9, 4), 
                                        (9, 5), (9, 6), (9, 7)]);
 }
 

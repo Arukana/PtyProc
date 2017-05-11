@@ -118,7 +118,7 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
+  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
                                        (9, 5), (9, 6), (9, 7)]);
 
   // Goto::Home, then Goto::Down, then 3 times Goto::Right, then EraseRightLine
@@ -132,7 +132,7 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
+  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
                                        (9, 5), (9, 6), (9, 7)]);
 
   // 3 times Goto::Down, then EraseLeftLine
@@ -146,7 +146,7 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
+  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
                                        (9, 5), (9, 6), (9, 7)]);
 
   // 4 times Goto::Up, then EraseLine
@@ -160,7 +160,7 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
+  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
                                        (9, 5), (9, 6), (9, 7)]);
 
   // Print "coucou"
@@ -174,7 +174,7 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
+  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
                                        (9, 5), (9, 6), (9, 7)]);
 
   // 4 times Goto::Left, then EraseRightLine
@@ -188,7 +188,7 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.newlines(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
+  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
                                        (9, 5), (9, 6), (9, 7)]); }
 
 #[test]

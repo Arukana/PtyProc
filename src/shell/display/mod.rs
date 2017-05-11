@@ -35,7 +35,6 @@ pub struct Table {
 
 }
 
-
 #[derive(Debug, Clone)]
 pub struct Display {
     save_terminal: Option<Table>,
@@ -84,12 +83,14 @@ impl Display {
     }
 
     /// The accessor `ss` returns the value of 'ss_mod'.
-    pub fn ss(&self) -> bool
-    { self.table.ss_mod }
+    pub fn get_ss(&self) -> bool {
+        self.table.ss_mod
+    }
 
-    /// The accessor `mouse` returns the value of 'mouse_handle'.
-    pub fn mouse(&self) -> (bool, bool, bool, bool)
-    { self.table.mouse_handle }
+    /// The accessor method `get_mouse` returns the value of mouse_handle'.
+    pub fn get_mouse(&self) -> (bool, bool, bool, bool) {
+        self.table.mouse_handle
+    }
 
     /// The accessor `get_window_size` returns the window size interface.
     pub fn get_window_size(&self) -> &Winszed {
@@ -103,13 +104,15 @@ impl Display {
     }
 
     /// The accessor `get_cursor_coords` returns the value of 'oob', that is the coordinates of the cursor.
-    pub fn get_cursor_coords(&self) -> (libc::size_t, libc::size_t)
-    { self.table.oob }
+    pub fn get_cursor_coords(&self) -> (libc::size_t, libc::size_t) {
+        self.table.oob
+    }
 
     /// The accessor `newlines` returns the value of 'newline', that contains all newlines that are now
     /// displayed on the screen.
-    pub fn newlines(&self) -> &Vec<(libc::size_t, libc::size_t)>
-    { &self.table.newline }
+    pub fn get_newline(&self) -> &Vec<(libc::size_t, libc::size_t)> {
+        &self.table.newline
+    }
 
     /// Converts a Vector of Character into a byte vector.
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
@@ -495,29 +498,30 @@ impl Display {
     /// The method `print_char` print an unicode character (1 to 4 chars range)
     pub fn print_char(&mut self, first: char, next: &[u8]) -> io::Result<usize>
     { let col = self.table.size.get_col();
-      if self.table.show_cursor
-      { self.clear_cursor(); }
-      if self.table.oob.0 < col - 1
-      { self.table.oob.0 += 1; }
-      else if self.table.oob.1.lt(&self.table.region.1.sub(&1))
-      { if self.table.newline.is_empty().not().bitand(self.table.ss_mod.not())
-        { match self.table.newline.iter().position(|&x| x.1.eq(&self.table.oob.1))
-          { Some(n) => { self.table.newline.remove(n); },
-            None => {}, }; }
-        self.table.oob.1 += 1;
-        self.table.oob.0 = 0; }
-      else if self.table.oob.1.eq(&(self.table.region.1.sub(&1)))
-      { let x = self.table.region.0;
-        self.scroll_up(x);
-        let _ = self.goto_begin_row();
+        if self.table.show_cursor
+        { self.clear_cursor(); }
+        if self.table.oob.0 < col - 1
+        { self.table.oob.0 += 1; }
+        else if self.table.oob.1.lt(&self.table.region.1.sub(&1))
+        { if self.table.newline.is_empty().not().bitand(self.table.ss_mod.not())
+            { match self.table.newline.iter().position(|&x| x.1.eq(&self.table.oob.1))
+                { Some(n) => { self.table.newline.remove(n); },
+                    None => {}, }; }
+            self.table.oob.1 += 1;
+            self.table.oob.0 = 0; }
+        else if self.table.oob.1.eq(&(self.table.region.1.sub(&1)))
+        { let x = self.table.region.0;
+            self.scroll_up(x);
+            let _ = self.goto_begin_row();
+            { let pos = self.table.screen.position();
+                if pos.gt(&0)
+                { let _ = self.goto(pos - 1); }}}
+        else
         { let pos = self.table.screen.position();
-          if pos.gt(&0)
-          { let _ = self.goto(pos - 1); }}}
-      else
-      { let pos = self.table.screen.position();
-        if pos.gt(&0)
-        { let _ = self.goto(pos - 1); }}
-      self.table.screen.write_with_color(first, self.table.collection).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) )) }
+            if pos.gt(&0)
+            { let _ = self.goto(pos - 1); }}
+        self.table.screen.write_with_color(first, self.table.collection).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) ))
+    }
 
     pub fn catch_numbers<'a>(&self, mut acc: Vec<libc::size_t>, buf: &'a [u8]) -> (Vec<libc::size_t>, &'a [u8])
     { match parse_number!(buf)
@@ -535,13 +539,13 @@ impl Display {
     { 8 - (self.table.oob.0 % 8) }
 
     /// The method `save_terminal` saves the terminal Display configuration.
-    pub fn save_terminal(&mut self) {
+    fn save_terminal(&mut self) {
         self.save_terminal = Some(self.table.clone());
     }
 
     /// The method `restore_terminal` restore the terminal Display configuration
     /// kept in the 'save_terminal' variable.
-    pub fn restore_terminal(&mut self)
+    fn restore_terminal(&mut self)
     {
         if let Some(save_terminal) = self.save_terminal.clone() {
             self.table.save_position = save_terminal.save_position;
@@ -678,7 +682,7 @@ impl Write for Display {
               { self.restore_terminal();
                 self.write(next) },
 
-            //---------- MOUSE HANDLE -----------
+            //----------.mouse_handle -----------
             &[b'\x1B', b'[', b'?', b'9', b'h', ref next..] =>
               { self.table.mouse_handle.0 = true;
                 self.write(next) },
