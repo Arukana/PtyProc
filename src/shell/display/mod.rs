@@ -18,15 +18,55 @@ use self::character::color;
 pub use self::character::Character;
 use self::character::attribute::Attribute;
 
+#[derive(Debug, Copy, Clone)]
+pub struct Coordinate {
+    pub x: libc::size_t,
+    pub y: libc::size_t,
+}
+
+impl Coordinate {
+    pub fn reset(&mut self) {
+        self.x = 0;
+        self.y = 0;
+    }
+}
+
+impl From<(libc::size_t, libc::size_t)> for Coordinate {
+    fn from((x, y): (libc::size_t, libc::size_t)) -> Coordinate {
+        Coordinate {
+            x: x,
+            y: y,
+        }
+    }
+}
+
+impl From<Winszed> for Coordinate {
+    fn from(size: Winszed) -> Coordinate {
+        Coordinate {
+            x: size.get_col(),
+            y: size.get_row(),
+        }
+    }
+}
+
+impl Default for Coordinate {
+    fn default() -> Coordinate {
+        Coordinate {
+            x: 0,
+            y: 0,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Table {
-    pub save_position: (libc::size_t, libc::size_t),
+    pub save_position: Coordinate,
     pub show_cursor: bool,
     pub mouse_handle: (bool, bool, bool, bool),
     pub ss_mod: bool,
     pub region: (libc::size_t, libc::size_t),
     pub collection: Character,
-    pub oob: (libc::size_t, libc::size_t),
+    pub oob: Coordinate,
     pub line_wrap: bool,
     pub size: Winszed,
     pub bell: libc::size_t,
@@ -56,7 +96,7 @@ impl Display {
         Display {
             save_terminal: None,
             table: Table {
-              save_position: (0, 0),
+              save_position: Coordinate::default(),
               show_cursor: true,
               mouse_handle: (false, false, false, false),
               ss_mod: false,
@@ -68,7 +108,7 @@ impl Display {
                 end_row_newlines },
               region: (0, size.get_row()),
               collection: Character::default(),
-              oob: (0, 0),
+              oob: Coordinate::default(),
               line_wrap: true,
               size: size,
               bell: 0,
@@ -103,8 +143,8 @@ impl Display {
     }
 
     /// The accessor `get_cursor_coords` returns the value of 'oob', that is the coordinates of the cursor.
-    pub fn get_cursor_coords(&self) -> (libc::size_t, libc::size_t) {
-        self.table.oob
+    pub fn get_cursor_coords(&self) -> &Coordinate {
+        &self.table.oob
     }
 
     /// The accessor `newlines` returns the value of 'newline', that contains all newlines that are now
@@ -174,9 +214,10 @@ impl Display {
                 None => { self.table.region.0 = 0; }, }}
             match self.table.size.get_col().checked_mul((self.table.size.ws_row - size.ws_row) as usize)
             { Some(get) =>
-                { if self.table.oob.1.ge(&(size.ws_row as usize))
+                { if self.table.oob.y.ge(&(size.ws_row as usize))
                   { let x = self.table.size.get_col() - 1;
-                    let _ = self.goto_coord(x, (size.ws_row as usize) - 1); }
+                    let _ = self.goto_coord(Coordinate::from((x, size.get_row()-1)));
+                  }
                   match self.table.size.row_by_col().checked_sub(get)
                   { Some(start) => { self.table.screen.get_mut().drain(start..); },
                     None => {}, }},
@@ -196,9 +237,9 @@ impl Display {
                 { (*coucou).insert(((row - i) * col) as usize, Character::default());
                   true }) }); }
             self.table.size = *size;
-            let x = self.table.oob.0;
-            let y = self.table.oob.1;
-            let _ = self.goto_coord(x, y); }
+            let x = self.table.oob.x;
+            let y = self.table.oob.y;
+            let _ = self.goto_coord(Coordinate::from((x, y))); }
           else if self.table.size.ws_col > size.ws_col
           { let col = self.table.size.ws_col;
             let row = size.ws_row;
@@ -213,12 +254,12 @@ impl Display {
                 { (*coucou).remove((((row - i) * col) - (k + 1)) as usize);
                   true }) }); }
             self.table.size = *size;
-            let x = if self.table.oob.0 < size.ws_col as usize
-            { self.table.oob.0 }
+            let x = if self.table.oob.x < size.ws_col as usize
+            { self.table.oob.x }
             else
             { size.ws_col as usize - 1 };
-            let y = self.table.oob.1;
-            let _ = self.goto_coord(x, y); }}
+            let y = self.table.oob.y;
+            let _ = self.goto_coord(Coordinate::from((x, y))); }}
           self.table.size = *size;
 
     }
@@ -239,20 +280,20 @@ impl Display {
     /// The method `goto_home` moves the cursor to the top left of the output screen.
     pub fn goto_home(&mut self) -> io::Result<libc::size_t>
     { let _ = self.goto(0);
-      self.table.oob = (0, 0);
+      self.table.oob.reset();
       Ok(0) }
 
     /// The method `goto_up` moves the cursor up.
     pub fn goto_up(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
     { let col = self.table.size.get_col();
       let pos = self.table.screen.position();
-      if self.table.oob.1 >= mv
+      if self.table.oob.y >= mv
       { let _ = self.goto(pos.sub(&((col.mul(&mv)))));
-        self.table.oob.1 = self.table.oob.1.sub(&mv); }
+        self.table.oob.y = self.table.oob.y.sub(&mv); }
       else
-      { self.table.oob.1 = 0;
-        let x = self.table.oob.0;
-        let _ = self.goto_coord(x, 0); }
+      { self.table.oob.y = 0;
+        let x = self.table.oob.x;
+        let _ = self.goto_coord(Coordinate::from((x, 0))); }
       Ok(0) }
 
     /// The method `goto_down` moves the cursor down.
@@ -260,65 +301,64 @@ impl Display {
     { let row = self.table.size.get_row();
       let col = self.table.size.get_col();
       let pos = self.table.screen.position();
-      if self.table.oob.1 + mv <= row - 1
+      if self.table.oob.y + mv <= row - 1
       { let _ = self.goto(pos.add(&(col.mul(&mv))));
-        self.table.oob.1 = self.table.oob.1.add(&mv); }
+        self.table.oob.y = self.table.oob.y.add(&mv); }
       else
-      { self.table.oob.1 = row - 1;
-        let x = self.table.oob.0;
-        let _ = self.goto_coord(x, row - 1); }
+      { self.table.oob.y = row - 1;
+        let x = self.table.oob.x;
+        let _ = self.goto_coord(Coordinate::from((x, row - 1))); }
       Ok(0) }
 
     /// The method `goto_right` moves the cursor to its right.
     pub fn goto_right(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
     { let col = self.table.size.get_col();
       let pos = self.table.screen.position();
-      if self.table.oob.0 + mv <= col - 1
+      if self.table.oob.x + mv <= col - 1
       { let _ = self.goto(pos.add(&mv));
-        self.table.oob.0 = self.table.oob.0.add(&mv); }
+        self.table.oob.x = self.table.oob.x.add(&mv); }
       else
       { let _ = self.goto_end_row(); }
       Ok(0) }
 
     pub fn goto_left(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
     { let pos = self.table.screen.position();
-      if self.table.oob.0 >= mv
+      if self.table.oob.x >= mv
       { let _ = self.goto(pos.sub(&mv));
-        self.table.oob.0 = self.table.oob.0.sub(&mv); }
+        self.table.oob.x = self.table.oob.x.sub(&mv); }
       else
       { let _ = self.goto_begin_row(); }
       Ok(0) }
 
     /// The method `goto_begin_row` moves the cursor to the beginning of the row
     pub fn goto_begin_row(&mut self)
-    { let y = self.table.oob.1;
-      let _ = self.goto_coord(0, y); }
+    { let y = self.table.oob.y;
+      let _ = self.goto_coord(Coordinate::from((0, y))); }
 
     /// The method `goto_end_row` moves the cursor to the end of the row
     pub fn goto_end_row(&mut self)
     { let x = self.table.size.get_col() - 1;
-      let y = self.table.oob.1;
-      let _ = self.goto_coord(x, y); }
+      let y = self.table.oob.y;
+      let _ = self.goto_coord(Coordinate::from((x, y))); }
 
     /// The method `goto_coord` moves the cursor to the given coordinates
-    pub fn goto_coord(&mut self, x: libc::size_t, y: libc::size_t)
-    { let col = self.table.size.get_col();
-      let row = self.table.size.get_row();
-      let c;
-      let r;
-      if x < col
-      { self.table.oob.0 = x;
-        c = x; }
-      else
-      { self.table.oob.0 = col - 1;
-        c = col - 1; }
-      if y < row
-      { self.table.oob.1 = y;
-        r = y; }
-      else
-      { self.table.oob.1 = row - 1;
-        r = row - 1; }
-      let _ = self.goto(c + (r * col)); }
+    pub fn goto_coord(&mut self, mut current: Coordinate) {
+        let limit: Coordinate = Coordinate::from(self.table.size);
+
+        if current.x < limit.x {
+            self.table.oob.x = current.x;
+        } else {
+            self.table.oob.x = limit.x - 1;
+            current.x = limit.x - 1;
+        }
+        if current.y < limit.y {
+            self.table.oob.y = current.y;
+        } else {
+            self.table.oob.y = limit.y - 1;
+            current.y = limit.y - 1;
+        }
+        let _ = self.goto(current.x + (current.y * limit.x));
+    }
 
     /// The method `scroll_down` append an empty line on bottom of the screen
     /// (the cursor doesn't move)
@@ -373,15 +413,18 @@ impl Display {
     /// The method `save_position` save a position in the variable 'save_position' to get
     /// restored with self.table.restore_position() described right after.
     /// If save_position() is called many times, only the newest safe will be kept.
-    pub fn save_position(&mut self)
-    { self.table.save_position = (self.table.oob.0, self.table.oob.1); }
+    pub fn save_position(&mut self) {
+        self.table.save_position = self.table.oob;
+    }
 
     /// The method `restore_position` move the cursor to coordinates safe
     /// with self.table.save_position() described right before.
     /// If no coordinates were safe, cursor moves to the top left of the output screen
-    pub fn restore_position(&mut self)
-    { let (x, y) = self.table.save_position;
-      let _ = self.goto_coord(x, y); }
+    pub fn restore_position(&mut self) {
+        let position: Coordinate = self.table.save_position;
+
+        self.goto_coord(position);
+    }
 
     /// The method `insert_empty_line` insert an empty line on the right of the cursor
     /// (the cursor doesn't move)
@@ -451,8 +494,8 @@ impl Display {
     /// The method `erase_line` erase the entire current line
     pub fn erase_line(&mut self, mv: libc::size_t)
     { let col = self.table.size.get_col();
-      let mut x = self.table.oob.0;
-      let mut y = self.table.oob.1;
+      let mut x = self.table.oob.x;
+      let mut y = self.table.oob.y;
       {0..mv}.all(|_|
       { match self.table.newline.iter().position(|&a| a.1.ge(&y))
         { Some(n) =>
@@ -488,9 +531,9 @@ impl Display {
 
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
-    { if self.table.oob.1.lt(&(self.table.region.1.sub(&1)))
+    { if self.table.oob.y.lt(&(self.table.region.1.sub(&1)))
       { let _ = self.goto_down(1); }
-      else if self.table.oob.1.eq(&(self.table.region.1.sub(&1)))
+      else if self.table.oob.y.eq(&(self.table.region.1.sub(&1)))
       { let x = self.table.region.0;
         self.scroll_up(x); }}
 
@@ -499,16 +542,16 @@ impl Display {
     { let col = self.table.size.get_col();
         if self.table.show_cursor
         { self.clear_cursor(); }
-        if self.table.oob.0 < col - 1
-        { self.table.oob.0 += 1; }
-        else if self.table.oob.1.lt(&self.table.region.1.sub(&1))
+        if self.table.oob.x < col - 1
+        { self.table.oob.x += 1; }
+        else if self.table.oob.y.lt(&self.table.region.1.sub(&1))
         { if self.table.newline.is_empty().not().bitand(self.table.ss_mod.not())
-            { match self.table.newline.iter().position(|&x| x.1.eq(&self.table.oob.1))
+            { match self.table.newline.iter().position(|&x| x.1.eq(&self.table.oob.y))
                 { Some(n) => { self.table.newline.remove(n); },
                     None => {}, }; }
-            self.table.oob.1 += 1;
-            self.table.oob.0 = 0; }
-        else if self.table.oob.1.eq(&(self.table.region.1.sub(&1)))
+            self.table.oob.y += 1;
+            self.table.oob.x = 0; }
+        else if self.table.oob.y.eq(&(self.table.region.1.sub(&1)))
         { let x = self.table.region.0;
             self.scroll_up(x);
             let _ = self.goto_begin_row();
@@ -535,7 +578,7 @@ impl Display {
 
     /// The method `next_tab` return the size of the current printed tabulation
     pub fn next_tab(&self) -> libc::size_t
-    { 8 - (self.table.oob.0 % 8) }
+    { 8 - (self.table.oob.x % 8) }
 
     /// The method `save_terminal` saves the terminal Display configuration.
     fn save_terminal(&mut self) {
@@ -566,15 +609,14 @@ impl Display {
         if self.save_terminal.is_some() {
             self.save_terminal = None;
         }
-        let (x, y) = self.table.oob;
-        let _ = self.goto_coord(x, y);
-
+        let position: Coordinate = self.table.oob;
+        self.goto_coord(position);
     }
 
     /// The method `erase_chars` erases couple of chars in the current line from the cursor.
     pub fn erase_chars(&mut self, mv: libc::size_t)
     { let pos = self.table.screen.position();
-      let border = match self.table.newline.iter().position(|&x| x.1.ge(&self.table.oob.1))
+      let border = match self.table.newline.iter().position(|&x| x.1.ge(&self.table.oob.y))
       { Some(n) => self.table.newline[n].0 + (self.table.newline[n].1 * self.table.size.get_col()) + 1,
         None => self.table.size.row_by_col() - 1, };
       let coucou = self.table.screen.get_mut();
@@ -587,7 +629,7 @@ impl Display {
     /// The method `erase_chars` erases couple of chars in the current line from the cursor.
     pub fn insert_chars(&mut self, mv: libc::size_t)
     { let pos = self.table.screen.position();
-      let border = match self.table.newline.iter().position(|&x| x.1.ge(&self.table.oob.1))
+      let border = match self.table.newline.iter().position(|&x| x.1.ge(&self.table.oob.y))
       { Some(n) => self.table.newline[n].0 + (self.table.newline[n].1 * self.table.size.get_col()) + 1,
         None => self.table.size.row_by_col() - 1, };
       let coucou = self.table.screen.get_mut();
@@ -765,7 +807,7 @@ impl Write for Display {
 
             //------------ INSERT -----------------
             &[b'\x1B', b'[', b'L', ref next..] =>
-              { if self.table.oob.1.ge(&self.table.region.0).bitand(self.table.oob.1.lt(&self.table.region.1))
+              { if self.table.oob.y.ge(&self.table.region.0).bitand(self.table.oob.y.lt(&self.table.region.1))
                 { self.insert_empty_line(1); }
                 self.write(next) },
             &[b'\x1B', b'[', b'@', ref next..] =>
@@ -827,32 +869,32 @@ impl Write for Display {
 
             //------------- SCROLL ---------------
             &[b'\x1B', b'M', ref next..] =>
-              { if self.table.oob.1.ge(&self.table.region.0).bitand(self.table.oob.1.lt(&self.table.region.1))
-                { let x = self.table.oob.1;
+              { if self.table.oob.y.ge(&self.table.region.0).bitand(self.table.oob.y.lt(&self.table.region.1))
+                { let x = self.table.oob.y;
                   if !self.table.ss_mod
                   { self.scroll_up(x); }
                   else
                   { self.scroll_down(x); }}
                 self.write(next) },
             &[b'\x1B', b'[', b'M', ref next..] =>
-              { if self.table.oob.1.ge(&self.table.region.0).bitand(self.table.oob.1.lt(&self.table.region.1))
-                { let x = self.table.oob.1;
+              { if self.table.oob.y.ge(&self.table.region.0).bitand(self.table.oob.y.lt(&self.table.region.1))
+                { let x = self.table.oob.y;
                   self.scroll_up(x); }
                 self.write(next) },
             &[b'\x1B', b'[', b'S', ref next..] |
             &[b'\x1B', b'S', ref next..] =>
-              { if self.table.oob.1.ge(&self.table.region.0).bitand(self.table.oob.1.lt(&self.table.region.1))
+              { if self.table.oob.y.ge(&self.table.region.0).bitand(self.table.oob.y.lt(&self.table.region.1))
                 { let x = self.table.region.0;
                   self.scroll_up(x); }
                 self.write(next) },
             &[b'\x1B', b'L', ref next..] =>
-              { if self.table.oob.1.ge(&self.table.region.0).bitand(self.table.oob.1.lt(&self.table.region.1))
-                { let x = self.table.oob.1;
+              { if self.table.oob.y.ge(&self.table.region.0).bitand(self.table.oob.y.lt(&self.table.region.1))
+                { let x = self.table.oob.y;
                   self.scroll_down(x); }
                 self.write(next) },
             &[b'\x1B', b'[', b'T', ref next..] |
             &[b'\x1B', b'T', ref next..] =>
-              { if self.table.oob.1.ge(&self.table.region.0).bitand(self.table.oob.1.lt(&self.table.region.1))
+              { if self.table.oob.y.ge(&self.table.region.0).bitand(self.table.oob.y.lt(&self.table.region.1))
                 { let x = self.table.region.0;
                   self.scroll_down(x); }
                 self.write(next) },
@@ -893,20 +935,21 @@ impl Write for Display {
                     self.write(next) },
                 &[b'G', ref next..] =>
                   { if bonjour.len() == 1 && self.table.size.get_col() >= bonjour[0]
-                    { let y = self.table.oob.1;
-                      let _ = self.goto_coord(bonjour[0] - 1, y); }
+                    { let y = self.table.oob.y;
+                      let _ = self.goto_coord(Coordinate::from((bonjour[0] - 1, y))); }
                     self.write(next) },
                 &[b'd', ref next..] =>
                   { if bonjour.len() == 1 && self.table.size.get_row() >= bonjour[0]
-                    { let x = self.table.oob.0;
-                      let _ = self.goto_coord(x, bonjour[0] - 1); }
+                    { let x = self.table.oob.x;
+                      let _ = self.goto_coord(Coordinate::from((x, bonjour[0] - 1))); }
                     self.write(next) },
                 &[b'H', ref next..] |
-                &[b'f', ref next..] =>
-                  { if bonjour.len() == 2 && bonjour[0] > 0 && bonjour[1] > 0
-                    { let _ = self.goto_coord(bonjour[1] - 1, bonjour[0] - 1); }
-                    self.write(next) },
-
+                &[b'f', ref next..] => {
+                    if bonjour.len() == 2 && bonjour[0] > 0 && bonjour[1] > 0 {
+                        let _ = self.goto_coord(Coordinate::from((bonjour[1] - 1, bonjour[0] - 1)));
+                    }
+                    self.write(next)
+                },
                 //-------------- ERASE ----------------
                 &[b'P', ref next..] =>
                   { if bonjour.len().eq(&1)
@@ -919,28 +962,28 @@ impl Write for Display {
 
                 //-------------- SCROLL ----------------
                 &[b'M', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.table.oob.1.ge(&self.table.region.0)).bitand(self.table.oob.1.lt(&self.table.region.1))
-                    { let x = self.table.oob.1;
+                  { if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.0)).bitand(self.table.oob.y.lt(&self.table.region.1))
+                    { let x = self.table.oob.y;
                       {0..bonjour[0]}.all(|_|
                       { self.scroll_up(x);
                         true }); }
                     self.write(next) },
                 &[b'S', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.table.oob.1.ge(&self.table.region.0)).bitand(self.table.oob.1.lt(&self.table.region.1))
+                  { if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.0)).bitand(self.table.oob.y.lt(&self.table.region.1))
                     { let x = self.table.region.0;
                       {0..bonjour[0]}.all(|_|
                       { self.scroll_up(x);
                         true }); }
                     self.write(next) },
                 &[b'L', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.table.oob.1.ge(&self.table.region.0)).bitand(self.table.oob.1.lt(&self.table.region.1))
-                    { let x = self.table.oob.1;
+                  { if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.0)).bitand(self.table.oob.y.lt(&self.table.region.1))
+                    { let x = self.table.oob.y;
                       {0..bonjour[0]}.all(|_|
                       { self.scroll_down(x);
                         true }); }
                     self.write(next) },
                 &[b'T', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.table.oob.1.ge(&self.table.region.0)).bitand(self.table.oob.1.lt(&self.table.region.1))
+                  { if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.0)).bitand(self.table.oob.y.lt(&self.table.region.1))
                     { let x = self.table.region.0;
                       {0..bonjour[0]}.all(|_|
                       { self.scroll_down(x);
