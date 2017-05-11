@@ -1,9 +1,9 @@
 mod err;
 
+pub use self::err::WinszedError;
 use std::ops::{BitAnd, Mul};
 
 use ::libc;
-pub use self::err::{WinszedError, Result};
 
 /// The enum `Winszed` is the size of the tty window.
 
@@ -23,7 +23,7 @@ pub struct Winszed {
 impl Winszed {
 
     /// The constructor method `new` returns the window size.
-    pub fn new(fd: libc::c_int) -> Result<Self> {
+    pub fn new(fd: libc::c_int) -> Result<Self, WinszedError> {
         unsafe {
             let winsz: Winszed = Winszed::default();
 
@@ -78,7 +78,7 @@ impl Winszed {
 
     /// The method `from_winsized` changes the window size.
     #[allow(dead_code)]
-    pub fn from_winsized(fd: libc::c_int, winsize: &Winszed) -> Result<()> {
+    pub fn from_winsized(fd: libc::c_int, winsize: &Winszed) -> Result<(), WinszedError> {
         unsafe {
             match libc::ioctl(fd, libc::TIOCSWINSZ, winsize) {
                 -1 => Err(WinszedError::GsFail),

@@ -12,7 +12,7 @@ use std::io::Write;
 #[cfg(feature = "task")]
 use std::ops::Not;
 
-pub use self::err::{ProcError, Result};
+pub use self::err::ProcError;
 
 #[cfg(any(target_os = "linux", target_os = "android"))]
 pub use self::linux::*;

@@ -3,10 +3,6 @@ use super::winsz::WinszedError;
 use std::fmt;
 use std::error::Error;
 
-/// The alias `Result` learns `DisplayError` possibility.
-
-pub type Result<T> = ::std::result::Result<T, DisplayError>;
-
 /// The enum `DisplayError` defines the possible errors from constructor Display.
 
 #[derive(Clone, Copy, Debug)]

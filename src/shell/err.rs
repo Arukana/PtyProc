@@ -4,8 +4,6 @@ use std::fmt;
 
 use super::termios::TermiosError;
 
-pub type Result<T> = ::std::result::Result<T, ShellError>;
-
 /// The enum `ShellError` defines the possible errors from constructor Shell.
 
 #[derive(Clone, Copy, Debug)]

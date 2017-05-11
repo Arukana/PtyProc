@@ -1,8 +1,6 @@
 use std::error::Error;
 use std::fmt;
 
-pub type Result<T> = ::std::result::Result<T, TermiosError>;
-
 /// The enum `TermiosError` defines the possible errors from constructor Termios.
 
 #[derive(Clone, Copy, Debug)]

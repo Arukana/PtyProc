@@ -7,7 +7,7 @@ use std::io::Write;
 use ::libc;
 
 use super::In;
-pub use self::err::{MouseError, Result};
+pub use self::err::MouseError;
 use self::code::Code;
 
 #[repr(C)]
@@ -20,7 +20,7 @@ pub struct Mouse {
 }
 
 impl Mouse {
-    fn with_code(action: u8, next: &[u8]) -> Result<Self> {
+    fn with_code(action: u8, next: &[u8]) -> Result<Self, MouseError> {
         match next {
             &[ref coordinate.., m @ b'M'...b'm'] => {
                 match Code::new(action) {
@@ -45,7 +45,7 @@ impl Mouse {
         }
     }
 
-    pub fn new(buf: &[u8]) -> Result<Self> {
+    pub fn new(buf: &[u8]) -> Result<Self, MouseError> {
         match buf {
             &[b'\x1B', b'[', b'<', action1 @ b'0'...b'9', action2 @ b'0'...b'9', b';', ref next..] => {
                 Mouse::with_code((action1 - 48) * 10 + action2 - 48, next)

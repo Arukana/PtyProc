@@ -1,8 +1,6 @@
 use std::error::Error;
 use std::fmt;
 
-pub type Result<T> = ::std::result::Result<T, CodeError>;
-
 /// The enum `CodeError` defines the possible errors from constructor Code.
 
 #[derive(Clone, Copy, Debug)]

@@ -1,10 +1,6 @@
 use std::fmt;
 use std::error::Error;
 
-/// The alias `Result` learns `WinszedError` possibility.
-
-pub type Result<T> = ::std::result::Result<T, WinszedError>;
-
 /// The enum `WinszedError` defines the possible errors from constructor Winszed.
 
 #[derive(Clone, Copy, Debug)]

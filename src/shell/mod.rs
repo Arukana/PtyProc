@@ -16,7 +16,7 @@ use ::pty::prelude as pty;
 use self::device::Device;
 use self::termios::Termios;
 pub use self::state::ShellState;
-pub use self::err::{ShellError, Result};
+pub use self::err::ShellError;
 use self::display::Display;
 pub use self::display::winsz::Winszed;
 
@@ -44,7 +44,7 @@ impl Shell {
       interval: Option<i64>,
       command: Option<&str>,
       windows: Option<Winszed>,
-  ) -> Result<Self> {
+  ) -> Result<Self, ShellError> {
       unsafe {
             let winsz: Winszed =
                 windows.and_then(|winsz| {

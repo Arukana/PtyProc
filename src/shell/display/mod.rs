@@ -12,7 +12,7 @@ use std::mem;
 use ::libc;
 
 pub use self::winsz::Winszed;
-pub use self::err::{DisplayError, Result};
+pub use self::err::DisplayError;
 use self::cursor::Cursor;
 use self::character::color;
 pub use self::character::Character;
@@ -32,7 +32,6 @@ pub struct Table {
     pub size: Winszed,
     pub screen: Cursor<Vec<Character>>,
     pub bell: libc::size_t,
-
 }
 
 #[derive(Debug, Clone)]
@@ -44,7 +43,7 @@ pub struct Display {
 impl Display {
     /// The constructor method `default` returns the `Display`'s interface
     /// from shell.
-    pub fn new(fd: libc::c_int) -> Result<Display> {
+    pub fn new(fd: libc::c_int) -> Result<Self, DisplayError> {
         match Winszed::new(fd) {
           Err(why) => Err(DisplayError::WinszedFail(why)),
           Ok(wsz) => Ok(Display::from_winszed(wsz)),
@@ -138,7 +137,7 @@ impl Display {
     }
 
     /// The method `resize` updates the size of the output screen.
-    pub fn resize(&mut self) -> Result<()> {
+    pub fn resize(&mut self) -> Result<(), DisplayError> {
         match Winszed::new(0) {
             Err(why) => Err(DisplayError::WinszedFail(why)),
             Ok(ref size) => Ok(self.resize_with(size)),

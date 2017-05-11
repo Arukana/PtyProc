@@ -1,6 +1,6 @@
 mod err;
 
-pub use self::err::{CodeError, Result};
+pub use self::err::CodeError;
 
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
@@ -120,7 +120,7 @@ pub enum Code {
 }
 
 impl Code {
-    pub fn new(action: u8) -> Result<Self> {
+    pub fn new(action: u8) -> Result<Self, CodeError> {
         match action {
             b'\x00' => Ok(Code::Left),
             b'\x01' => Ok(Code::Wheel),

@@ -3,8 +3,6 @@ use std::fmt;
 
 use super::code::CodeError;
 
-pub type Result<T> = ::std::result::Result<T, MouseError>;
-
 /// The enum `CodeError` defines the possible errors from constructor Code.
 
 #[derive(Clone, Copy, Debug)]
