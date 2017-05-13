@@ -3,11 +3,13 @@ pub mod winsz;
 pub mod cursor;
 pub mod character;
 
-use std::ops::{BitAnd, Add, Sub, Mul, Not};
+use std::ops::{self, BitAnd, Add, Sub, Mul, Not};
 use std::io::{self, Write};
+use std::iter;
 use std::fmt;
 use std::str;
 use std::mem;
+use std::cmp;
 
 use ::libc;
 
@@ -18,7 +20,10 @@ use self::character::color;
 pub use self::character::Character;
 use self::character::attribute::Attribute;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub const LIMIT_X: libc::size_t = 1000;
+pub const LIMIT_Y: libc::size_t = 1000;
+
+#[derive(Default, Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Coordinate {
     pub x: libc::size_t,
     pub y: libc::size_t,
@@ -55,11 +60,216 @@ impl From<Winszed> for Coordinate {
     }
 }
 
-impl Default for Coordinate {
-    fn default() -> Coordinate {
-        Coordinate {
-            x: 0,
-            y: 0,
+pub struct Newline {
+    row: [Coordinate; LIMIT_Y],
+    index: libc::size_t,
+}
+
+impl Newline {
+    pub fn get_row(&self) -> &[Coordinate; LIMIT_Y] {
+        &self.row
+    }
+
+    pub fn get_index(&self) -> libc::size_t {
+        self.index
+    }
+
+    pub fn scroll_down(&mut self, mut resize: Coordinate) {
+        resize.y -= 1;
+        self.row.iter_mut()
+                .take(self.index)
+                .filter(|pos| pos.y.ge(&resize.x).bitand(pos.y.lt(&resize.y)))
+                .all(|pos| {
+                    pos.y += 1;
+                    true 
+                });
+    }
+
+    pub fn scroll_up(&mut self, resize: Coordinate, base: &libc::size_t) {
+        self.row.iter_mut()
+                .take(self.index)
+                .filter(|pos| pos.y.gt(base).bitand(pos.y.lt(&resize.y)))
+                .all(|pos| {
+                    pos.y -= 1;
+                    true 
+                });
+    }
+
+    pub fn push(&mut self, item: Coordinate) {
+        if self.index < LIMIT_Y {
+            unsafe {
+                *self.row.get_unchecked_mut(self.index) = item;
+            }
+            self.index += 1;
+        }
+    }
+
+    pub fn reverse(&mut self) {
+        let mut row: [Coordinate; LIMIT_Y] = self.row;
+        
+        row.reverse();
+        self.row.iter_mut()
+                .zip(row.iter().skip(LIMIT_Y-self.index))
+                .all(|(current, after): (&mut Coordinate, &Coordinate)| {
+                        *current = *after;
+                        true
+                });
+    }
+
+    pub fn dedup(&mut self) {
+        let row: [Coordinate; LIMIT_Y] = self.row;
+        
+        self.index =
+            self.row.iter_mut()
+                    .zip(row.windows(2)
+                            .filter(|both| both[0].ne(&both[1])))
+                    .map(|(current, after): (&mut Coordinate, &[Coordinate])| {
+                        *current = after[0];
+                        true
+                    })
+                    .count();
+    }
+
+    pub fn sort_by(&mut self) {
+        let mut row: Vec<Coordinate> = self.row.iter().take(self.index).map(|coordinate| *coordinate).collect::<Vec<Coordinate>>();
+        
+        row.sort_by(|a, b| a.y.cmp(&b.y));
+        self.row.iter_mut()
+                .zip(row.iter())
+                .all(|(current, after): (&mut Coordinate, &Coordinate)| {
+                        *current = *after;
+                        true
+                });
+    }
+
+    pub fn remove(&mut self, at: usize) {
+        if let Some(index) = self.index.checked_sub(1) {
+            let row: [Coordinate; LIMIT_Y] = self.row;
+            self.index = index;
+            self.row.iter_mut()
+                    .skip(at)
+                    .zip(row.iter().skip(at+1))
+                    .take(index-at)
+                    .all(|(current, after): (&mut Coordinate, &Coordinate)| {
+                        *current = *after;
+                        true
+                    });
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.index = 0;
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.index.eq(&0)
+    }
+}
+
+impl ops::Index<usize> for Newline {
+    type Output = Coordinate;
+    
+    fn index(&self, index: usize) -> &Coordinate {
+        unsafe {
+            self.row.get_unchecked(index)
+        }
+    }
+}
+
+impl ops::IndexMut<usize> for Newline {
+    fn index_mut(&mut self, index: usize) -> &mut Coordinate {
+        unsafe {
+            self.row.get_unchecked_mut(index)
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a Newline {
+    type Item = &'a Coordinate;
+    type IntoIter = iter::Take<::std::slice::Iter<'a, Coordinate>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.row.into_iter().take(self.index)
+    }
+}
+
+impl From<Vec<(libc::size_t, libc::size_t)>> for Newline {
+    fn from(rhs: Vec<(libc::size_t, libc::size_t)>) -> Newline {
+        let mut line: Newline = Newline::default();
+
+        line.index = rhs.len();
+        line.row.iter_mut()
+                .zip(rhs.iter())
+                .all(|(elem, &(x, y)): (&mut Coordinate, &(libc::size_t, libc::size_t))| {
+                    *elem = Coordinate::from((x, y));
+                    true
+                });
+        line
+    }
+}
+
+impl From<Vec<Coordinate>> for Newline {
+    fn from(rhs: Vec<Coordinate>) -> Newline {
+        let mut line: Newline = Newline::default();
+
+        line.index = rhs.len();
+        line.row.iter_mut()
+                .zip(rhs.iter())
+                .all(|(elem, rhs_elem): (&mut Coordinate, &Coordinate)| {
+                    *elem = *rhs_elem;
+                    true
+                });
+        line
+    }
+}
+
+impl From<Winszed> for Newline {
+    fn from(size: Winszed) -> Newline {
+        let mut line: Newline = Newline::default();
+    
+        line.index = size.get_row();
+        line.row.iter_mut()
+                .zip(iter::repeat(size.get_col().checked_sub(1).unwrap_or_default())
+                          .take(line.index)
+                          .enumerate())
+                .all(|(elem, (index, colum)): (&mut Coordinate, (libc::size_t, libc::size_t))| {
+                     *elem = Coordinate::from((colum, index));
+                     true
+                });
+        line
+    }
+}
+
+impl cmp::PartialEq for Newline {
+    fn eq(&self, rhs: &Newline) -> bool {
+        self.index.eq(&rhs.index)
+    }
+}
+
+impl Clone for Newline {
+    fn clone(&self) -> Newline {
+        Newline {
+            row: self.row,
+            index: self.index,
+        }
+    }
+}
+
+impl fmt::Debug for Newline {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.index < 8 {
+            write!(f, "Newline {{ row: {:?}, index: {} }}", &self.row.iter().take(self.index).collect::<Vec<&Coordinate>>(), self.index)
+        } else {
+            write!(f, "Newline {{ row: {:?}, index: {} }}", &self.row[..8], self.index)
+        }
+    }
+}
+
+impl Default for Newline {
+    fn default() -> Newline {
+        Newline {
+            row: [Coordinate::default(); LIMIT_Y],
+            index: 0,
         }
     }
 }
@@ -78,7 +288,7 @@ pub struct Table {
     pub size: Winszed,
     pub bell: libc::size_t,
     pub screen: Cursor<Vec<Character>>,
-    pub newline: Vec<Coordinate>,
+    pub newline: Newline,
 }
 
 #[derive(Debug, Clone)]
@@ -107,15 +317,7 @@ impl Display {
               show_cursor: true,
               mouse_handle: (false, false, false, false),
               ss_mod: false,
-              newline: {
-                  let mut end_row_newlines: Vec<Coordinate> = Vec::with_capacity(size.get_row());
-                  {0..size.ws_row}.all(|i| {
-                      end_row_newlines.push(Coordinate::from((size.get_col() - 1, i as usize)));
-                      true
-                  });
-
-                  end_row_newlines
-              },
+              newline: Newline::from(size),
               region: Coordinate::from((0, size.get_row())),
               collection: Character::default(),
               oob: Coordinate::default(),
@@ -159,7 +361,7 @@ impl Display {
 
     /// The accessor `newlines` returns the value of 'newline', that contains all newlines that are now
     /// displayed on the screen.
-    pub fn get_newline(&self) -> &Vec<Coordinate> {
+    pub fn get_newline(&self) -> &Newline {
         &self.table.newline
     }
 
@@ -210,7 +412,7 @@ impl Display {
               None => {}, }}
           else if self.table.size.ws_row > size.ws_row
           { {size.ws_row..self.table.size.ws_row}.all(|i|
-            { match self.table.newline.iter().position(|&pos| pos.y.eq(&(i as usize)))
+            { match self.table.newline.into_iter().position(|pos| pos.y.eq(&(i as usize)))
               { Some(n) =>
                   { self.table.newline.remove(n); },
                 None => {}, }
@@ -237,7 +439,7 @@ impl Display {
           { let col = self.table.size.ws_col;
             let row = size.ws_row;
             {0..row}.all(|i|
-            { match self.table.newline.iter().position(|&pos| pos.y.eq(&(i as usize)))
+            { match self.table.newline.into_iter().position(|pos| pos.y.eq(&(i as usize)))
               { Some(n) => { self.table.newline[n].x = (size.ws_col as usize) - 1; },
                 None => {}, }
               true });
@@ -254,7 +456,7 @@ impl Display {
           { let col = self.table.size.ws_col;
             let row = size.ws_row;
             {0..row}.all(|i|
-            { match self.table.newline.iter().position(|&pos| pos.y.eq(&(i as usize)))
+            { match self.table.newline.into_iter().position(|pos| pos.y.eq(&(i as usize)))
               { Some(n) => { self.table.newline[n].x = (size.ws_col as usize) - 1; },
                 None => {}, }
               true });
@@ -379,22 +581,24 @@ impl Display {
       { self.clear_cursor(); }
       let resize = self.table.region;
       if !self.table.newline.is_empty()
-      { match self.table.newline.iter().position(|&pos| pos.y.eq(&(resize.y - 1)).bitand(pos.y.eq(&(self.table.size.get_row() - 1)).not()))
-        { Some(n) => { self.table.newline.remove(n); },
+      { match self.table.newline.into_iter().position(|pos| pos.y.eq(&(resize.y - 1)).bitand(pos.y.eq(&(self.table.size.get_row() - 1)).not()))
+        { Some(n) => { 
+        self.table.newline.remove(n); 
+        },
           None => {}, }
-        self.table.newline.iter_mut().all(|mut pos|
-        { if pos.y.ge(&resize.x).bitand(pos.y.lt(&(resize.y - 1)))
-          { pos.y += 1; }
-          true }); }
+            self.table.newline.scroll_down(resize);
+      }
       self.table.newline.push(Coordinate::from((self.table.size.get_col() - 1, resize.x)));
-      self.table.newline.sort_by(|&pos_left, &pos_right| pos_left.y.cmp(&pos_right.y));
+      self.table.newline.sort_by();
       self.table.newline.dedup();
       let coucou = self.table.screen.get_mut();
       {0..col}.all(|_|
       { (*coucou).insert(base * col, collection);
         (*coucou).remove(resize.y * col);
-        true }); }
+        true }); 
+    }
 
+    //pos.y.gt(&base).bitand(pos.y.lt(&resize.y
     /// The method `scroll_up` insert an empty line on top of the screen
     /// (the cursor doesn't move)
     pub fn scroll_up(&mut self, base: libc::size_t)
@@ -404,15 +608,17 @@ impl Display {
       { self.clear_cursor(); }
       let resize = self.table.region;
       if !self.table.newline.is_empty()
-      { match self.table.newline.iter().position(|&pos| pos.y.eq(&base))
-        { Some(n) => { self.table.newline.remove(n); },
+      {
+      match self.table.newline.into_iter().position(|pos| {
+      pos.y.eq(&base)
+      })
+        { Some(n) => {
+        self.table.newline.remove(n); },
           None => {}, }
-        self.table.newline.iter_mut().all(|mut pos|
-        { if pos.y.gt(&base).bitand(pos.y.lt(&resize.y))
-          { pos.y -= 1; }
-          true }); }
+        self.table.newline.scroll_up(resize, &base);
+        }
       self.table.newline.push(Coordinate::from((self.table.size.get_col() - 1, resize.y - 1)));
-      self.table.newline.sort_by(|&pos_left, &pos_right| pos_left.y.cmp(&pos_right.y));
+      self.table.newline.sort_by();
       self.table.newline.dedup();
       let coucou = self.table.screen.get_mut();
       {0..col}.all(|_|
@@ -456,7 +662,7 @@ impl Display {
     { let col = self.table.size.get_col();
       let collection = self.table.collection;
       if !self.table.newline.is_empty()
-      { match self.table.newline.iter().position(|&pos| pos.y.ge(&(current/col)))
+      { match self.table.newline.into_iter().position(|pos| pos.y.ge(&(current/col)))
         { Some(n) =>
             { match self.table.newline[n].y.checked_mul(col)
               { Some(r) =>
@@ -482,7 +688,7 @@ impl Display {
       let collection = self.table.collection;
       if !self.table.newline.is_empty()
       { self.table.newline.reverse();
-        match self.table.newline.iter().position(|&pos| pos.y.lt(&(current/col)))
+        match self.table.newline.into_iter().position(|pos| pos.y.lt(&(current/col)))
         { Some(n) =>
             { match self.table.newline[n].y.checked_mul(col)
               { Some(r) =>
@@ -507,7 +713,7 @@ impl Display {
       let mut x = self.table.oob.x;
       let mut y = self.table.oob.y;
       {0..mv}.all(|_|
-      { match self.table.newline.iter().position(|&pos| pos.y.ge(&y))
+      { match self.table.newline.into_iter().position(|pos| pos.y.ge(&y))
         { Some(n) =>
             { self.erase_left_line(x + (y * col));
               self.erase_right_line(x + (y * col));
@@ -556,7 +762,7 @@ impl Display {
         { self.table.oob.x += 1; }
         else if self.table.oob.y.lt(&self.table.region.y.sub(&1))
         { if self.table.newline.is_empty().not().bitand(self.table.ss_mod.not())
-            { match self.table.newline.iter().position(|&pos| pos.y.eq(&self.table.oob.y))
+            { match self.table.newline.into_iter().position(|pos| pos.y.eq(&self.table.oob.y))
                 { Some(n) => { self.table.newline.remove(n); },
                     None => {}, }; }
             self.table.oob.y += 1;
@@ -626,7 +832,7 @@ impl Display {
     /// The method `erase_chars` erases couple of chars in the current line from the cursor.
     pub fn erase_chars(&mut self, mv: libc::size_t)
     { let pos = self.table.screen.position();
-      let border = match self.table.newline.iter().position(|&pos| pos.y.ge(&self.table.oob.y))
+      let border = match self.table.newline.into_iter().position(|pos| pos.y.ge(&self.table.oob.y))
       { Some(n) => self.table.newline[n].x + (self.table.newline[n].y * self.table.size.get_col()) + 1,
         None => self.table.size.row_by_col() - 1, };
       let coucou = self.table.screen.get_mut();
@@ -639,7 +845,7 @@ impl Display {
     /// The method `erase_chars` erases couple of chars in the current line from the cursor.
     pub fn insert_chars(&mut self, mv: libc::size_t)
     { let pos = self.table.screen.position();
-      let border = match self.table.newline.iter().position(|&pos| pos.y.ge(&self.table.oob.y))
+      let border = match self.table.newline.into_iter().position(|pos| pos.y.ge(&self.table.oob.y))
       { Some(n) => self.table.newline[n].x + (self.table.newline[n].y * self.table.size.get_col()) + 1,
         None => self.table.size.row_by_col() - 1, };
       let coucou = self.table.screen.get_mut();

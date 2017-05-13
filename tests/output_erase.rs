@@ -5,11 +5,11 @@ use std::io::Write;
 
 use self::pty_proc::prelude::*;
 
-const SIZE: Winszed = Winszed
-{ ws_row: 8,
-  ws_col: 10,
-  ws_xpixel: 0,
-  ws_ypixel: 0, };
+const SIZE: Winszed = Winszed {
+    ws_row: 8,
+    ws_col: 10,
+    ws_xpixel: 0,
+    ws_ypixel: 0,};
 
 
 #[test]
@@ -118,8 +118,8 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
-                                       (9, 5), (9, 6), (9, 7)]);
+  assert_eq!(display.get_newline(), &Newline::from(vec![(9, 0), (9, 2), (9, 3), (9, 4),
+                                       (9, 5), (9, 6), (9, 7)]));
 
   // Goto::Home, then Goto::Down, then 3 times Goto::Right, then EraseRightLine
   assert_eq!(display.write(b"\x1B[H\x1B[B\x1B[3C\x1B[0K").ok(), Some(0usize));
@@ -132,8 +132,8 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
-                                       (9, 5), (9, 6), (9, 7)]);
+  assert_eq!(display.get_newline(), &Newline::from(vec![(9, 0), (9, 2), (9, 3), (9, 4),
+                                       (9, 5), (9, 6), (9, 7)]));
 
   // 3 times Goto::Down, then EraseLeftLine
   assert_eq!(display.write(b"\x1B[3B\x1B[1K").ok(), Some(0usize));
@@ -146,8 +146,8 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
-                                       (9, 5), (9, 6), (9, 7)]);
+  assert_eq!(display.get_newline(), &Newline::from(vec![(9, 0), (9, 2), (9, 3), (9, 4),
+                                       (9, 5), (9, 6), (9, 7)]));
 
   // 4 times Goto::Up, then EraseLine
   assert_eq!(display.write(b"\x1B[4A\x1B[2K").ok(), Some(0usize));
@@ -160,8 +160,8 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
-                                       (9, 5), (9, 6), (9, 7)]);
+  assert_eq!(display.get_newline(), &Newline::from(vec![(9, 0), (9, 2), (9, 3), (9, 4),
+                                       (9, 5), (9, 6), (9, 7)]));
 
   // Print "coucou"
   assert_eq!(display.write(b"coucou").ok(), Some(6usize));
@@ -174,8 +174,8 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
-                                       (9, 5), (9, 6), (9, 7)]);
+  assert_eq!(display.get_newline(), &Newline::from(vec![(9, 0), (9, 2), (9, 3), (9, 4),
+                                       (9, 5), (9, 6), (9, 7)]));
 
   // 4 times Goto::Left, then EraseRightLine
   assert_eq!(display.write(b"\x1B[4D\x1B[0K").ok(), Some(0usize));
@@ -188,8 +188,9 @@ fn test_erase_right_left()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-  assert_eq!(display.get_newline(), &vec![(9, 0), (9, 2), (9, 3), (9, 4),
-                                       (9, 5), (9, 6), (9, 7)]); }
+  assert_eq!(display.get_newline(), &Newline::from(vec![(9, 0), (9, 2), (9, 3), (9, 4),
+                                       (9, 5), (9, 6), (9, 7)]));
+}
 
 #[test]
 fn test_erase_up_down()
