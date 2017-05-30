@@ -5,23 +5,25 @@ use std::io::Write;
 
 use self::pty_proc::prelude::*;
 
-const SIZE: Winszed = Winszed
-{ ws_row: 8,
-  ws_col: 10,
-  ws_xpixel: 0,
-  ws_ypixel: 0, };
+const SIZE: Winszed = Winszed {
+    ws_row: 8,
+    ws_col: 10,
+    ws_xpixel: 0,
+    ws_ypixel: 0,
+};
 
-
-#[test]
-fn test_new()
-{ assert!(Display::new(libc::STDOUT_FILENO).is_ok()); }
 
 
 #[test]
+fn test_new() {
+    assert!(Display::new(libc::STDOUT_FILENO).is_ok());
+}
+
 /// fn scroll_down(&mut self)
 /// fn scroll_up(&mut self)
-fn test_scroll()
-{ let mut display: Display = Display::from_winszed(SIZE);
+#[test]
+fn test_scroll() {
+ let mut display: Display = Display::from_winszed(SIZE);
   assert_eq!(display.into_bytes(),
       vec![b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
@@ -199,31 +201,4 @@ fn test_save_terminal()
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
-           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]); }
-
-
-/*
-#[test]
-fn test_iter()
-{ let mut display: Display = Display::from_winszed(SIZE);
-
-  // Print "Léopard"
-  assert_eq!(display.write(b"L\xE9opard").ok(), Some(7usize));
-  assert_eq!(display.into_bytes(),
-      vec![b'L', b'é', b'o', b'p', b'a', b'r', b'd', b' ', b' ', b' ',
-           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
-           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
-           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
-           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
-           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
-           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ',
-           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);
-
-  let mut iterator = display.into_iter();
-  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'L'][..]);
-  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'\xE9'][..]);
-  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'o'][..]);
-  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'p'][..]);
-  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b'a'][..]);
-  assert_eq!(iterator.next().unwrap_or_default().get_ref(), &[b' '][..]); }
-*/
+           b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ', b' ' ]);}

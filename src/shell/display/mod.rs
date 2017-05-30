@@ -20,8 +20,149 @@ use self::character::color;
 pub use self::character::Character;
 use self::character::attribute::Attribute;
 
-pub const LIMIT_X: libc::size_t = 1000;
-pub const LIMIT_Y: libc::size_t = 1000;
+pub const LIMIT_X: libc::size_t = 100;
+pub const LIMIT_Y: libc::size_t = 100;
+pub const LIMIT_XY: libc::size_t = LIMIT_X*LIMIT_Y;
+
+#[derive(Copy)]
+pub struct Screen {
+    content: [Character; LIMIT_XY],
+    limit: libc::size_t,
+    position: libc::size_t,
+}
+
+impl Screen {
+    pub fn push(&mut self, element: Character) {
+        if self.limit < LIMIT_XY {
+            unsafe {
+                *self.content.get_unchecked_mut(self.limit) = element;
+            }
+            self.limit += 1;
+        }
+    }
+
+    pub fn get_position(&self) -> libc::size_t {
+        self.position
+    }
+
+    pub fn set_position(&mut self, index: libc::size_t) {
+        self.position = index;
+    }
+
+    pub fn remove(&mut self, index: libc::size_t) {
+        let content: [Character; LIMIT_XY] = self.content;
+
+        self.content.iter_mut()
+                    .zip(content.iter().skip(1))
+                    .skip(index)
+                    .take(self.position.checked_sub(index).unwrap_or_default())
+                    .all(|(current, after): (&mut Character, &Character)| {
+                        *current = *after;
+                        true
+                    });
+        self.limit = self.limit.checked_sub(1).unwrap_or_default();
+    }
+
+    pub fn insert(&mut self,
+        index: libc::size_t,
+        element: Character
+    ) {
+        let content: [Character; LIMIT_XY] = self.content;
+        
+        self.content.iter_mut()
+                    .skip(1)
+                    .zip(content.iter())
+                    .skip(index)
+                    .take(self.position.checked_sub(index).unwrap_or_default())
+                    .all(|(current, after): (&mut Character, &Character)| {
+                        *current = *after;
+                        true
+                    });
+        unsafe {
+            *self.content.get_unchecked_mut(index) = element;
+        }
+        self.position += 1;
+    }
+
+    pub fn push_all(&mut self, content: Vec<Character>) {
+        let limit: libc::size_t = self.limit + content.len();
+        if limit < LIMIT_XY {
+            self.content.iter_mut()
+                        .skip(self.limit)
+                        .zip(content.iter())
+                        .take(content.len())
+                        .all(|(current, content): (&mut Character, &Character)| {
+                            *current = *content;
+                            true
+                        });
+            self.limit = limit;
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.content.iter_mut()
+                    .take(self.limit)
+                    .all(|mut term: &mut Character| {
+                        term.clear();
+                        true
+                    });
+    }
+
+    pub fn write_with_color(&mut self, glyph: char, mut ope: Character) -> io::Result<usize> {
+        ope.set_glyph(glyph);
+        unsafe {
+            *self.content.get_unchecked_mut(self.position) = ope;
+        }
+        self.position += 1;
+        Ok(1)
+    }
+}
+
+impl<'a> IntoIterator for &'a Screen {
+    type Item = &'a Character;
+    type IntoIter = ::std::slice::Iter<'a, Character>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.content.split_at(self.limit).0.into_iter()
+    }
+}
+
+impl Clone for Screen {
+    fn clone(&self) -> Screen {
+        Screen {
+            content: self.content,
+            limit: self.limit,
+            position: 0,
+        }
+    }
+}
+
+impl fmt::Debug for Screen {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Newline {{ row: {:?}, index: {} }}", &self.content[..8], self.position)
+    }
+}
+
+
+impl From<Winszed> for Screen {
+    fn from(size: Winszed) -> Screen {
+        Screen {
+            content: [Character::default(); LIMIT_XY],
+            limit: size.row_by_col(),
+            position: 0,
+        }
+    }
+}
+
+impl Default for Screen {
+    fn default() -> Screen {
+        Screen {
+            content: [Character::default(); LIMIT_XY],
+            limit: 80,
+            position: 0,
+        }
+    }
+}
 
 #[derive(Default, Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Coordinate {
@@ -60,6 +201,7 @@ impl From<Winszed> for Coordinate {
     }
 }
 
+#[derive(Copy)]
 pub struct Newline {
     row: [Coordinate; LIMIT_Y],
     index: libc::size_t,
@@ -274,7 +416,7 @@ impl Default for Newline {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Table {
     pub save_position: Coordinate,
     pub show_cursor: bool,
@@ -287,7 +429,7 @@ pub struct Table {
     pub line_wrap: bool,
     pub size: Winszed,
     pub bell: libc::size_t,
-    pub screen: Cursor<Vec<Character>>,
+    pub screen: Screen,
     pub newline: Newline,
 }
 
@@ -324,11 +466,7 @@ impl Display {
               line_wrap: true,
               size: size,
               bell: 0,
-              screen: Cursor::new(
-                (0..size.row_by_col()).map(|_: usize|
-                                              Character::default()
-                                          ).collect::<Vec<Character>>()
-              ),
+              screen: Screen::from(size),
           }
         }
     }
@@ -368,7 +506,7 @@ impl Display {
     /// Converts a Vector of Character into a byte vector.
     pub fn into_bytes(&self) -> Vec<libc::c_uchar> {
         let mut screen: Vec<libc::c_uchar> = Vec::new();
-        self.table.screen.get_ref().iter().all(|control: &Character| unsafe {
+        self.table.screen.into_iter().all(|control: &Character| unsafe {
             let buf: [u8; 4] = mem::transmute::<char, [u8; 4]>(control.get_glyph());
             screen.extend_from_slice(&buf[..1]);
             true
@@ -378,13 +516,16 @@ impl Display {
 
     /// The method `clear` purges the screen vector.
     pub fn clear(&mut self) -> io::Result<libc::size_t> {
-        self.table.screen.get_mut().iter_mut().all(|mut term: &mut Character| {
-                                             term.clear();
-                                             true});
+        self.table.screen.clear();
         self.table.newline.clear();
-        {0..self.table.size.ws_row}.all(|i|
-        { self.table.newline.push(Coordinate::from((self.table.size.get_col() - 1, i as usize)));
-          true });
+
+        iter::repeat(self.table.size.get_col() - 1)
+             .take(self.table.size.get_row())
+             .enumerate()
+             .all(|(index, colum): (libc::size_t, libc::size_t)| {
+                  self.table.newline.push(Coordinate::from((colum, index)));
+                  true
+             });
         Ok(0)
     }
 
@@ -397,81 +538,108 @@ impl Display {
     }
 
     pub fn resize_with(&mut self, size: &Winszed) {
-      if size.ws_row.gt(&0).bitand(size.ws_col.gt(&0))
-      { if self.table.size.ws_row < size.ws_row
-          { {self.table.size.ws_row..size.ws_row}.all(|i|
-            { self.table.newline.push(Coordinate::from((self.table.size.get_col() - 1, i as usize)));
-              true });
+      if size.ws_row > 0 && size.ws_col > 0 {
+        if self.table.size.ws_row < size.ws_row {
+            {self.table.size.ws_row..size.ws_row}.all(|i| {
+               self.table.newline.push(Coordinate::from((self.table.size.get_col() - 1, i as usize)));
+               true
+            });
             let srow = size.ws_row as usize;
             if self.table.region.y == self.table.size.ws_row as usize
             { self.table.region.y = srow; }
-            match self.table.size.get_col().checked_mul((size.ws_row - self.table.size.ws_row) as usize)
-            { Some(get) =>
-                { let mut vide = {0..get}.map(|_: usize| Character::default()).collect::<Vec<Character>>();
-                  self.table.screen.get_mut().append(&mut vide); },
-              None => {}, }}
-          else if self.table.size.ws_row > size.ws_row
-          { {size.ws_row..self.table.size.ws_row}.all(|i|
-            { match self.table.newline.into_iter().position(|pos| pos.y.eq(&(i as usize)))
-              { Some(n) =>
-                  { self.table.newline.remove(n); },
-                None => {}, }
-              true });
-            let srow = size.ws_row as usize;
-            if self.table.region.y > srow
-            { self.table.region.y = srow; }
-            if self.table.region.x >= srow
-            { match srow.checked_sub(1)
-              { Some(get) => { self.table.region.x = get; },
-                None => { self.table.region.x = 0; }, }}
-            match self.table.size.get_col().checked_mul((self.table.size.ws_row - size.ws_row) as usize)
-            { Some(get) =>
-                { if self.table.oob.y.ge(&(size.ws_row as usize))
-                  { let x = self.table.size.get_col() - 1;
-                    let _ = self.goto_coord(Coordinate::from((x, size.get_row()-1)));
+            match self.table.size.get_col().checked_mul(size.get_row() - self.table.size.get_row()) {
+                Some(get) => self.table.screen.push_all(iter::repeat(Character::default())
+                                                           .take(get)
+                                                           .collect::<Vec<Character>>()),
+                None => {},
+            }
+         } else if self.table.size.ws_row > size.ws_row {
+              {size.ws_row..self.table.size.ws_row}.all(|i| {
+                    match self.table.newline.into_iter().position(|pos| pos.y.eq(&(i as usize))) {
+                        Some(n) => self.table.newline.remove(n),
+                        None => {},
+                    }
+                    true
+              });
+              let srow = size.ws_row as usize;
+              if self.table.region.y > srow {
+                  self.table.region.y = srow;
+              }
+              if self.table.region.x >= srow {
+                  match srow.checked_sub(1) {
+                      Some(get) => {
+                          self.table.region.x = get;
+                      },
+                      None => {
+                          self.table.region.x = 0
+                      },
                   }
-                  match self.table.size.row_by_col().checked_sub(get)
-                  { Some(start) => { self.table.screen.get_mut().drain(start..); },
-                    None => {}, }},
-              None => {}, }}
-
-          if self.table.size.ws_col < size.ws_col
-          { let col = self.table.size.ws_col;
-            let row = size.ws_row;
-            {0..row}.all(|i|
-            { match self.table.newline.into_iter().position(|pos| pos.y.eq(&(i as usize)))
-              { Some(n) => { self.table.newline[n].x = (size.ws_col as usize) - 1; },
-                None => {}, }
-              true });
-            { let coucou = self.table.screen.get_mut();
-              {0..row}.all(|i|
-              { {0..size.ws_col-col}.all(|_|
-                { (*coucou).insert(((row - i) * col) as usize, Character::default());
-                  true }) }); }
+              }
+              if let Some(get) = self.table.size.get_col().checked_mul((self.table.size.get_row() - size.get_row())) {
+                  if self.table.oob.y.ge(&(size.get_row())) {
+                      let x = self.table.size.get_col() - 1;
+                      let _ = self.goto_coord(Coordinate::from((x, size.get_row()-1)));
+                  }
+                  if let Some(start) = self.table.size.row_by_col().checked_sub(get) {
+                      self.table.screen.limit = start;
+                  }
+              }
+          }
+          if self.table.size.ws_col < size.ws_col {
+           let col = self.table.size.get_col();
+            let row = size.get_row();
+            {0..row}.all(|i| {
+                 match self.table.newline.into_iter().position(|pos| pos.y.eq(&(i as usize))) {
+                    Some(n) => {
+                        self.table.newline[n].x = size.get_col() - 1;
+                        true
+                    },
+                    None => true,
+                }
+            });
+              iter::repeat(Character::default())
+                   .take(row)
+                   .enumerate()
+                   .all(|(index, character)| {
+                        iter::repeat((row-index)*col)
+                             .take(size.get_col()-col)
+                             .all(|pos| {
+                                 self.table.screen.insert(pos, character);
+                                 true
+                             })
+                   });
+              self.table.size = *size;
+              let x = self.table.oob.x;
+              let y = self.table.oob.y;
+              let _ = self.goto_coord(Coordinate::from((x, y)));
+          } else if self.table.size.ws_col > size.ws_col {
+            let col = self.table.size.get_col();
+            let row = size.get_row();
+            {0..row}.all(|i| {
+                  match self.table.newline.into_iter().position(|pos| pos.y.eq(&(i as usize))) {
+                      Some(n) => {
+                          self.table.newline[n].x = size.get_col() - 1;
+                          true
+                      },
+                      None => true,
+                  }
+            });
+              {0..row}.all(|i| {
+                  {0..col-size.get_col()}.all(|k| {
+                        self.table.screen.remove((((row - i) * col) - k - 1));
+                        true
+                  })
+              });
             self.table.size = *size;
-            let x = self.table.oob.x;
+            let x = if self.table.oob.x < size.get_col() {
+               self.table.oob.x
+            } else {
+               size.get_col() - 1
+            };
             let y = self.table.oob.y;
-            let _ = self.goto_coord(Coordinate::from((x, y))); }
-          else if self.table.size.ws_col > size.ws_col
-          { let col = self.table.size.ws_col;
-            let row = size.ws_row;
-            {0..row}.all(|i|
-            { match self.table.newline.into_iter().position(|pos| pos.y.eq(&(i as usize)))
-              { Some(n) => { self.table.newline[n].x = (size.ws_col as usize) - 1; },
-                None => {}, }
-              true });
-            { let coucou = self.table.screen.get_mut();
-              {0..row}.all(|i|
-              { {0..col-size.ws_col}.all(|k|
-                { (*coucou).remove((((row - i) * col) - (k + 1)) as usize);
-                  true }) }); }
-            self.table.size = *size;
-            let x = if self.table.oob.x < size.ws_col as usize
-            { self.table.oob.x }
-            else
-            { size.ws_col as usize - 1 };
-            let y = self.table.oob.y;
-            let _ = self.goto_coord(Coordinate::from((x, y))); }}
+            let _ = self.goto_coord(Coordinate::from((x, y)));
+          }
+        }
           self.table.size = *size;
 
     }
@@ -498,7 +666,7 @@ impl Display {
     /// The method `goto_up` moves the cursor up.
     pub fn goto_up(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
     { let col = self.table.size.get_col();
-      let pos = self.table.screen.position();
+      let pos = self.table.screen.get_position();
       if self.table.oob.y >= mv
       { let _ = self.goto(pos.sub(&((col.mul(&mv)))));
         self.table.oob.y = self.table.oob.y.sub(&mv); }
@@ -512,7 +680,7 @@ impl Display {
     pub fn goto_down(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
     { let row = self.table.size.get_row();
       let col = self.table.size.get_col();
-      let pos = self.table.screen.position();
+      let pos = self.table.screen.get_position();
       if self.table.oob.y + mv <= row - 1
       { let _ = self.goto(pos.add(&(col.mul(&mv))));
         self.table.oob.y = self.table.oob.y.add(&mv); }
@@ -525,7 +693,7 @@ impl Display {
     /// The method `goto_right` moves the cursor to its right.
     pub fn goto_right(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
     { let col = self.table.size.get_col();
-      let pos = self.table.screen.position();
+      let pos = self.table.screen.get_position();
       if self.table.oob.x + mv <= col - 1
       { let _ = self.goto(pos.add(&mv));
         self.table.oob.x = self.table.oob.x.add(&mv); }
@@ -534,7 +702,7 @@ impl Display {
       Ok(0) }
 
     pub fn goto_left(&mut self, mv: libc::size_t) -> io::Result<libc::size_t>
-    { let pos = self.table.screen.position();
+    { let pos = self.table.screen.get_position();
       if self.table.oob.x >= mv
       { let _ = self.goto(pos.sub(&mv));
         self.table.oob.x = self.table.oob.x.sub(&mv); }
@@ -574,57 +742,55 @@ impl Display {
 
     /// The method `scroll_down` append an empty line on bottom of the screen
     /// (the cursor doesn't move)
-    pub fn scroll_down(&mut self, base: libc::size_t)
-    { let col = self.table.size.get_col();
-      let collection = self.table.collection;
-      if self.table.show_cursor
-      { self.clear_cursor(); }
-      let resize = self.table.region;
-      if !self.table.newline.is_empty()
-      { match self.table.newline.into_iter().position(|pos| pos.y.eq(&(resize.y - 1)).bitand(pos.y.eq(&(self.table.size.get_row() - 1)).not()))
-        { Some(n) => { 
-        self.table.newline.remove(n); 
-        },
-          None => {}, }
+    pub fn scroll_down(&mut self, base: libc::size_t) {
+        let col = self.table.size.get_col();
+        let collection = self.table.collection;
+        if self.table.show_cursor {
+            self.clear_cursor();
+        }
+        let resize = self.table.region;
+        if !self.table.newline.is_empty() {
+            match self.table.newline.into_iter().position(|pos| pos.y.eq(&(resize.y - 1)).bitand(pos.y.eq(&(self.table.size.get_row() - 1)).not())) {
+                Some(n) => self.table.newline.remove(n),
+                None => {},
+            }
             self.table.newline.scroll_down(resize);
-      }
-      self.table.newline.push(Coordinate::from((self.table.size.get_col() - 1, resize.x)));
-      self.table.newline.sort_by();
-      self.table.newline.dedup();
-      let coucou = self.table.screen.get_mut();
-      {0..col}.all(|_|
-      { (*coucou).insert(base * col, collection);
-        (*coucou).remove(resize.y * col);
-        true }); 
+        }
+        self.table.newline.push(Coordinate::from((self.table.size.get_col() - 1, resize.x)));
+        self.table.newline.sort_by();
+        self.table.newline.dedup();
+        {0..col}.all(|_| {
+            self.table.screen.insert(base * col, collection);
+            self.table.screen.remove(resize.y * col);
+            true
+        });
     }
 
     //pos.y.gt(&base).bitand(pos.y.lt(&resize.y
     /// The method `scroll_up` insert an empty line on top of the screen
     /// (the cursor doesn't move)
-    pub fn scroll_up(&mut self, base: libc::size_t)
-    { let col = self.table.size.get_col();
-      let collection = self.table.collection;
-      if self.table.show_cursor
-      { self.clear_cursor(); }
-      let resize = self.table.region;
-      if !self.table.newline.is_empty()
-      {
-      match self.table.newline.into_iter().position(|pos| {
-      pos.y.eq(&base)
-      })
-        { Some(n) => {
-        self.table.newline.remove(n); },
-          None => {}, }
-        self.table.newline.scroll_up(resize, &base);
+    pub fn scroll_up(&mut self, base: libc::size_t) {
+        let col = self.table.size.get_col();
+        let collection = self.table.collection;
+        if self.table.show_cursor {
+            self.clear_cursor();
         }
-      self.table.newline.push(Coordinate::from((self.table.size.get_col() - 1, resize.y - 1)));
-      self.table.newline.sort_by();
-      self.table.newline.dedup();
-      let coucou = self.table.screen.get_mut();
-      {0..col}.all(|_|
-      { (*coucou).insert(resize.y * col, collection);
-        (*coucou).remove(base * col);
-        true }); }
+        let resize = self.table.region;
+        if !self.table.newline.is_empty() {
+            if let Some(n) = self.table.newline.into_iter().position(|pos| pos.y.eq(&base)) {
+                self.table.newline.remove(n);
+            }
+            self.table.newline.scroll_up(resize, &base);
+        }
+        self.table.newline.push(Coordinate::from((self.table.size.get_col() - 1, resize.y - 1)));
+        self.table.newline.sort_by();
+        self.table.newline.dedup();
+        {0..col}.all(|_| {
+            self.table.screen.insert(resize.y * col, collection);
+            self.table.screen.remove(base * col);
+            true
+        });
+    }
 
     /// The method `save_position` save a position in the variable 'save_position' to get
     /// restored with self.table.restore_position() described right after.
@@ -644,16 +810,17 @@ impl Display {
 
     /// The method `insert_empty_line` insert an empty line on the right of the cursor
     /// (the cursor doesn't move)
-    pub fn insert_empty_line(&mut self, mv: libc::size_t)
-    { let col = self.table.size.get_col();
-      let region = self.table.region;
-      let pos = self.table.screen.position();
-      let collection = self.table.collection;
-      let coucou = self.table.screen.get_mut();
-      {0..(col * mv)}.all(|_|
-      { (*coucou).insert(pos, collection);
-        { (*coucou).remove(region.y * col); }
-        true }); }
+    pub fn insert_empty_line(&mut self, mv: libc::size_t) {
+        let col = self.table.size.get_col();
+        let region = self.table.region;
+        let pos = self.table.screen.get_position();
+        let collection = self.table.collection;
+        {0..(col * mv)}.all(|_| {
+            self.table.screen.insert(pos, collection);
+            self.table.screen.remove(region.y * col);
+            true
+        });
+    }
 
     /// The method `erase_right_line` erase the current line from the cursor
     /// to the next '\n' encountered
@@ -670,7 +837,7 @@ impl Display {
                     { Some(k) =>
                         { match k.checked_sub(current)
                           { Some(j) =>
-                              { self.table.screen.get_mut().into_iter().skip(current).take(j).all(|mut term: &mut Character|  { *term = collection;
+                              { self.table.screen.content.iter_mut().skip(current).take(j).all(|mut term: &mut Character|  { *term = collection;
                                       true }); },
                             None => { self.erase_down(); }, }},
                       None => { self.erase_down(); }, }},
@@ -683,8 +850,8 @@ impl Display {
     /// The method `erase_left_line` erase the current line from the previous '\n'
     /// to the cursor
     /// (char under the cursor included)
-    pub fn erase_left_line(&mut self, current: libc::size_t)
-    { let col = self.table.size.get_col();
+    pub fn erase_left_line(&mut self, current: libc::size_t) {
+      let col = self.table.size.get_col();
       let collection = self.table.collection;
       if !self.table.newline.is_empty()
       { self.table.newline.reverse();
@@ -696,16 +863,18 @@ impl Display {
                     { Some(k) =>
                         { match current.add(&1).checked_sub(k)
                           { Some(j) =>
-                              { self.table.screen.get_mut().into_iter().skip(k).take(j).all(|mut term: &mut Character|  { *term = collection;
+                              { self.table.screen.content.iter_mut().skip(k).take(j).all(|mut term: &mut Character|  { *term = collection;
                                     true }); },
                             None => { self.erase_up(); }, }},
                       None => { self.erase_up(); }, }},
                 None => { self.erase_up(); }, }},
           None =>
             { self.erase_up(); }, }
-        self.table.newline.reverse(); }
-      else
-      { self.erase_up(); }}
+            self.table.newline.reverse();
+        } else {
+            self.erase_up();
+        }
+    }
 
     /// The method `erase_line` erase the entire current line
     pub fn erase_line(&mut self, mv: libc::size_t)
@@ -726,24 +895,31 @@ impl Display {
     /// the top of the screen, and erase the current line from the left border
     /// column to the cursor.
     /// (char under the cursor included)
-    pub fn erase_up(&mut self)
-    { let pos = self.table.screen.position();
-      let collection = self.table.collection;
-      self.table.screen.get_mut().into_iter().take(pos + 1).all(|mut term: &mut Character|
-      { *term = collection;
-        true }); }
+    pub fn erase_up(&mut self) {
+        let pos = self.table.screen.get_position();
+        let collection = self.table.collection;
+        self.table.screen.content.iter_mut().take(pos + 1).all(|mut term: &mut Character| {
+            *term = collection;
+            true
+        });
+    }
 
     /// The method `erase_down` erase all lines from the current line down to
     /// the bottom of the screen and erase the current line from the cursor to
     /// the right border column
     /// (char under the cursor included)
-    pub fn erase_down(&mut self)
-    { let pos = self.table.screen.position();
-      let len = self.table.size.row_by_col();
-      let collection = self.table.collection;
-      self.table.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Character|
-      { *term = collection;
-        true }); }
+    pub fn erase_down(&mut self) {
+        let pos = self.table.screen.get_position();
+        let len = self.table.size.row_by_col();
+        let collection = self.table.collection;
+
+        self.table.screen.content.iter_mut().skip(pos)
+                                            .take(len - pos + 1)
+                                            .all(|mut term: &mut Character| {
+                                                *term = collection;
+                                                true
+                                            });
+    }
 
     /// The method `print_enter` reproduce the behavior of a '\n'
     pub fn print_enter(&mut self)
@@ -754,30 +930,37 @@ impl Display {
         self.scroll_up(x); }}
 
     /// The method `print_char` print an unicode character (1 to 4 chars range)
-    pub fn print_char(&mut self, first: char, next: &[u8]) -> io::Result<usize>
-    { let col = self.table.size.get_col();
-        if self.table.show_cursor
-        { self.clear_cursor(); }
-        if self.table.oob.x < col - 1
-        { self.table.oob.x += 1; }
-        else if self.table.oob.y.lt(&self.table.region.y.sub(&1))
-        { if self.table.newline.is_empty().not().bitand(self.table.ss_mod.not())
-            { match self.table.newline.into_iter().position(|pos| pos.y.eq(&self.table.oob.y))
-                { Some(n) => { self.table.newline.remove(n); },
-                    None => {}, }; }
+    pub fn print_char(&mut self, first: char, next: &[u8]) -> io::Result<usize> {
+      let col = self.table.size.get_col();
+        if self.table.show_cursor {
+            self.clear_cursor();
+        }
+        if self.table.oob.x < col - 1 {
+            self.table.oob.x += 1;
+        } else if self.table.oob.y.lt(&self.table.region.y.sub(&1)) {
+            if self.table.newline.is_empty().not().bitand(self.table.ss_mod.not()) {
+                match self.table.newline.into_iter().position(|pos| pos.y.eq(&self.table.oob.y)) {
+                   Some(n) => {
+                       self.table.newline.remove(n);
+                   },
+                   None => {},
+                }
+            }
             self.table.oob.y += 1;
-            self.table.oob.x = 0; }
-        else if self.table.oob.y.eq(&(self.table.region.y.sub(&1)))
-        { let x = self.table.region.x;
+            self.table.oob.x = 0;
+        } else if self.table.oob.y.eq(&(self.table.region.y.sub(&1))) {
+            let x = self.table.region.x;
             self.scroll_up(x);
             let _ = self.goto_begin_row();
-            { let pos = self.table.screen.position();
+            { let pos = self.table.screen.get_position();
                 if pos.gt(&0)
-                { let _ = self.goto(pos - 1); }}}
-        else
-        { let pos = self.table.screen.position();
-            if pos.gt(&0)
-            { let _ = self.goto(pos - 1); }}
+                { let _ = self.goto(pos - 1); }}
+        } else {
+            let pos = self.table.screen.get_position();
+            if pos.gt(&0) {
+                let _ = self.goto(pos - 1);
+            }
+        }
         self.table.screen.write_with_color(first, self.table.collection).and_then(|f| self.write(next).and_then(|n| Ok(f.add(&n)) ))
     }
 
@@ -830,54 +1013,57 @@ impl Display {
     }
 
     /// The method `erase_chars` erases couple of chars in the current line from the cursor.
-    pub fn erase_chars(&mut self, mv: libc::size_t)
-    { let pos = self.table.screen.position();
-      let border = match self.table.newline.into_iter().position(|pos| pos.y.ge(&self.table.oob.y))
-      { Some(n) => self.table.newline[n].x + (self.table.newline[n].y * self.table.size.get_col()) + 1,
-        None => self.table.size.row_by_col() - 1, };
-      let coucou = self.table.screen.get_mut();
-      let collection = self.table.collection;
-      {0..mv}.all(|_|
-      { (*coucou).insert(border, collection);
-        (*coucou).remove(pos);
-        true }); }
+    pub fn erase_chars(&mut self, mv: libc::size_t) {
+        let pos = self.table.screen.get_position();
+        let border =
+            match self.table.newline.into_iter().position(|pos| pos.y.ge(&self.table.oob.y)) {
+                Some(n) => self.table.newline[n].x + (self.table.newline[n].y * self.table.size.get_col()) + 1,
+                None => self.table.size.row_by_col() - 1,
+            };
+        let collection = self.table.collection;
+        {0..mv}.all(|_| {
+            self.table.screen.insert(border, collection);
+            self.table.screen.remove(pos);
+            true
+        });
+    }
 
     /// The method `erase_chars` erases couple of chars in the current line from the cursor.
-    pub fn insert_chars(&mut self, mv: libc::size_t)
-    { let pos = self.table.screen.position();
-      let border = match self.table.newline.into_iter().position(|pos| pos.y.ge(&self.table.oob.y))
-      { Some(n) => self.table.newline[n].x + (self.table.newline[n].y * self.table.size.get_col()) + 1,
-        None => self.table.size.row_by_col() - 1, };
-      let coucou = self.table.screen.get_mut();
-      let collection = self.table.collection;
-      {0..mv}.all(|_|
-      { (*coucou).insert(pos, collection);
-        (*coucou).remove(border);
-        true }); }
+    pub fn insert_chars(&mut self, mv: libc::size_t) {
+        let pos = self.table.screen.get_position();
+        let border =
+            match self.table.newline.into_iter().position(|pos| pos.y.ge(&self.table.oob.y)) {
+                Some(n) => self.table.newline[n].x + (self.table.newline[n].y * self.table.size.get_col()) + 1,
+                None => self.table.size.row_by_col() - 1,
+            };
+        let collection = self.table.collection;
+        {0..mv}.all(|_| {
+            self.table.screen.insert(pos, collection);
+            self.table.screen.remove(border);
+            true
+        });
+    }
 
     /// Reset the color.
     fn clear_cursor(&mut self) {
-        let pos = self.table.screen.position();
-        let collection = self.table.collection;
-//        let cursor = self.table.cursor;
+        let pos = self.table.screen.get_position();
 
-        if let Some(character) = self.table.screen.get_mut().get_mut(pos) {
-          character.set_attribute_from_u8(collection.get_attribute());
-          character.set_foreground(collection.get_foreground());
-          character.set_background(collection.get_background());
+        if let Some(character) = self.table.screen.content.iter_mut().skip(pos).next() {
+            let attribute = character.get_attribute();
+            let foreground = character.get_foreground();
+            let background = character.get_background();
 
-/*          character.set_attribute_from_u8(cursor.get_attribute());
-          character.set_foreground(cursor.get_foreground());
-          character.set_background(cursor.get_background());*/
+            character.set_attribute_from_u8(attribute);
+            character.set_foreground(foreground);
+            character.set_background(background);
         }
     }
 
     /// Color the cursor.
     fn color_cursor(&mut self) {
-        let pos = self.table.screen.position();
+        let pos = self.table.screen.get_position();
 
-        if let Some(character) = self.table.screen.get_mut().get_mut(pos) {
-//            self.table.cursor = *character;
+        if let Some(character) = self.table.screen.content.iter_mut().skip(pos).next() {
             character.set_attribute(Attribute::Dim);
             character.set_foreground([255, 0, 0]);
             character.set_background([0, 255, 255]);
@@ -890,7 +1076,7 @@ impl<'a> IntoIterator for &'a Display {
     type IntoIter = ::std::slice::Iter<'a, Character>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.table.screen.get_ref().into_iter()
+        self.table.screen.into_iter()
     }
 }
 
@@ -909,7 +1095,7 @@ impl fmt::Display for Display
 { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
   { let mut disp: String = String::new();
       let width: usize = self.table.size.get_col() as usize;
-    self.into_iter().as_slice()
+    self.table.screen.content
         .chunks(width)
         .all(|characters| {
         characters.iter().all(|character| {
@@ -924,437 +1110,486 @@ impl Write for Display {
     /// The method `write` from trait `io::Write` inserts a new list of terms
     /// from output.
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-      if self.table.size.get_row().gt(&0).bitand(self.table.size.get_col().gt(&0))
-      { match buf {
-            &[] =>
-              { if self.table.show_cursor
-                { self.color_cursor(); }
-                Ok(0) },
-
-            //---------- TERMINAL SAVE -----------
-            &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'h', ref next..] =>
-              { self.save_terminal();
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'l', ref next..] =>
-              { self.restore_terminal();
-                self.write(next) },
-
-            //----------.mouse_handle -----------
-            &[b'\x1B', b'[', b'?', b'9', b'h', ref next..] =>
-              { self.table.mouse_handle.0 = true;
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'9', b'l', ref next..] =>
-              { self.table.mouse_handle.0 = false;
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'0', b'h', ref next..] =>
-              { self.table.mouse_handle.1 = true;
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'0', b'l', ref next..] =>
-              { self.table.mouse_handle.1 = false;
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'2', b'h', ref next..] =>
-              { self.table.mouse_handle.2 = true;
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'2', b'l', ref next..] =>
-              { self.table.mouse_handle.2 = false;
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'6', b'h', ref next..] =>
-              { self.table.mouse_handle.3 = true;
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'6', b'l', ref next..] =>
-              { self.table.mouse_handle.3 = false;
-                self.write(next) },
-
-            //------------ SETTINGS -------------
-            &[b'\x1B', b'c', ref next..] =>
-              { self.write(next) },
-            &[b'\x1B', b'[', b'>', b'0', b'c', ref next..] |
-            &[b'\x1B', b'[', b'>', b'c', ref next..] =>
-              { self.write(next) },
-            &[b'\x1B', b'[', b'?', b'7', b'h', ref next..] |
-            &[b'\x1B', b'[', b'2', b'0', b'h', ref next..] =>
-              { self.table.line_wrap = true;
-                self.write(next) },
-            &[b'\x1B', b'[', b'7', b'l', ref next..] |
-            &[b'\x1B', b'[', b'2', b'0', b'l', ref next..] =>
-              { self.table.line_wrap = false;
-                self.write(next) },
-            &[b'\x1B', b'[', b'r', ref next..] =>
-              { self.write(next) },
-            &[b'\x1B', b'[', b'?', b'1', b'h', ref next..] =>
-              { self.table.ss_mod = true;
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'1', b'l', ref next..] =>
-              { self.table.ss_mod = false;
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'2', b'5', b'h', ref next..] =>
-              { self.table.show_cursor = true;
-                self.color_cursor();
-                self.write(next) },
-            &[b'\x1B', b'[', b'?', b'2', b'5', b'l', ref next..] =>
-              { self.table.show_cursor = false;
-                self.clear_cursor();
-                self.write(next) },
-
-            //------------ ERASE -----------------
-            &[b'\x1B', b'[', b'K', ref next..] |
-            &[b'\x1B', b'[', b'0', b'K', ref next..] =>
-              { let pos = self.table.screen.position();
-                self.erase_right_line(pos);
-                self.write(next) },
-            &[b'\x1B', b'[', b'1', b'K', ref next..] =>
-              { let pos = self.table.screen.position();
-                self.erase_left_line(pos);
-                self.write(next) },
-            &[b'\x1B', b'[', b'2', b'K', ref next..] =>
-              { self.erase_line(1);
-                self.write(next) },
-            &[b'\x1B', b'[', b'J', ref next..] |
-            &[b'\x1B', b'[', b'0', b'J', ref next..] =>
-              { self.erase_down();
-                self.write(next) },
-            &[b'\x1B', b'[', b'1', b'J', ref next..] =>
-              { self.erase_up();
-                self.write(next) },
-            &[b'\x1B', b'[', b'2', b'J', ref next..] => self.clear().and(self.write(next)),
-            &[b'\x1B', b'[', b'P', ref next..] =>
-              { self.erase_chars(1);
-                self.write(next) },
-
-            //------------ INSERT -----------------
-            &[b'\x1B', b'[', b'L', ref next..] =>
-              { if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y))
-                { self.insert_empty_line(1); }
-                self.write(next) },
-            &[b'\x1B', b'[', b'@', ref next..] =>
-              { self.insert_chars(1);
-                self.write(next) },
-
-            //------------- GOTO ------------------
-            &[b'\x1B', b'[', b';', b'H', ref next..] |
-            &[b'\x1B', b'[', b';', b'f', ref next..] |
-            &[b'\x1B', b'[', b'd', ref next..] |
-            &[b'\x1B', b'[', b'H', ref next..] |
-            &[b'\x1B', b'[', b'f', ref next..] =>
-              { let _ = self.goto_home();
-                self.write(next) },
-            &[b'\x1B', b'[', b'A', ref next..] |
-            &[b'\x1B', b'[', b'm', b'A', b'\x08', ref next..] |
-            &[b'\x1B', b'O', b'A', ref next..] =>
-              { let _ = self.goto_up(1);
-                self.write(next) },
-            &[b'A', b'\x08'] =>
-              { let _ = self.goto_up(1);
-                Ok(0) },
-            &[b'\x1B', b'[', b'B', ref next..] |
-            &[b'\x1B', b'[', b'm', b'B', b'\x08', ref next..] |
-            &[b'\x1B', b'D', ref next..] |
-            &[b'\x1B', b'O', b'B', ref next..] =>
-              { let _ = self.goto_down(1);
-                self.write(next) },
-            &[b'B', b'\x08'] =>
-              { let _ = self.goto_down(1);
-                Ok(0) },
-            &[b'\x1B', b'[', b'C', ref next..] |
-            &[b'\x1B', b'[', b'm', b'C', b'\x08', ref next..] |
-            &[b'\x1B', b'O', b'C', ref next..] =>
-              { let _ = self.goto_right(1);
-                self.write(next) },
-            &[b'C', b'\x08'] =>
-              { let _ = self.goto_right(1);
-                Ok(0) },
-            &[b'\x1B', b'[', b'D', ref next..] |
-            &[b'\x1B', b'[', b'm', b'D', b'\x08', ref next..] |
-            &[b'\x1B', b'O', b'D', ref next..] |
-            &[b'\x08', ref next..] =>
-              { let _ = self.goto_left(1);
-                self.write(next) },
-            &[b'D', b'\x08'] =>
-              { let _ = self.goto_left(1);
-                Ok(0) },
-
-            //--------- POSITION SAVE ----------
-            &[b'\x1B', b'[', b's', ref next..] |
-            &[b'\x1B', b'7', ref next..] =>
-              { self.save_position();
-                self.write(next) },
-            &[b'\x1B', b'[', b'u', ref next..] |
-            &[b'\x1B', b'8', ref next..] =>
-              { self.restore_position();
-                self.write(next) },
-
-            //------------- SCROLL ---------------
-            &[b'\x1B', b'M', ref next..] =>
-              { if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y))
-                { let x = self.table.oob.y;
-                  if !self.table.ss_mod
-                  { self.scroll_up(x); }
-                  else
-                  { self.scroll_down(x); }}
-                self.write(next) },
-            &[b'\x1B', b'[', b'M', ref next..] =>
-              { if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y))
-                { let x = self.table.oob.y;
-                  self.scroll_up(x); }
-                self.write(next) },
-            &[b'\x1B', b'[', b'S', ref next..] |
-            &[b'\x1B', b'S', ref next..] =>
-              { if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y))
-                { let x = self.table.region.x;
-                  self.scroll_up(x); }
-                self.write(next) },
-            &[b'\x1B', b'L', ref next..] =>
-              { if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y))
-                { let x = self.table.oob.y;
-                  self.scroll_down(x); }
-                self.write(next) },
-            &[b'\x1B', b'[', b'T', ref next..] |
-            &[b'\x1B', b'T', ref next..] =>
-              { if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y))
-                { let x = self.table.region.x;
-                  self.scroll_down(x); }
-                self.write(next) },
-
-            //------------ CL ATTR -------------
-            &[b'\x1B', b'[', b'?', b'1', b'2', b'l', ref next..] |
-            &[b'\x1B', b'[', b'0', b'm', ref next..] |
-            &[b'\x1B', b'[', b'm', ref next..] =>
-              { self.table.collection.clear();
-                self.write(next) },
-
-            &[b'\x1B', b'[', b'?', ref next..] |
-            &[b'\x1B', b'[', b'>', ref next..] |
-            &[b'\x1B', b'[', ref next..] |
-            &[b'\x1B', b']', ref next..] |
-            &[b'\x1B', b'(', ref next..] |
-            &[b'\x1B', b'?', ref next..] |
-            &[b'\x1B', ref next..] =>
-            { let (bonjour, coucou) =
-              { self.catch_numbers(Vec::new(), next) };
-              match coucou
-              { //------------- n GOTO ------------------
-                &[b'A', ref next..] =>
-                  { if bonjour.len() == 1
-                    { let _ = self.goto_up(bonjour[0]); }
-                    self.write(next) },
-                &[b'B', ref next..] =>
-                  { if bonjour.len() == 1
-                    { let _ = self.goto_down(bonjour[0]); }
-                    self.write(next) },
-                &[b'C', ref next..] =>
-                  { if bonjour.len() == 1
-                    { let _ = self.goto_right(bonjour[0]); }
-                    self.write(next) },
-                &[b'D', ref next..] =>
-                  { if bonjour.len() == 1
-                    { let _ = self.goto_left(bonjour[0]); }
-                    self.write(next) },
-                &[b'G', ref next..] =>
-                  { if bonjour.len() == 1 && self.table.size.get_col() >= bonjour[0]
-                    { let y = self.table.oob.y;
-                      let _ = self.goto_coord(Coordinate::from((bonjour[0] - 1, y))); }
-                    self.write(next) },
-                &[b'd', ref next..] =>
-                  { if bonjour.len() == 1 && self.table.size.get_row() >= bonjour[0]
-                    { let x = self.table.oob.x;
-                      let _ = self.goto_coord(Coordinate::from((x, bonjour[0] - 1))); }
-                    self.write(next) },
-                &[b'H', ref next..] |
-                &[b'f', ref next..] => {
-                    if bonjour.len() == 2 && bonjour[0] > 0 && bonjour[1] > 0 {
-                        let _ = self.goto_coord(Coordinate::from((bonjour[1] - 1, bonjour[0] - 1)));
+        if self.table.size.get_row().gt(&0).bitand(self.table.size.get_col().gt(&0)) {
+            match buf {
+                &[] => {
+                    if self.table.show_cursor {
+                        self.color_cursor();
+                    }
+                    Ok(0)
+                },
+                // terminal save
+                &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'h', ref next..] => {
+                    self.save_terminal();
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'1', b'0', b'4', b'9', b'l', ref next..] => {
+                    self.restore_terminal();
+                    self.write(next)
+                },
+                // mouse_handle
+                &[b'\x1B', b'[', b'?', b'9', b'h', ref next..] => {
+                    self.table.mouse_handle.0 = true;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'9', b'l', ref next..] => {
+                    self.table.mouse_handle.0 = false;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'0', b'h', ref next..] => {
+                    self.table.mouse_handle.1 = true;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'0', b'l', ref next..] => {
+                    self.table.mouse_handle.1 = false;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'2', b'h', ref next..] => {
+                    self.table.mouse_handle.2 = true;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'2', b'l', ref next..] => {
+                    self.table.mouse_handle.2 = false;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'6', b'h', ref next..] => {
+                    self.table.mouse_handle.3 = true;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'1', b'0', b'0', b'6', b'l', ref next..] => {
+                    self.table.mouse_handle.3 = false;
+                    self.write(next)
+                },
+                // settings
+                &[b'\x1B', b'c', ref next..] => {
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'>', b'0', b'c', ref next..] |
+                &[b'\x1B', b'[', b'>', b'c', ref next..] => {
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'7', b'h', ref next..] |
+                &[b'\x1B', b'[', b'2', b'0', b'h', ref next..] => {
+                    self.table.line_wrap = true;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'7', b'l', ref next..] |
+                &[b'\x1B', b'[', b'2', b'0', b'l', ref next..] => {
+                    self.table.line_wrap = false;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'r', ref next..] => {
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'1', b'h', ref next..] => {
+                    self.table.ss_mod = true;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'1', b'l', ref next..] => {
+                    self.table.ss_mod = false;
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'2', b'5', b'h', ref next..] => {
+                    self.table.show_cursor = true;
+                    self.color_cursor();
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'?', b'2', b'5', b'l', ref next..] => {
+                    self.table.show_cursor = false;
+                    self.clear_cursor();
+                    self.write(next)
+                },
+                // erase
+                &[b'\x1B', b'[', b'K', ref next..] |
+                &[b'\x1B', b'[', b'0', b'K', ref next..] => {
+                    let pos = self.table.screen.get_position();
+                    self.erase_right_line(pos);
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'1', b'K', ref next..] => {
+                    let pos = self.table.screen.get_position();
+                    self.erase_left_line(pos);
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'2', b'K', ref next..] => {
+                    self.erase_line(1);
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'J', ref next..] |
+                &[b'\x1B', b'[', b'0', b'J', ref next..] => {
+                    self.erase_down();
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'1', b'J', ref next..] => {
+                    self.erase_up();
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'2', b'J', ref next..] => self.clear().and(self.write(next)),
+                &[b'\x1B', b'[', b'P', ref next..] => {
+                    self.erase_chars(1);
+                    self.write(next)
+                },
+                // insert
+                &[b'\x1B', b'[', b'L', ref next..] => {
+                    if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y)) {
+                        self.insert_empty_line(1);
                     }
                     self.write(next)
                 },
-                //-------------- ERASE ----------------
-                &[b'P', ref next..] =>
-                  { if bonjour.len().eq(&1)
-                    { self.erase_chars(bonjour[0]); }
-                    self.write(next) },
-                &[b'@', ref next..] =>
-                  { if bonjour.len().eq(&1)
-                    { self.insert_chars(bonjour[0]); }
-                    self.write(next) },
-
-                //-------------- SCROLL ----------------
-                &[b'M', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.x)).bitand(self.table.oob.y.lt(&self.table.region.y))
+                &[b'\x1B', b'[', b'@', ref next..] => {
+                    self.insert_chars(1);
+                    self.write(next)
+                },
+                // goto
+                &[b'\x1B', b'[', b';', b'H', ref next..] |
+                &[b'\x1B', b'[', b';', b'f', ref next..] |
+                &[b'\x1B', b'[', b'd', ref next..] |
+                &[b'\x1B', b'[', b'H', ref next..] |
+                &[b'\x1B', b'[', b'f', ref next..] => {
+                    let _ = self.goto_home();
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'A', ref next..] |
+                &[b'\x1B', b'[', b'm', b'A', b'\x08', ref next..] |
+                &[b'\x1B', b'O', b'A', ref next..] => {
+                    let _ = self.goto_up(1);
+                    self.write(next)
+                },
+                &[b'A', b'\x08'] => {
+                    let _ = self.goto_up(1);
+                    Ok(0)
+                },
+                &[b'\x1B', b'[', b'B', ref next..] |
+                &[b'\x1B', b'[', b'm', b'B', b'\x08', ref next..] |
+                &[b'\x1B', b'D', ref next..] |
+                &[b'\x1B', b'O', b'B', ref next..] => {
+                    let _ = self.goto_down(1);
+                    self.write(next)
+                },
+                &[b'B', b'\x08'] => {
+                    let _ = self.goto_down(1);
+                    Ok(0)
+                },
+                &[b'\x1B', b'[', b'C', ref next..] |
+                &[b'\x1B', b'[', b'm', b'C', b'\x08', ref next..] |
+                &[b'\x1B', b'O', b'C', ref next..] => {
+                    let _ = self.goto_right(1);
+                    self.write(next)
+                },
+                &[b'C', b'\x08'] => {
+                    let _ = self.goto_right(1);
+                    Ok(0)
+                },
+                &[b'\x1B', b'[', b'D', ref next..] |
+                &[b'\x1B', b'[', b'm', b'D', b'\x08', ref next..] |
+                &[b'\x1B', b'O', b'D', ref next..] |
+                &[b'\x08', ref next..] => {
+                    let _ = self.goto_left(1);
+                    self.write(next)
+                },
+                &[b'D', b'\x08'] => {
+                    let _ = self.goto_left(1);
+                    Ok(0)
+                },
+                // position save
+                &[b'\x1B', b'[', b's', ref next..] |
+                &[b'\x1B', b'7', ref next..] => {
+                    self.save_position();
+                    self.write(next)
+                },
+                &[b'\x1B', b'[', b'u', ref next..] |
+                &[b'\x1B', b'8', ref next..] => {
+                    self.restore_position();
+                    self.write(next)
+                },
+                // scroll
+                &[b'\x1B', b'M', ref next..] =>
+                  { if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y))
                     { let x = self.table.oob.y;
-                      {0..bonjour[0]}.all(|_|
-                      { self.scroll_up(x);
-                        true }); }
+                      if !self.table.ss_mod
+                      { self.scroll_up(x); }
+                      else {
+                          self.scroll_down(x); }}
                     self.write(next) },
-                &[b'S', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.x)).bitand(self.table.oob.y.lt(&self.table.region.y))
-                    { let x = self.table.region.x;
-                      {0..bonjour[0]}.all(|_|
-                      { self.scroll_up(x);
-                        true }); }
-                    self.write(next) },
-                &[b'L', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.x)).bitand(self.table.oob.y.lt(&self.table.region.y))
+                &[b'\x1B', b'[', b'M', ref next..] =>
+                  { if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y))
                     { let x = self.table.oob.y;
-                      {0..bonjour[0]}.all(|_|
-                      { self.scroll_down(x);
-                        true }); }
+                      self.scroll_up(x); }
                     self.write(next) },
-                &[b'T', ref next..] =>
-                  { if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.x)).bitand(self.table.oob.y.lt(&self.table.region.y))
-                    { let x = self.table.region.x;
-                      {0..bonjour[0]}.all(|_|
-                      { self.scroll_down(x);
-                        true }); }
+                &[b'\x1B', b'[', b'S', ref next..] |
+                &[b'\x1B', b'S', ref next..] => {
+                    if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y)) {
+                        let x = self.table.region.x;
+                         self.scroll_up(x);
+                    }
+                    self.write(next)
+                },
+                &[b'\x1B', b'L', ref next..] =>
+                  { if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y))
+                    { let x = self.table.oob.y;
+                      self.scroll_down(x); }
                     self.write(next) },
+                &[b'\x1B', b'[', b'T', ref next..] |
+                &[b'\x1B', b'T', ref next..] => {
+                   if self.table.oob.y.ge(&self.table.region.x).bitand(self.table.oob.y.lt(&self.table.region.y)) {
+                       let x = self.table.region.x;
+                       self.scroll_down(x);
+                   }
+                   self.write(next)
+                },
 
-                //------------- ATTRIBUTS ---------------
-		            &[b'm', b'%', ref next..] |
-                &[b'm', ref next..] =>
-                  { //if self.table.show_cursor
-                    { bonjour.iter().all(|&attr|
-                      { match attr
-                        { 0 => { self.table.collection.clear(); },
-
-                          //Set special attributes
-                          1 => {
-                              self.table.collection.add_attribute(Attribute::Bold);
-                          },
-                          2 => {
-                              self.table.collection.add_attribute(Attribute::Dim);
-                          },
-                          3 => {
-                              self.table.collection.add_attribute(Attribute::Italic);
-                          },
-                          4 => {
-                              self.table.collection.add_attribute(Attribute::Underline);
-                          },
-                          5 => {
-                              self.table.collection.add_attribute(Attribute::Blink);
-                          },
-                          7 => {
-                              self.table.collection.add_attribute(Attribute::Reverse);
-                          },
-                          8 => {
-                              self.table.collection.add_attribute(Attribute::Hidden);
-                          },
-
-                          //Unset special attributes
-                          22 => {
-                              self.table.collection.sub_attribute(Attribute::Bold);
-                              self.table.collection.sub_attribute(Attribute::Dim);
-                          },
-                          23 => { self.table.collection.sub_attribute(Attribute::Italic); },
-                          24 => { self.table.collection.sub_attribute(Attribute::Underline); },
-                          25 => { self.table.collection.sub_attribute(Attribute::Blink); },
-                          27 => { self.table.collection.sub_attribute(Attribute::Reverse); },
-                          28 => { self.table.collection.sub_attribute(Attribute::Hidden); },
-
-                          //Foreground colors
-                          30 => { self.table.collection.set_foreground(color::BLACK); },
-                          31 => { self.table.collection.set_foreground(color::RED); },
-                          32 => { self.table.collection.set_foreground(color::GREEN); },
-                          33 => { self.table.collection.set_foreground(color::YELLOW); },
-                          34 => { self.table.collection.set_foreground(color::BLUE); },
-                          35 => { self.table.collection.set_foreground(color::MAGENTA); },
-                          36 => { self.table.collection.set_foreground(color::CYAN); },
-                          37 => { self.table.collection.set_foreground(color::WHITE); },
-                          39 => { self.table.collection.set_foreground(color::BLACK); },
-
-                          //Background colors
-                          40 => { self.table.collection.set_background(color::BLACK); },
-                          41 => { self.table.collection.set_background(color::RED); },
-                          42 => { self.table.collection.set_background(color::GREEN); },
-                          43 => { self.table.collection.set_background(color::YELLOW); },
-                          44 => { self.table.collection.set_background(color::BLUE); },
-                          45 => { self.table.collection.set_background(color::MAGENTA); },
-                          46 => { self.table.collection.set_background(color::CYAN); },
-                          47 => { self.table.collection.set_background(color::WHITE); },
-                          49 => { self.table.collection.set_background(color::WHITE); },
-
-                          _ => {}, }
-                        true }); }
+                //------------ CL ATTR -------------
+                &[b'\x1B', b'[', b'?', b'1', b'2', b'l', ref next..] |
+                &[b'\x1B', b'[', b'0', b'm', ref next..] |
+                &[b'\x1B', b'[', b'm', ref next..] =>
+                  { self.table.collection.clear();
                     self.write(next) },
 
-                //----------- TRICKY RESIZE -------------
-                &[b'r', ref next..] =>
-                  { if bonjour.len() == 2
-                    { self.tricky_resize(bonjour[0], bonjour[1]); }
+                &[b'\x1B', b'[', b'?', ref next..] |
+                &[b'\x1B', b'[', b'>', ref next..] |
+                &[b'\x1B', b'[', ref next..] |
+                &[b'\x1B', b']', ref next..] |
+                &[b'\x1B', b'(', ref next..] |
+                &[b'\x1B', b'?', ref next..] |
+                &[b'\x1B', ref next..] => {
+                 let (bonjour, coucou) =
+                  { self.catch_numbers(Vec::new(), next) };
+                  match coucou
+                  { //------------- n GOTO ------------------
+                    &[b'A', ref next..] =>
+                      { if bonjour.len() == 1
+                        { let _ = self.goto_up(bonjour[0]); }
+                        self.write(next) },
+                    &[b'B', ref next..] =>
+                      { if bonjour.len() == 1
+                        { let _ = self.goto_down(bonjour[0]); }
+                        self.write(next) },
+                    &[b'C', ref next..] =>
+                      { if bonjour.len() == 1
+                        { let _ = self.goto_right(bonjour[0]); }
+                        self.write(next) },
+                    &[b'D', ref next..] =>
+                      { if bonjour.len() == 1
+                        { let _ = self.goto_left(bonjour[0]); }
+                        self.write(next) },
+                    &[b'G', ref next..] =>
+                      { if bonjour.len() == 1 && self.table.size.get_col() >= bonjour[0]
+                        { let y = self.table.oob.y;
+                          let _ = self.goto_coord(Coordinate::from((bonjour[0] - 1, y))); }
+                        self.write(next) },
+                    &[b'd', ref next..] =>
+                      { if bonjour.len() == 1 && self.table.size.get_row() >= bonjour[0]
+                        { let x = self.table.oob.x;
+                          let _ = self.goto_coord(Coordinate::from((x, bonjour[0] - 1))); }
+                        self.write(next) },
+                    &[b'H', ref next..] |
+                    &[b'f', ref next..] => {
+                        if bonjour.len() == 2 && bonjour[0] > 0 && bonjour[1] > 0 {
+                            let _ = self.goto_coord(Coordinate::from((bonjour[1] - 1, bonjour[0] - 1)));
+                        }
+                        self.write(next)
+                    },
+                    //-------------- ERASE ----------------
+                    &[b'P', ref next..] =>
+                      { if bonjour.len().eq(&1)
+                        { self.erase_chars(bonjour[0]); }
+                        self.write(next) },
+                    &[b'@', ref next..] =>
+                      { if bonjour.len().eq(&1)
+                        { self.insert_chars(bonjour[0]); }
+                        self.write(next) },
+
+                    //-------------- SCROLL ----------------
+                    &[b'M', ref next..] =>
+                      { if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.x)).bitand(self.table.oob.y.lt(&self.table.region.y))
+                        { let x = self.table.oob.y;
+                          {0..bonjour[0]}.all(|_|
+                          { self.scroll_up(x);
+                            true }); }
+                        self.write(next) },
+                    &[b'S', ref next..] => {
+                      if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.x)).bitand(self.table.oob.y.lt(&self.table.region.y))
+                        { let x = self.table.region.x;
+                          {0..bonjour[0]}.all(|_|
+                          { self.scroll_up(x);
+                            true }); }
+                        self.write(next) },
+                    &[b'L', ref next..] => {
+                        if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.x))
+                                               .bitand(self.table.oob.y.lt(&self.table.region.y)) {
+                          let x = self.table.oob.y;
+                          {0..bonjour[0]}.all(|_| {
+                              self.scroll_down(x);
+                              true
+                          });
+                        }
+                        self.write(next)
+                    },
+                    &[b'T', ref next..] => {
+                        if bonjour.len().eq(&1).bitand(self.table.oob.y.ge(&self.table.region.x)).bitand(self.table.oob.y.lt(&self.table.region.y))
+                        {
+                            let x = self.table.region.x;
+                            {0..bonjour[0]}.all(|_| {
+                                self.scroll_down(x);
+                                true
+                            });
+                        }
+                        self.write(next)
+                    },
+
+                    //------------- ATTRIBUTS ---------------
+                        &[b'm', b'%', ref next..] |
+                    &[b'm', ref next..] =>
+                      { //if self.table.show_cursor
+                        { bonjour.iter().all(|&attr|
+                          { match attr
+                            { 0 => { self.table.collection.clear(); },
+
+                              //Set special attributes
+                              1 => {
+                                  self.table.collection.add_attribute(Attribute::Bold);
+                              },
+                              2 => {
+                                  self.table.collection.add_attribute(Attribute::Dim);
+                              },
+                              3 => {
+                                  self.table.collection.add_attribute(Attribute::Italic);
+                              },
+                              4 => {
+                                  self.table.collection.add_attribute(Attribute::Underline);
+                              },
+                              5 => {
+                                  self.table.collection.add_attribute(Attribute::Blink);
+                              },
+                              7 => {
+                                  self.table.collection.add_attribute(Attribute::Reverse);
+                              },
+                              8 => {
+                                  self.table.collection.add_attribute(Attribute::Hidden);
+                              },
+
+                              //Unset special attributes
+                              22 => {
+                                  self.table.collection.sub_attribute(Attribute::Bold);
+                                  self.table.collection.sub_attribute(Attribute::Dim);
+                              },
+                              23 => { self.table.collection.sub_attribute(Attribute::Italic); },
+                              24 => { self.table.collection.sub_attribute(Attribute::Underline); },
+                              25 => { self.table.collection.sub_attribute(Attribute::Blink); },
+                              27 => { self.table.collection.sub_attribute(Attribute::Reverse); },
+                              28 => { self.table.collection.sub_attribute(Attribute::Hidden); },
+
+                              //Foreground colors
+                              30 => { self.table.collection.set_foreground(color::BLACK); },
+                              31 => { self.table.collection.set_foreground(color::RED); },
+                              32 => { self.table.collection.set_foreground(color::GREEN); },
+                              33 => { self.table.collection.set_foreground(color::YELLOW); },
+                              34 => { self.table.collection.set_foreground(color::BLUE); },
+                              35 => { self.table.collection.set_foreground(color::MAGENTA); },
+                              36 => { self.table.collection.set_foreground(color::CYAN); },
+                              37 => { self.table.collection.set_foreground(color::WHITE); },
+                              39 => { self.table.collection.set_foreground(color::BLACK); },
+
+                              //Background colors
+                              40 => { self.table.collection.set_background(color::BLACK); },
+                              41 => { self.table.collection.set_background(color::RED); },
+                              42 => { self.table.collection.set_background(color::GREEN); },
+                              43 => { self.table.collection.set_background(color::YELLOW); },
+                              44 => { self.table.collection.set_background(color::BLUE); },
+                              45 => { self.table.collection.set_background(color::MAGENTA); },
+                              46 => { self.table.collection.set_background(color::CYAN); },
+                              47 => { self.table.collection.set_background(color::WHITE); },
+                              49 => { self.table.collection.set_background(color::WHITE); },
+
+                              _ => {}, }
+                            true }); }
+                        self.write(next) },
+
+                    //----------- TRICKY RESIZE -------------
+                    &[b'r', ref next..] =>
+                      { if bonjour.len() == 2
+                        { self.tricky_resize(bonjour[0], bonjour[1]); }
+                        self.write(next) },
+
+                    //----------- TERM VERSION --------------
+                    &[b'c', ref next..] =>
+                      { self.write(next) },
+                    &[b';', b'c', ref next..] =>
+                      { self.write(next) },
+
+                    &[_, ref next..] |
+                    &[ref next..] =>
+                      { self.write(next) }, }},
+
+                &[b'\x07', ref next..] =>
+                  { self.table.bell += 1;
+                    self.write(next) },
+                &[b'\x0A', b'\x0D', ref next..] |
+                &[b'\x0A', ref next..] |
+                &[b'\x0D', b'\x0A', ref next..] =>
+                  { self.print_enter();
+                    let _ = self.goto_begin_row();
+                    self.write(next) },
+                &[b'\x0D', ref next..] =>
+                  { let _ = self.goto_begin_row();
                     self.write(next) },
 
-                //----------- TERM VERSION --------------
-                &[b'c', ref next..] =>
-                  { self.write(next) },
-                &[b';', b'c', ref next..] =>
-                  { self.write(next) },
+                &[b'\x09', ref next..] => {
+                    let resize = self.table.region;
+                    let tab_width = self.next_tab();
+                    let pos = self.table.screen.get_position();
+                    let col_y = resize.y * self.table.size.get_col();
 
-                &[_, ref next..] |
-                &[ref next..] =>
-                  { self.write(next) }, }},
+                    iter::repeat(Character::default())
+                         .take(tab_width)
+                         .all(|character| {
+                              self.table.screen.insert(pos, character);
+                              self.table.screen.remove(col_y);
+                              true
+                          });
+                    let _ = self.goto_right(tab_width);
+                    self.write(next)
+                },
 
-            &[b'\x07', ref next..] =>
-              { self.table.bell += 1;
-                self.write(next) },
-            &[b'\x0A', b'\x0D', ref next..] |
-            &[b'\x0A', ref next..] |
-            &[b'\x0D', b'\x0A', ref next..] =>
-              { self.print_enter();
-                let _ = self.goto_begin_row();
-                self.write(next) },
-            &[b'\x0D', ref next..] =>
-              { let _ = self.goto_begin_row();
-                self.write(next) },
-
-            &[b'\x09', ref next..] =>
-            { let resize = self.table.region;
-              let col = self.table.size.get_col();
-              let tab_width = self.next_tab();
-              let pos = self.table.screen.position();
-              { let coucou = self.table.screen.get_mut();
-                {0..tab_width}.all(|_|
-                { (*coucou).insert(pos, Character::default());
-                  (*coucou).remove(resize.y * col);
-                  true }); }
-              let _ = self.goto_right(tab_width);
-              self.write(next) },
-
-            &[u1, ref next..] =>
-            { if u1 & 0b10000000 == 0
-              { if u1 > 0
-								{ self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, 0, 0, 0]) }, next) }
-								else
-								{ self.print_char(unsafe { mem::transmute::<[u8; 4], char>([b' ', 0, 0, 0]) }, next) }}
-              else if (u1 & 0b11111000) == 0b11110000
-              { match next
-                { &[u2, u3, u4, ref next..] =>
-                  { let mut m = 0u32;
-                    m |= (u1 as u32 & 0x07) << 18;
-                    m |= (u2 as u32 & 0x3F) << 12;
-                    m |= (u3 as u32 & 0x3F) << 6;
-                    m |= u4 as u32 & 0x3F;
-                    self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
-                  _ => self.write(next), }}
-              else if (u1 & 0b11110000) == 0b11100000
-              { match next
-                { &[u2, u3, ref next..] =>
-                  { let mut m = 0u32;
-                    m |= (u1 as u32 & 0x0F) << 12;
-                    m |= (u2 as u32 & 0x3F) << 6;
-                    m |= u3 as u32 & 0x3F;
-                    self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
-                  _ => self.write(next), }}
-              else if (u1 & 0b11100000) == 0b11000000
-              { match next
-                { &[u2, ref next..] =>
-                  { let mut m = 0u32;
-                    m |= (u1 as u32 & 0x3F) << 6;
-                    m |= u2 as u32 & 0x3F;
-                    self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
-                  _ => self.write(next), }}
-              else
-              { self.write(next) }
-            },
-        }}
-        else
-        { Ok(0) }
+                &[u1, ref next..] =>
+                { if u1 & 0b10000000 == 0
+                  { if u1 > 0
+                                    { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([u1, 0, 0, 0]) }, next) }
+                                    else
+                                    { self.print_char(unsafe { mem::transmute::<[u8; 4], char>([b' ', 0, 0, 0]) }, next) }}
+                  else if (u1 & 0b11111000) == 0b11110000
+                  { match next
+                    { &[u2, u3, u4, ref next..] =>
+                      { let mut m = 0u32;
+                        m |= (u1 as u32 & 0x07) << 18;
+                        m |= (u2 as u32 & 0x3F) << 12;
+                        m |= (u3 as u32 & 0x3F) << 6;
+                        m |= u4 as u32 & 0x3F;
+                        self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
+                      _ => self.write(next), }}
+                  else if (u1 & 0b11110000) == 0b11100000
+                  { match next
+                    { &[u2, u3, ref next..] =>
+                      { let mut m = 0u32;
+                        m |= (u1 as u32 & 0x0F) << 12;
+                        m |= (u2 as u32 & 0x3F) << 6;
+                        m |= u3 as u32 & 0x3F;
+                        self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
+                      _ => self.write(next), }}
+                  else if (u1 & 0b11100000) == 0b11000000
+                  { match next
+                    { &[u2, ref next..] =>
+                      { let mut m = 0u32;
+                        m |= (u1 as u32 & 0x3F) << 6;
+                        m |= u2 as u32 & 0x3F;
+                        self.print_char(unsafe { mem::transmute::<u32, char>(m) }, next) },
+                      _ => self.write(next), }}
+                  else
+                  { self.write(next) }
+                },
+            }}
+            else
+            { Ok(0) }
     }
 
     fn flush(&mut self) -> io::Result<()> {

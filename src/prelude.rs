@@ -9,6 +9,7 @@ pub use ::shell::device::control::operate::Operate;
 pub use ::shell::device::control::Control;
 pub use ::shell::device::{In, Out};
 pub use ::shell::display::Display;
+pub use ::shell::display::Screen;
 pub use ::shell::display::Newline;
 pub use ::shell::display::winsz::Winszed;
 pub use ::shell::display::character::Character;

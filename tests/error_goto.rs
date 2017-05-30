@@ -234,6 +234,7 @@ fn error_position_save()
            b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ',
            b' ', b' ', b' ', b' ', b' ' ]);
+    // halt
 
   // Position Restore (at (7, 0), outside the screen)
   assert_eq!(display.write(b"\x1B[u").ok(), Some(0usize));
