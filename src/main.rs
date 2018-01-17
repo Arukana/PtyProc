@@ -2,7 +2,6 @@ extern crate pty_proc;
 extern crate libc;
 
 use std::io::Write;
-use std::str;
 
 use pty_proc::prelude as shell;
 

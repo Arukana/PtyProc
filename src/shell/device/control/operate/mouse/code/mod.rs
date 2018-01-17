@@ -128,83 +128,83 @@ impl Code {
             b'\x40' => Ok(Code::WheelUp),
             b'\x41' => Ok(Code::WheelDown),
 
-            /// Drag.
+            // Drag.
             b'\x20' => Ok(Code::LeftDrag),
             b'\x21' => Ok(Code::WheelDrag),
             b'\x22' => Ok(Code::RightDrag),
 
-            /// Shift Click.
+            // Shift Click.
             b'\x04' => Ok(Code::ShiftLeft),
             b'\x05' => Ok(Code::ShiftWheel),
             b'\x06' => Ok(Code::ShiftRight),
 
-            /// Shift Drag.
+            // Shift Drag.
             b'\x24' => Ok(Code::ShiftLeftDrag),
             b'\x25' => Ok(Code::ShiftWheelDrag),
             b'\x26' => Ok(Code::ShiftRightDrag),
 
-            /// Control Click.
+            // Control Click.
             b'\x10' => Ok(Code::CtrlLeft),
             b'\x11' => Ok(Code::CtrlWheel),
             b'\x12' => Ok(Code::CtrlRight),
             b'\x50' => Ok(Code::CtrlWheelUp),
             b'\x51' => Ok(Code::CtrlWheelDown),
 
-            /// Control Drag.
+            // Control Drag.
             b'\x30' => Ok(Code::CtrlLeftDrag),
             b'\x31' => Ok(Code::CtrlWheelDrag),
             b'\x32' => Ok(Code::CtrlRightDrag),
 
-            /// Control Shift Click.
+            // Control Shift Click.
             b'\x14' => Ok(Code::ShiftCtrlLeft),
             b'\x15' => Ok(Code::ShiftCtrlWheel),
             b'\x16' => Ok(Code::ShiftCtrlRight),
 
-            /// Control Shift Drag.
+            // Control Shift Drag.
             b'\x34' => Ok(Code::ShiftCtrlLeftDrag),
             b'\x35' => Ok(Code::ShiftCtrlWheelDrag),
             b'\x36' => Ok(Code::ShiftCtrlRightDrag),
 
-            /// Command Click.
+            // Command Click.
             b'\x08' => Ok(Code::CmdLeft),
             b'\x09' => Ok(Code::CmdWheel),
             b'\x0A' => Ok(Code::CmdRight),
             b'\x48' => Ok(Code::CmdWheelUp),
             b'\x49' => Ok(Code::CmdWheelDown),
 
-            /// Command Drag.
+            // Command Drag.
             b'\x28' => Ok(Code::CmdLeftDrag),
             b'\x29' => Ok(Code::CmdWheelDrag),
             b'\x2A' => Ok(Code::CmdRightDrag),
 
-            /// Command Shift Click.
+            // Command Shift Click.
             b'\x0C' => Ok(Code::CmdShiftLeft),
             b'\x0D' => Ok(Code::CmdShiftWheel),
             b'\x0E' => Ok(Code::CmdShiftRight),
 
-            /// Command Shift Drag.
+            // Command Shift Drag.
             b'\x2C' => Ok(Code::CmdShiftLeftDrag),
             b'\x2D' => Ok(Code::CmdShiftWheelDrag),
             b'\x2E' => Ok(Code::CmdShiftRightDrag),
 
-            /// Command Control Click.
+            // Command Control Click.
             b'\x18' => Ok(Code::CmdCtrlLeft),
             b'\x19' => Ok(Code::CmdCtrlWheel),
             b'\x1A' => Ok(Code::CmdCtrlRight),
             b'\x58' => Ok(Code::CmdWheelUp),
             b'\x59' => Ok(Code::CmdWheelDown),
 
-            /// Command Control Drag.
+            // Command Control Drag.
             b'\x38' => Ok(Code::CmdCtrlLeftDrag),
             b'\x39' => Ok(Code::CmdCtrlWheelDrag),
             b'\x3A' => Ok(Code::CmdCtrlRightDrag),
 
-            /// Command Shift Control Click.
+            // Command Shift Control Click.
             b'\x1C' => Ok(Code::CmdShiftCtrlLeft),
             b'\x1D' => Ok(Code::CmdShiftCtrlWheel),
             b'\x1E' => Ok(Code::CmdShiftCtrlRight),
 
-            /// Command Shift Control Drag.
+            // Command Shift Control Drag.
             b'\x3C' => Ok(Code::CmdShiftCtrlLeftDrag),
             b'\x3E' => Ok(Code::CmdShiftCtrlWheelDrag),
             b'\x3F' => Ok(Code::CmdShiftCtrlRightDrag),

@@ -310,51 +310,51 @@ impl Key {
 impl From<u32> for Key {
     fn from(code: u32) -> Self {
         match code {
-            /// Enter.
+            // Enter.
             13 => Key::Char(ENTER),
-            /// BackSpace.
+            // BackSpace.
             127 => Key::Char(BACKSPACE),
-            /// Up.
+            // Up.
             63232 => Key::Char(UP),
-            /// Down.
+            // Down.
             63233 => Key::Char(DOWN),
-            /// Right.
+            // Right.
             63235 => Key::Char(RIGHT),
-            /// Left.
+            // Left.
             63234 => Key::Char(LEFT),
-            /// End.
+            // End.
             63275 => Key::Char(END),
-            /// Home.
+            // Home.
             63273 => Key::Char(HOME),
-            /// Delete.
+            // Delete.
             63272 => Key::Char(DELETE),
-            /// Page Up.
+            // Page Up.
             63276 => Key::Char(PAGE_UP),
-            /// Page Down.
+            // Page Down.
             63277 => Key::Char(PAGE_DOWN),
-            /// Function 1.
+            // Function 1.
             63236 => Key::Char(FUNCTION_1),
-            /// Function 2.
+            // Function 2.
             63237 => Key::Char(FUNCTION_2),
-            /// Function 3.
+            // Function 3.
             63238 => Key::Char(FUNCTION_3),
-            /// Function 4.
+            // Function 4.
             63239 => Key::Char(FUNCTION_4),
-            /// Function 5.
+            // Function 5.
             63240 => Key::Char(FUNCTION_5),
-            /// Function 6.
+            // Function 6.
             63241 => Key::Char(FUNCTION_6),
-            /// Function 7.
+            // Function 7.
             63242 => Key::Char(FUNCTION_7),
-            /// Function 8.
+            // Function 8.
             63243 => Key::Char(FUNCTION_8),
-            /// Function 9.
+            // Function 9.
             63244 => Key::Char(FUNCTION_9),
-            /// Function 10.
+            // Function 10.
             63245 => Key::Char(FUNCTION_10),
-            /// Function 11.
+            // Function 11.
             63246 => Key::Char(FUNCTION_11),
-            /// Function 12.
+            // Function 12.
             63247 => Key::Char(FUNCTION_12),
             code => Key::Char(code as u64),
         }
@@ -365,85 +365,85 @@ impl From<(In, libc::size_t)> for Key {
     /// The constructor method `new` returns a parsed Key.
     fn from((buf, len): (In, libc::size_t)) -> Self {
         match &buf[..len] {
-            /// Enter.
+            // Enter.
             &[b'\n'] | &[b'\r'] | &[b'\n', b'\r'] => Key::Char(ENTER),
-            /// BackSpace.
+            // BackSpace.
             &[b'\x7f'] => Key::Char(BACKSPACE),
-            /// Up.
+            // Up.
             &[b'\x1B', b'[', b'A'] => Key::Char(UP),
-            /// Down.
+            // Down.
             &[b'\x1B', b'[', b'B'] => Key::Char(DOWN),
-            /// Right.
+            // Right.
             &[b'\x1B', b'[', b'C'] => Key::Char(RIGHT),
-            /// Left.
+            // Left.
             &[b'\x1B', b'[', b'D'] => Key::Char(LEFT),
-            /// End.
+            // End.
             &[b'\x1B', b'[', b'F'] => Key::Char(END),
-            /// Home.
+            // Home.
             &[b'\x1B', b'[', b'1', b'~'] => Key::Char(HOME),
-            /// Delete.
+            // Delete.
             &[b'\x1B', b'[', b'3', b'~'] => Key::Char(DELETE),
-            /// Page Up.
+            // Page Up.
             &[b'\x1B', b'[', b'5', b'~'] => Key::Char(PAGE_UP),
-            /// Page Down.
+            // Page Down.
             &[b'\x1B', b'[', b'6', b'~'] => Key::Char(PAGE_DOWN),
-            /// Alt Up.
+            // Alt Up.
             &[b'\x1B', b'[', b'1', b';', b'9', b'A'] => Key::Char(ALT_UP),
-            //// Alt Down.
+            // Alt Down.
             &[b'\x1B', b'[', b'1', b';', b'9', b'B'] => Key::Char(ALT_DOWN),
-            /// Alt Right.
+            // Alt Right.
             &[b'\x1B', b'[', b'1', b';', b'9', b'C'] => Key::Char(ALT_RIGHT),
-            /// Alt Left.
+            // Alt Left.
             &[b'\x1B', b'[', b'1', b';', b'9', b'D'] => Key::Char(ALT_LEFT),
-            /// Function 1.
+            // Function 1.
             &[b'\x1B', b'O', b'P'] => Key::Char(FUNCTION_1),
-            /// Function 2.
+            // Function 2.
             &[b'\x1B', b'O', b'Q'] => Key::Char(FUNCTION_2),
-            /// Function 3.
+            // Function 3.
             &[b'\x1B', b'O', b'R'] => Key::Char(FUNCTION_3),
-            /// Function 4.
+            // Function 4.
             &[b'\x1B', b'O', b'S'] => Key::Char(FUNCTION_4),
-            /// Function 5.
+            // Function 5.
             &[b'\x1B', b'[', b'1', b'5', b'~'] => Key::Char(FUNCTION_5),
-            /// Function 6.
+            // Function 6.
             &[b'\x1B', b'[', b'1', b'7', b'~'] => Key::Char(FUNCTION_6),
-            /// Function 7.
+            // Function 7.
             &[b'\x1B', b'[', b'1', b'8', b'~'] => Key::Char(FUNCTION_7),
-            /// Function 8.
+            // Function 8.
             &[b'\x1B', b'[', b'1', b'9', b'~'] => Key::Char(FUNCTION_8),
-            /// Function 9.
+            // Function 9.
             &[b'\x1B', b'[', b'2', b'0', b'~'] => Key::Char(FUNCTION_9),
-            /// Function 10.
+            // Function 10.
             &[b'\x1B', b'[', b'2', b'1', b'~'] => Key::Char(FUNCTION_10),
-            /// Function 11.
+            // Function 11.
             &[b'\x1B', b'[', b'2', b'3', b'~'] => Key::Char(FUNCTION_11),
-            /// Function 12.
+            // Function 12.
             &[b'\x1B', b'[', b'2', b'4', b'~'] => Key::Char(FUNCTION_12),
-            /// Function 13.
+            // Function 13.
             &[b'\x1B', b'[', b'2', b'5', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'P'] => Key::Char(FUNCTION_13),
-            /// Function 14.
+            // Function 14.
             &[b'\x1B', b'[', b'2', b'6', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'Q'] => Key::Char(FUNCTION_14),
-            /// Function 15.
+            // Function 15.
             &[b'\x1B', b'[', b'2', b'8', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'R'] => Key::Char(FUNCTION_15),
-            /// Function 16.
+            // Function 16.
             &[b'\x1B', b'[', b'2', b'9', b'~'] | &[b'\x1B', b'[', b'1', b';', b'2', b'S'] => Key::Char(FUNCTION_16),
-            /// Function 17.
+            // Function 17.
             &[b'\x1B', b'[', b'3', b'1', b'~'] => Key::Char(FUNCTION_17),
-            /// Function 18.
+            // Function 18.
             &[b'\x1B', b'[', b'3', b'2', b'~'] => Key::Char(FUNCTION_18),
-            /// Function 19.
+            // Function 19.
             &[b'\x1B', b'[', b'3', b'3', b'~'] => Key::Char(FUNCTION_19),
-            /// Byte 0.
+            // Byte 0.
             &[u1] => Key::Char(u1 as u64),
-            /// Byte 1.
+            // Byte 1.
             &[u1, u2] => unsafe {
                 Key::Char(mem::transmute::<[u8; 2], u16>([u1, u2]) as u64)
             },
-            /// Byte 2.
+            // Byte 2.
             &[u1, u2, u3]  => unsafe {
                 Key::Char(mem::transmute::<[u8; 4], u32>([u1, u2, u3, b'\0']) as u64)
             },
-            /// Byte 3.
+            // Byte 3.
             &[u1, u2, u3, u4] => unsafe {
                 Key::Char(mem::transmute::<[u8; 4], u32>([u1, u2, u3, u4]) as u64)
             },
