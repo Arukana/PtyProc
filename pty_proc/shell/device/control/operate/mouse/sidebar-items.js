@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["MouseError","The enum `CodeError` defines the possible errors from constructor Code."]],"mod":[["code",""]],"struct":[["Mouse",""]]});

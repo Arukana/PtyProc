@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ShellError","The enum `ShellError` defines the possible errors from constructor Shell."]],"mod":[["device",""],["display",""],["state",""],["termios",""]],"struct":[["Shell","The struct `Shell` is the speudo terminal interface."]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["attribute",""],["color",""]],"struct":[["Character",""]]});

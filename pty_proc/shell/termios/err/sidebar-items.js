@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["TermiosError","The enum `TermiosError` defines the possible errors from constructor Termios."]]});

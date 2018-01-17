@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Code",""],["CodeError","The enum `CodeError` defines the possible errors from constructor Code."]]});

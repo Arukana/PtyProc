@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["LIMIT_X",""],["LIMIT_Y",""]],"enum":[["DisplayError","The enum `DisplayError` defines the possible errors from constructor Display."]],"mod":[["character",""],["cursor",""],["winsz",""]],"struct":[["Coordinate",""],["Display",""],["Newline",""],["Table",""]]});

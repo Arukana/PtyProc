@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["WinszedError","The enum `WinszedError` defines the possible errors from constructor Winszed."]],"struct":[["Winszed","The enum `Winszed` is the size of the tty window."]]});
