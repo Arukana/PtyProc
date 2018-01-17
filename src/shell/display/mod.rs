@@ -7,7 +7,6 @@ use std::ops::{self, BitAnd, Add, Sub, Mul, Not};
 use std::io::{self, Write};
 use std::iter;
 use std::fmt;
-use std::str;
 use std::mem;
 use std::cmp;
 
@@ -378,7 +377,7 @@ impl Display {
 
     /// The method `clear` purges the screen vector.
     pub fn clear(&mut self) -> io::Result<libc::size_t> {
-        self.table.screen.get_mut().iter_mut().all(|mut term: &mut Character| {
+        self.table.screen.get_mut().iter_mut().all(|term: &mut Character| {
                                              term.clear();
                                              true});
         self.table.newline.clear();
@@ -670,7 +669,7 @@ impl Display {
                     { Some(k) =>
                         { match k.checked_sub(current)
                           { Some(j) =>
-                              { self.table.screen.get_mut().into_iter().skip(current).take(j).all(|mut term: &mut Character|  { *term = collection;
+                              { self.table.screen.get_mut().into_iter().skip(current).take(j).all(|term: &mut Character|  { *term = collection;
                                       true }); },
                             None => { self.erase_down(); }, }},
                       None => { self.erase_down(); }, }},
@@ -696,7 +695,7 @@ impl Display {
                     { Some(k) =>
                         { match current.add(&1).checked_sub(k)
                           { Some(j) =>
-                              { self.table.screen.get_mut().into_iter().skip(k).take(j).all(|mut term: &mut Character|  { *term = collection;
+                              { self.table.screen.get_mut().into_iter().skip(k).take(j).all(|term: &mut Character|  { *term = collection;
                                     true }); },
                             None => { self.erase_up(); }, }},
                       None => { self.erase_up(); }, }},
@@ -729,7 +728,7 @@ impl Display {
     pub fn erase_up(&mut self)
     { let pos = self.table.screen.position();
       let collection = self.table.collection;
-      self.table.screen.get_mut().into_iter().take(pos + 1).all(|mut term: &mut Character|
+      self.table.screen.get_mut().into_iter().take(pos + 1).all(|term: &mut Character|
       { *term = collection;
         true }); }
 
@@ -741,7 +740,7 @@ impl Display {
     { let pos = self.table.screen.position();
       let len = self.table.size.row_by_col();
       let collection = self.table.collection;
-      self.table.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|mut term: &mut Character|
+      self.table.screen.get_mut().into_iter().skip(pos).take(len - pos + 1).all(|term: &mut Character|
       { *term = collection;
         true }); }
 
