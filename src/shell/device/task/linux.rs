@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::io::{self, BufRead};
 
 use super::{SPEC_PROC, SPEC_SUBD_STATUS, SPEC_CAPACITY_PROC};
-use super::err::{ProcError, Result};
+use super::err::ProcError;
 use ::libc;
 
 #[derive(Debug)]
@@ -20,7 +20,7 @@ pub struct Proc {
 impl Proc {
 
     /// The method `with_list_process` pushes all process after the first pid.
-    pub fn with_list_process(&mut self) -> Result<()> {
+    pub fn with_list_process(&mut self) -> Result<(), ProcError> {
         let fpid: PathBuf = PathBuf::from(self.first_pid.to_string());
         match fs::read_dir(Path::new(SPEC_PROC)) {
             Err(why) => Err(ProcError::ReadDir(why)),

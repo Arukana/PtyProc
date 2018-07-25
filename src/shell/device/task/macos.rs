@@ -1,7 +1,7 @@
 use std::mem;
 
 use super::ffi;
-use super::err::{ProcError, Result};
+use super::err::ProcError;
 use ::libc;
 
 unsafe fn get_unchecked_str(cp: *mut u8, start: *mut u8) -> String {
@@ -24,7 +24,7 @@ pub struct Proc {
 }
 
 impl Proc {
-    pub fn with_list_process(&mut self) -> Result<()> {
+    pub fn with_list_process(&mut self) -> Result<(), ProcError> {
         unsafe {
             let count = ffi::proc_listallpids(::std::ptr::null_mut(), 0);
             if count < 1 {

@@ -36,7 +36,7 @@ const SPEC_CAPACITY_PROC: usize = 512;
 
 impl Proc {
     /// The constructor method `new` returns the list of process.
-    pub fn new(first_pid: libc::pid_t) -> Result<Self> {
+    pub fn new(first_pid: libc::pid_t) -> Result<Self, ProcError> {
         let mut status: Proc = Proc::default();
 
         status.first_pid = first_pid;
