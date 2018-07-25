@@ -1,5 +1,4 @@
 #![feature(slice_patterns)]
-#![feature(advanced_slice_patterns)]
 #![feature(range_contains)]
 
 #![crate_type= "lib"]
